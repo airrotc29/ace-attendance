@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>관리비 미납관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#3b82f6;--primary-dark:#1d4ed8;--primary-light:#eff6ff;
+  --green:#10b981;--green-light:#d1fae5;--red:#ef4444;--red-light:#fee2e2;
+  --gold:#f59e0b;--gold-light:#fef3c7;--navy:#0f172a;
+  --gray1:#f8fafc;--gray2:#f1f5f9;--gray3:#e2e8f0;--gray4:#94a3b8;--gray5:#64748b;
+  --text:#0f172a;--radius:14px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+}
+body{font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:var(--gray2);color:var(--text);min-height:100vh}
+header{background:linear-gradient(145deg,#0f172a,#1e3a8a);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+header h1{font-size:18px;font-weight:800}
+header .asof{font-size:13px;opacity:.9;display:flex;gap:6px;align-items:center}
+header input{padding:4px 8px;border-radius:6px;border:0}
+nav{display:flex;gap:4px;background:#fff;padding:0 12px;overflow-x:auto;border-bottom:1px solid var(--gray3);position:sticky;top:0;z-index:5}
+nav button{border:0;background:none;padding:13px 14px;font:600 14px inherit;font-family:inherit;color:var(--gray5);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:var(--primary-dark);border-color:var(--primary)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card h2{font-size:15px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+.stat small{color:var(--gray5);font-size:12px}.stat b{display:block;font-size:20px;margin-top:4px}
+.stat.red b{color:var(--red)}.stat.gold b{color:#b45309}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--gray3);white-space:nowrap}
+th{background:var(--gray1);color:var(--gray5);font-weight:600;position:sticky;top:0}
+td.n,th.n{text-align:right}
+.scroll{overflow-x:auto;max-height:520px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+label{font-size:12px;color:var(--gray5);display:flex;flex-direction:column;gap:3px}
+input,select,textarea{padding:8px 10px;border:1px solid var(--gray3);border-radius:8px;font:14px inherit;font-family:inherit}
+textarea{width:100%;min-height:200px}
+.btn{border:0;background:var(--primary);color:#fff;padding:9px 14px;border-radius:8px;font:600 13px inherit;font-family:inherit;cursor:pointer}
+.btn.gray{background:var(--gray3);color:var(--text)}.btn.red{background:var(--red)}.btn.sm{padding:4px 9px;font-size:12px}
+.tag{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+.t0{background:var(--green-light);color:#047857}.t1{background:var(--gold-light);color:#b45309}.t2{background:#ffedd5;color:#c2410c}.t3{background:var(--red-light);color:#b91c1c}
+.note{font-size:12px;color:var(--gray5);line-height:1.7;background:var(--gray1);border-radius:8px;padding:10px 12px;margin-top:10px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏢 관리비 미납관리</h1>
+  <div class="asof">기준일 <input type="date" id="asof"></div>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+
+<script>
+/* ═══ 데이터 ═══ */
+const KEY='arrears_v1';
+const DEF={units:[],charges:[],payments:[],logs:[],cfg:{rate:12,dueDay:25,graceDays:0,complex:'○○아파트',office:'관리사무소',tel:'',account:''}};
+let DB=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));return d?{...DEF,...d,cfg:{...DEF.cfg,...d.cfg}}:structuredClone(DEF)}catch(e){return structuredClone(DEF)}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){alert('저장 실패: 브라우저 저장공간을 확인하세요')}}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const won=n=>Math.round(n).toLocaleString('ko-KR');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const day=s=>new Date(s+'T00:00:00');
+const diffDays=(a,b)=>Math.round((day(b)-day(a))/864e5);
+const iso=d=>d.toISOString().slice(0,10);
+const today=()=>{const d=new Date();return iso(new Date(d.getTime()-d.getTimezoneOffset()*6e4))};
+let ASOF=today(), TAB='dash', SEL=null;
+
+/* ═══ 계산 ═══
+ 납부액은 오래된 부과분부터 충당(원금). 연체료 = 미납 원금 × 연이율 × 연체일수/365 (단리, 연체료에는 재차 연체료 불부과) */
+function calc(unitId){
+  const cs=DB.charges.filter(c=>c.unitId===unitId).sort((a,b)=>a.due.localeCompare(b.due)||a.ym.localeCompare(b.ym));
+  const ps=DB.payments.filter(p=>p.unitId===unitId&&p.date<=ASOF).sort((a,b)=>a.date.localeCompare(b.date));
+  const rate=DB.cfg.rate/100, grace=DB.cfg.graceDays;
+  const items=cs.map(c=>({...c,paid:0,alloc:[]}));
+  let credit=0;
+  for(const p of ps){let rem=p.amount;
+    for(const it of items){ if(!rem)break; const need=it.amount-it.paid; if(need<=0)continue; const t=Math.min(need,rem); it.paid+=t; rem-=t; it.alloc.push({date:p.date,amt:t});}
+    credit+=rem;}
+  let principal=0,fee=0,oldest=null;
+  for(const it of items){
+    it.bal=it.amount-it.paid; it.late=0;
+    // 구간별 연체료: 납기(+유예) 다음날부터 기준일까지, 납부일에 잔액 감소
+    const start=iso(new Date(day(it.due).getTime()+(grace)*864e5));
+    let bal=it.amount, cur=start;
+    const evs=[...it.alloc].sort((a,b)=>a.date.localeCompare(b.date));
+    for(const e of evs){ if(e.date>cur&&e.date<=ASOF){it.late+=bal*rate*Math.max(0,diffDays(cur,e.date))/365; cur=e.date;} bal-=e.amt; if(e.date<=cur)cur=cur; }
+    if(bal>0&&ASOF>cur) it.late+=bal*rate*diffDays(cur,ASOF)/365;
+    it.days=it.bal>0?Math.max(0,diffDays(it.due,ASOF)):0;
+    if(it.bal>0&&it.days>0){principal+=it.bal;fee+=it.late;if(!oldest)oldest=it;}
+  }
+  const months=items.filter(i=>i.bal>0&&i.days>0).length;
+  const maxDays=oldest?oldest.days:0;
+  return {items,principal,fee:Math.round(fee),total:principal+Math.round(fee),months,maxDays,credit,oldest};
+}
+const grade=d=>d<=0?[0,'정상']:d<=30?[1,'1개월 미만']:d<=90?[2,'1~3개월']:[3,'3개월 이상'];
+function all(){return DB.units.map(u=>({u,...calc(u.id)}))}
+
+/* ═══ 화면 ═══ */
+const TABS=[['dash','대시보드'],['arr','미납현황'],['units','세대'],['bill','부과·납부'],['notice','독촉·안내'],['law','법령'],['cfg','설정']];
+function render(){
+  document.getElementById('nav').innerHTML=TABS.map(([k,l])=>`<button class="${k===TAB?'on':''}" onclick="TAB='${k}';render()">${l}</button>`).join('');
+  document.getElementById('main').innerHTML=({dash,arr,units,bill,notice,law,cfg}[TAB])();
+}
+function dash(){
+  const a=all(), d=a.filter(x=>x.principal>0);
+  const P=d.reduce((s,x)=>s+x.principal,0),F=d.reduce((s,x)=>s+x.fee,0);
+  const bucket=[0,0,0,0];d.forEach(x=>bucket[grade(x.maxDays)[0]]+=x.principal);
+  const billed=DB.charges.filter(c=>c.ym===ASOF.slice(0,7)).reduce((s,c)=>s+c.amount,0);
+  return `<div class="grid">
+   <div class="stat red"><small>미납 원금</small><b>${won(P)}원</b></div>
+   <div class="stat gold"><small>연체료(예상)</small><b>${won(F)}원</b></div>
+   <div class="stat"><small>미납 세대</small><b>${d.length} / ${a.length}</b></div>
+   <div class="stat"><small>3개월 이상 장기미납</small><b>${d.filter(x=>x.maxDays>90).length}세대</b></div>
+   <div class="stat"><small>이번 달 부과액</small><b>${won(billed)}원</b></div></div>
+  <div class="card"><h2>연체 기간별 미납 원금</h2><table>
+   ${['1개월 미만','1~3개월','3개월 이상'].map((l,i)=>`<tr><td><span class="tag t${i+1}">${l}</span></td><td class="n">${d.filter(x=>grade(x.maxDays)[0]===i+1).length}세대</td><td class="n">${won(bucket[i+1])}원</td></tr>`).join('')}</table></div>
+  <div class="card"><h2>미납 상위 10세대</h2>${table(d.sort((a,b)=>b.total-a.total).slice(0,10))}</div>`;
+}
+function table(rows){
+  if(!rows.length)return '<p style="color:var(--gray5);font-size:13px">미납 세대가 없습니다.</p>';
+  return `<div class="scroll"><table><tr><th>호실</th><th>소유/입주자</th><th>연락처</th><th class="n">미납월</th><th class="n">최장연체</th><th class="n">원금</th><th class="n">연체료</th><th class="n">합계</th><th>등급</th><th></th></tr>
+  ${rows.map(x=>{const g=grade(x.maxDays);return `<tr><td><b>${esc(x.u.name)}</b></td><td>${esc(x.u.owner)}</td><td>${esc(x.u.phone)}</td><td class="n">${x.months}</td><td class="n">${x.maxDays}일</td><td class="n">${won(x.principal)}</td><td class="n">${won(x.fee)}</td><td class="n"><b>${won(x.total)}</b></td><td><span class="tag t${g[0]}">${g[1]}</span></td><td><button class="btn sm gray" onclick="SEL='${x.u.id}';TAB='notice';render()">안내문</button></td></tr>`}).join('')}</table></div>`;
+}
+let FQ='',FG='';
+function arr(){
+  let d=all().filter(x=>x.principal>0);
+  if(FQ)d=d.filter(x=>(x.u.name+x.u.owner).includes(FQ));
+  if(FG!=='')d=d.filter(x=>grade(x.maxDays)[0]==FG);
+  d.sort((a,b)=>b.maxDays-a.maxDays);
+  return `<div class="card"><div class="row">
+   <label>검색<input value="${esc(FQ)}" oninput="FQ=this.value;render();this.focus()" placeholder="호실/이름"></label>
+   <label>등급<select onchange="FG=this.value;render()"><option value="">전체</option><option value="1" ${FG==='1'?'selected':''}>1개월 미만</option><option value="2" ${FG==='2'?'selected':''}>1~3개월</option><option value="3" ${FG==='3'?'selected':''}>3개월 이상</option></select></label>
+   <button class="btn" onclick="exportXlsx()">엑셀 내보내기</button></div>${table(d)}</div>`;
+}
+function units(){
+  return `<div class="card"><h2>세대 등록</h2><div class="row">
+   <label>호실<input id="un" placeholder="101동 1203호"></label><label>소유/입주자<input id="uo"></label><label>연락처<input id="up" placeholder="010-0000-0000"></label>
+   <button class="btn" onclick="addUnit()">추가</button>
+   <label>엑셀 일괄등록 (호실,이름,연락처)<input type="file" accept=".xlsx,.xls,.csv" onchange="importUnits(this)"></label></div>
+   <div class="scroll"><table><tr><th>호실</th><th>이름</th><th>연락처</th><th></th></tr>
+   ${DB.units.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.owner)}</td><td>${esc(u.phone)}</td><td><button class="btn sm red" onclick="delUnit('${u.id}')">삭제</button></td></tr>`).join('')||'<tr><td colspan=4>등록된 세대가 없습니다.</td></tr>'}</table></div></div>`;
+}
+function bill(){
+  const opts=DB.units.map(u=>`<option value="${u.id}">${esc(u.name)} ${esc(u.owner)}</option>`).join('');
+  const ym=ASOF.slice(0,7);
+  return `<div class="card"><h2>관리비 부과</h2><div class="row">
+   <label>세대<select id="bu">${opts}</select></label><label>부과월<input type="month" id="bm" value="${ym}"></label>
+   <label>금액(원)<input type="number" id="ba"></label><label>납기일<input type="date" id="bd" value="${dueOf(ym)}"></label>
+   <button class="btn" onclick="addCharge()">부과</button></div>
+   <div class="row"><label>전세대 일괄부과 금액(원)<input type="number" id="bulk"></label><label>부과월<input type="month" id="bulkm" value="${ym}"></label><button class="btn gray" onclick="bulkCharge()">전세대 일괄부과</button>
+   <label>엑셀 부과 업로드 (호실,부과월,금액,납기일)<input type="file" accept=".xlsx,.xls,.csv" onchange="importCharges(this)"></label></div></div>
+  <div class="card"><h2>납부 입력</h2><div class="row">
+   <label>세대<select id="pu">${opts}</select></label><label>납부일<input type="date" id="pd" value="${ASOF}"></label>
+   <label>금액(원)<input type="number" id="pa"></label><button class="btn" onclick="addPay()">납부 등록</button></div></div>
+  <div class="card"><h2>세대별 내역 조회</h2><div class="row"><label>세대<select onchange="SEL=this.value;render()"><option value="">선택</option>${DB.units.map(u=>`<option value="${u.id}" ${SEL===u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></label></div>${ledger()}</div>`;
+}
+function dueOf(ym){const [y,m]=ym.split('-').map(Number);const last=new Date(y,m,0).getDate();return `${ym}-${String(Math.min(DB.cfg.dueDay,last)).padStart(2,'0')}`}
+function ledger(){
+  if(!SEL)return '';
+  const c=calc(SEL);
+  return `<div class="scroll"><table><tr><th>부과월</th><th>납기일</th><th class="n">부과액</th><th class="n">납부액</th><th class="n">잔액</th><th class="n">연체일</th><th class="n">연체료</th><th></th></tr>
+  ${c.items.map(i=>`<tr><td>${i.ym}</td><td>${i.due}</td><td class="n">${won(i.amount)}</td><td class="n">${won(i.paid)}</td><td class="n">${won(i.bal)}</td><td class="n">${i.days||''}</td><td class="n">${i.bal>0&&i.days?won(i.late):''}</td><td><button class="btn sm red" onclick="delCharge('${i.id}')">삭제</button></td></tr>`).join('')}</table></div>
+  <p style="margin-top:8px;font-size:13px">미납합계 <b>${won(c.total)}원</b> (원금 ${won(c.principal)} + 연체료 ${won(c.fee)})${c.credit?` · 선납/초과분 ${won(c.credit)}원`:''}</p>
+  <div class="scroll" style="margin-top:8px"><table><tr><th>납부일</th><th class="n">금액</th><th></th></tr>${DB.payments.filter(p=>p.unitId===SEL).sort((a,b)=>b.date.localeCompare(a.date)).map(p=>`<tr><td>${p.date}</td><td class="n">${won(p.amount)}</td><td><button class="btn sm red" onclick="delPay('${p.id}')">삭제</button></td></tr>`).join('')}</table></div>`;
+}
+const STAGES=[['1','납부 안내 (단기 연체)'],['2','1차 독촉'],['3','2차 독촉 (최고)'],['4','법적조치 예고']];
+let STAGE='1';
+function notice(){
+  const opts=DB.units.map(u=>`<option value="${u.id}" ${SEL===u.id?'selected':''}>${esc(u.name)} ${esc(u.owner)}</option>`).join('');
+  return `<div class="card"><h2>안내문 / 문자 생성</h2><div class="row">
+   <label>세대<select onchange="SEL=this.value;render()"><option value="">선택</option>${opts}</select></label>
+   <label>단계<select onchange="STAGE=this.value;render()">${STAGES.map(([k,l])=>`<option value="${k}" ${STAGE===k?'selected':''}>${l}</option>`).join('')}</select></label>
+   <button class="btn" onclick="copyNotice()">복사</button><button class="btn gray" onclick="logSent()">발송기록 남기기</button><button class="btn gray" onclick="window.print()">인쇄</button></div>
+   <textarea id="ntext">${esc(makeNotice())}</textarea>
+   <div class="note">※ 단전·단수 등 사실상 강제수단은 쓰지 마세요. 청구는 서면(내용증명)·지급명령 등 적법한 절차로 진행합니다. 개인정보(연락처)는 독촉 목적 외 사용·타 세대 노출 금지(개인정보 보호법).</div></div>
+   <div class="card"><h2>발송 기록</h2><div class="scroll"><table><tr><th>일자</th><th>세대</th><th>단계</th></tr>${[...DB.logs].reverse().slice(0,50).map(l=>`<tr><td>${l.date}</td><td>${esc(l.name)}</td><td>${esc(l.stage)}</td></tr>`).join('')}</table></div></div>`;
+}
+function makeNotice(){
+  if(!SEL)return '세대를 선택하세요.';
+  const u=DB.units.find(x=>x.id===SEL); if(!u)return '';
+  const c=calc(SEL), cfg=DB.cfg;
+  if(!c.principal)return `${u.name} 세대는 ${ASOF} 기준 미납 관리비가 없습니다.`;
+  const list=c.items.filter(i=>i.bal>0&&i.days>0).map(i=>` - ${i.ym}분 ${won(i.bal)}원 (납기 ${i.due}, 연체 ${i.days}일)`).join('\n');
+  const acc=cfg.account?`\n납부계좌: ${cfg.account}`:'', tel=cfg.tel?`\n문의: ${cfg.tel}`:'';
+  const tot=`미납 관리비 ${won(c.principal)}원 + 연체료 ${won(c.fee)}원 = 합계 ${won(c.total)}원 (${ASOF} 기준, 연체료는 납부일까지 계속 가산)`;
+  const head=`[${cfg.complex} ${cfg.office}]\n${u.name} ${u.owner||''} 님`;
+  const body={
+   '1':`관리비가 아직 납부되지 않아 안내드립니다. 이미 납부하셨다면 양해 부탁드립니다.\n\n${list}\n\n${tot}${acc}${tel}`,
+   '2':`아래 관리비가 납부기한이 지나도록 납부되지 않았습니다. 관리규약에 따라 연체료가 부과되며, ${addDays(ASOF,14)}까지 납부하여 주시기 바랍니다.\n\n${list}\n\n${tot}${acc}${tel}`,
+   '3':`수차례 안내에도 불구하고 관리비가 납부되지 않았습니다. 본 문서는 이행 최고서로, ${addDays(ASOF,10)}까지 납부하지 않을 경우 지급명령 신청 등 법적 절차를 진행할 수 있습니다.\n\n${list}\n\n${tot}${acc}${tel}`,
+   '4':`장기 체납에 따라 ${addDays(ASOF,7)}까지 전액 납부되지 않으면 지급명령·소송 및 소멸시효 중단 조치 등 법적 절차를 진행하겠습니다.\n\n${list}\n\n${tot}${acc}${tel}`}[STAGE];
+  return `${head}\n\n${body}\n\n${ASOF}\n${cfg.office}`;
+}
+function addDays(s,n){return iso(new Date(day(s).getTime()+n*864e5))}
+function law(){
+  const risk=all().flatMap(x=>x.items.filter(i=>i.bal>0).map(i=>({...i,u:x.u}))).filter(i=>diffDays(i.due,ASOF)>365*3-180);
+  return `<div class="card"><h2>관련 법령 (확인용)</h2><div class="note" style="margin-top:0">
+   <b>연체료</b> · 공동주택관리법 제23조 및 같은 법 시행령 제23조(관리비 등의 징수), 관리규약(준칙)으로 연체료율 규정. 이 앱 기본값은 연 12%이며 <b>설정에서 단지 관리규약의 요율로 반드시 수정</b>하세요.<br>
+   <b>소멸시효</b> · 관리비채권은 민법 제163조 제1호(1년 이하 정기 금전채권)로 3년 단기 소멸시효(대법원 판례). 지급명령·소제기·승인(일부납부 등)으로 중단됩니다.<br>
+   <b>승계</b> · 집합건물법 제18조: 공용부분 관리비는 특별승계인(양수인)에게도 청구 가능. 전 소유자 체납분은 양수인이 부담하는 범위가 판례로 제한되므로 개별 확인 필요.<br>
+   <b>단전·단수</b> · 관리비 체납을 이유로 한 단전·단수는 위법 소지(공동주택관리법상 입주민 생활 방해 금지, 형법 제314조 업무방해 등).<br>
+   <b>세금·보험</b> · 관리비 체납 처리는 소득세·건강보험료와 무관하나, 임대(월세) 소득이 있는 소유자라면 종합소득세·건보료 문제는 별도입니다.
+   <br><br>※ 실제 적용 전 국가법령정보센터(law.go.kr)에서 최신 조문을 확인하고 법무사·변호사 자문을 받으세요.</div></div>
+   <div class="card"><h2>⚠ 소멸시효(3년) 임박 채권</h2>${risk.length?`<table><tr><th>호실</th><th>부과월</th><th>납기</th><th class="n">잔액</th><th>시효 완성일</th></tr>${risk.map(i=>`<tr><td>${esc(i.u.name)}</td><td>${i.ym}</td><td>${i.due}</td><td class="n">${won(i.bal)}</td><td>${addDays(i.due,365*3)}</td></tr>`).join('')}</table>`:'<p style="font-size:13px;color:var(--gray5)">시효 임박(6개월 이내) 채권이 없습니다.</p>'}</div>`;
+}
+function cfg(){
+  const c=DB.cfg;
+  const f=(k,l,t='text')=>`<label>${l}<input type="${t}" value="${esc(c[k])}" onchange="DB.cfg['${k}']=${t==='number'?'+':''}this.value;save()"></label>`;
+  return `<div class="card"><h2>설정</h2><div class="row">${f('complex','단지명')}${f('office','발신처')}${f('tel','문의 전화')}${f('account','납부계좌')}</div>
+   <div class="row">${f('rate','연체료율(연 %)','number')}${f('dueDay','기본 납기일(일)','number')}${f('graceDays','유예일수','number')}</div>
+   <div class="row"><button class="btn gray" onclick="backup()">백업(JSON)</button><label>복원<input type="file" accept=".json" onchange="restore(this)"></label><button class="btn red" onclick="if(confirm('모든 데이터를 삭제합니다.')){DB=structuredClone(DEF);save();render()}">전체 초기화</button></div>
+   <div class="note">데이터는 이 브라우저(localStorage)에만 저장됩니다. 정기적으로 백업하세요. 입주민 개인정보가 포함되므로 공용 PC 사용을 피하세요.</div></div>`;
+}
+
+/* ═══ 동작 ═══ */
+function addUnit(){const n=val('un').trim();if(!n)return alert('호실을 입력하세요');DB.units.push({id:uid(),name:n,owner:val('uo'),phone:val('up')});save();render()}
+function delUnit(id){if(!confirm('세대와 관련 부과·납부 내역을 모두 삭제합니다.'))return;DB.units=DB.units.filter(u=>u.id!==id);DB.charges=DB.charges.filter(c=>c.unitId!==id);DB.payments=DB.payments.filter(p=>p.unitId!==id);save();render()}
+function val(id){return document.getElementById(id).value}
+function addCharge(){const a=+val('ba');if(!val('bu')||!a||!val('bd'))return alert('세대·금액·납기일을 입력하세요');DB.charges.push({id:uid(),unitId:val('bu'),ym:val('bm'),amount:a,due:val('bd')});SEL=val('bu');save();render()}
+function bulkCharge(){const a=+val('bulk'),ym=val('bulkm');if(!a)return alert('금액을 입력하세요');if(!confirm(`${DB.units.length}세대에 ${ym}분 ${won(a)}원을 부과합니다.`))return;DB.units.forEach(u=>{if(!DB.charges.some(c=>c.unitId===u.id&&c.ym===ym))DB.charges.push({id:uid(),unitId:u.id,ym,amount:a,due:dueOf(ym)})});save();render()}
+function addPay(){const a=+val('pa');if(!val('pu')||!a||!val('pd'))return alert('세대·납부일·금액을 입력하세요');DB.payments.push({id:uid(),unitId:val('pu'),date:val('pd'),amount:a});SEL=val('pu');save();render()}
+function delCharge(id){DB.charges=DB.charges.filter(c=>c.id!==id);save();render()}
+function delPay(id){DB.payments=DB.payments.filter(p=>p.id!==id);save();render()}
+function copyNotice(){const t=document.getElementById('ntext');t.select();navigator.clipboard?.writeText(t.value).then(()=>alert('복사되었습니다'),()=>document.execCommand('copy'))}
+function logSent(){if(!SEL)return;const u=DB.units.find(x=>x.id===SEL);DB.logs.push({date:ASOF,name:u.name,stage:STAGES.find(s=>s[0]===STAGE)[1]});save();render()}
+function readSheet(inp,cb){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{const wb=XLSX.read(e.target.result,{type:'array',cellDates:false});cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false}).filter(r=>r.length))};r.readAsArrayBuffer(f);inp.value=''}
+function importUnits(inp){readSheet(inp,rows=>{let n=0;rows.forEach((r,i)=>{if(i===0&&/호/.test(r[0]||'')&&/이름|성명/.test(r[1]||''))return;if(!r[0]||DB.units.some(u=>u.name===String(r[0]).trim()))return;DB.units.push({id:uid(),name:String(r[0]).trim(),owner:r[1]||'',phone:r[2]||''});n++});save();alert(n+'세대 등록');render()})}
+function importCharges(inp){readSheet(inp,rows=>{let n=0,miss=[];rows.forEach(r=>{const u=DB.units.find(x=>x.name===String(r[0]||'').trim());const a=+String(r[2]||'').replace(/,/g,'');if(!u){if(r[0]&&!/호/.test(r[0]+'')||r[0])miss.push(r[0]);return}if(!a||!/^\d{4}-\d{2}/.test(r[1]||''))return;const ym=r[1].slice(0,7);DB.charges.push({id:uid(),unitId:u.id,ym,amount:a,due:/^\d{4}-\d{2}-\d{2}$/.test(r[3]||'')?r[3]:dueOf(ym)});n++});save();alert(n+'건 부과 등록'+(miss.length?`\n미등록 호실 건너뜀: ${[...new Set(miss)].slice(0,10).join(', ')}`:''));render()})}
+function exportXlsx(){const rows=all().filter(x=>x.principal>0).sort((a,b)=>b.maxDays-a.maxDays).map(x=>({호실:x.u.name,이름:x.u.owner,연락처:x.u.phone,미납월수:x.months,최장연체일:x.maxDays,미납원금:x.principal,연체료:x.fee,합계:x.total}));const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'미납현황');XLSX.writeFile(wb,`미납현황_${ASOF}.xlsx`)}
+function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB)],{type:'application/json'}));a.download=`arrears_backup_${ASOF}.json`;a.click()}
+function restore(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{DB={...DEF,...JSON.parse(e.target.result)};save();render()}catch(x){alert('올바른 백업 파일이 아닙니다')}};r.readAsText(f)}
+
+const ai=document.getElementById('asof');ai.value=ASOF;ai.onchange=()=>{ASOF=ai.value||today();render()};
+render();
+</script>
+</body>
+</html>
