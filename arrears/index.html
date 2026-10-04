@@ -50,7 +50,7 @@ textarea{width:100%;min-height:200px}
 <body>
 <header>
   <h1>🏢 관리비 미납관리</h1>
-  <div class="asof">기준일 <input type="date" id="asof"></div>
+  <div class="asof"><span id="sync" title="동기화 상태">● 로컬</span> 기준일 <input type="date" id="asof"></div>
 </header>
 <nav id="nav"></nav>
 <main id="main"></main>
@@ -61,7 +61,67 @@ const KEY='arrears_v1';
 const DEF={units:[],charges:[],payments:[],logs:[],cfg:{rate:12,dueDay:25,graceDays:0,complex:'○○아파트',office:'관리사무소',tel:'',account:''}};
 let DB=load();
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));return d?{...DEF,...d,cfg:{...DEF.cfg,...d.cfg}}:structuredClone(DEF)}catch(e){return structuredClone(DEF)}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){alert('저장 실패: 브라우저 저장공간을 확인하세요')}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){alert('저장 실패: 브라우저 저장공간을 확인하세요')}sbPush()}
+
+/* ═══ Supabase 동기화 ═══
+ 테이블 arrears_state(site text pk, data jsonb, updated_at timestamptz, client text) 한 행에 전체 DB를 저장.
+ 마지막 저장이 이김(last-write-wins). 실시간 구독 + 20초 폴링 fallback. */
+const SBKEY='arrears_sb';
+let SB={url:'',key:'',site:''};try{SB={...SB,...JSON.parse(localStorage.getItem(SBKEY)||'{}')}}catch(e){}
+const CID=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+let sb=null, sbTimer=null, lastRemote='', sbState='로컬';
+function setSync(s,color){sbState=s;const el=document.getElementById('sync');if(el){el.textContent='● '+s;el.style.color=color||'#fff'}}
+function sbReady(){return SB.url&&SB.key&&SB.site}
+async function sbInit(){
+  if(!sbReady())return;
+  setSync('연결중','#fbbf24');
+  try{
+    if(!window.supabase){await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=ok;s.onerror=()=>no(new Error('supabase 라이브러리(CDN) 로드 실패 — 인터넷 연결 확인'));document.head.appendChild(s)})}
+    sb=window.supabase.createClient(SB.url,SB.key);
+    const {data,error}=await sb.from('arrears_state').select('data,updated_at').eq('site',SB.site).maybeSingle();
+    if(error)throw error;
+    if(data&&data.data){ applyRemote(data); }
+    else { await sbUpsert(); }
+    sb.channel('arrears_'+SB.site).on('postgres_changes',{event:'*',schema:'public',table:'arrears_state',filter:`site=eq.${SB.site}`},p=>{if(p.new&&p.new.client!==CID)applyRemote(p.new)}).subscribe();
+    setInterval(sbPull,20000);
+    setSync('동기화 중','#86efac');
+  }catch(e){console.warn(e);setSync('연결 실패','#fca5a5');alert('Supabase 연결 실패: '+(e.message||e)+'\n설정 탭의 SQL을 실행했는지, URL/키가 맞는지 확인하세요.')}
+}
+function applyRemote(row){
+  if(!row||!row.data||row.updated_at===lastRemote)return;
+  lastRemote=row.updated_at;
+  DB={...DEF,...row.data,cfg:{...DEF.cfg,...(row.data.cfg||{})}};
+  try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}
+  render();
+}
+async function sbPull(){
+  if(!sb)return;
+  const {data}=await sb.from('arrears_state').select('data,updated_at,client').eq('site',SB.site).maybeSingle();
+  if(data&&data.client!==CID)applyRemote(data);
+}
+function sbPush(){ if(!sb)return; clearTimeout(sbTimer); sbTimer=setTimeout(sbUpsert,400); }
+async function sbUpsert(){
+  if(!sb)return;
+  const updated_at=new Date().toISOString(); lastRemote=updated_at;
+  const {error}=await sb.from('arrears_state').upsert({site:SB.site,data:DB,updated_at,client:CID});
+  if(error){console.warn(error);setSync('저장 실패','#fca5a5')}else setSync('동기화 중','#86efac');
+}
+function sbSave(){
+  SB={url:val('sbu').trim().replace(/\/$/,''),key:val('sbk').trim(),site:val('sbs').trim()};
+  if(!sbReady())return alert('URL, anon key, 단지 코드를 모두 입력하세요');
+  localStorage.setItem(SBKEY,JSON.stringify(SB));location.reload();
+}
+function sbOff(){if(!confirm('동기화를 끊습니다. (이 기계의 데이터는 유지, 서버 데이터도 삭제되지 않음)'))return;localStorage.removeItem(SBKEY);location.reload()}
+const SB_SQL=`create table if not exists public.arrears_state (
+  site text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now(),
+  client text
+);
+alter table public.arrears_state enable row level security;
+create policy "arrears_anon_all" on public.arrears_state
+  for all to anon using (true) with check (true);
+alter publication supabase_realtime add table public.arrears_state;`;
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const won=n=>Math.round(n).toLocaleString('ko-KR');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -215,7 +275,21 @@ function cfg(){
   return `<div class="card"><h2>설정</h2><div class="row">${f('complex','단지명')}${f('office','발신처')}${f('tel','문의 전화')}${f('account','납부계좌')}</div>
    <div class="row">${f('rate','연체료율(연 %)','number')}${f('dueDay','기본 납기일(일)','number')}${f('graceDays','유예일수','number')}</div>
    <div class="row"><button class="btn gray" onclick="backup()">백업(JSON)</button><label>복원<input type="file" accept=".json" onchange="restore(this)"></label><button class="btn red" onclick="if(confirm('모든 데이터를 삭제합니다.')){DB=structuredClone(DEF);save();render()}">전체 초기화</button></div>
-   <div class="note">데이터는 이 브라우저(localStorage)에만 저장됩니다. 정기적으로 백업하세요. 입주민 개인정보가 포함되므로 공용 PC 사용을 피하세요.</div></div>`;
+   <div class="note">백업은 설정과 무관하게 언제든 받아두세요. 입주민 개인정보가 포함되므로 공용 PC 사용을 피하세요.</div></div>
+  <div class="card"><h2>여러 기계에서 함께 쓰기 (Supabase 동기화) — 현재: <span style="color:${sb?'#047857':'var(--gray5)'}">${esc(sbState)}</span></h2>
+   <div class="row"><label>Project URL<input id="sbu" value="${esc(SB.url)}" placeholder="https://xxxx.supabase.co" style="min-width:260px"></label>
+   <label>anon public key<input id="sbk" type="password" value="${esc(SB.key)}" style="min-width:260px"></label>
+   <label>단지 코드(공유 키)<input id="sbs" value="${esc(SB.site)}" placeholder="예: ace-apt-2026"></label>
+   <button class="btn" onclick="sbSave()">저장 후 연결</button>${sb?'<button class="btn red" onclick="sbOff()">동기화 끊기</button>':''}</div>
+   <div class="note"><b>설정 순서</b><br>
+   1. supabase.com에서 새 프로젝트 생성 (출퇴근 앱과 별도 프로젝트 권장)<br>
+   2. 왼쪽 메뉴 SQL Editor → 아래 SQL 붙여넣고 Run<br>
+   3. Project Settings → API에서 Project URL과 anon public key 복사 → 위에 입력<br>
+   4. 단지 코드는 아무 문자열이나 정해서 모든 기계에 똑같이 입력<br>
+   5. 다른 기계에서도 같은 값 입력하면 자동으로 같은 데이터가 보입니다 (실시간 반영, 최대 20초 지연)<br><br>
+   <textarea readonly style="min-height:150px;font-family:monospace;font-size:12px" onclick="this.select()">${esc(SB_SQL)}</textarea>
+   <br>※ 이 설정은 anon 키로 누구나 읽고 쓸 수 있는 구조입니다(단지 코드를 알아야 데이터에 접근). URL·키·단지 코드를 외부에 공개하지 마세요. 더 엄격한 보안이 필요하면 Supabase Auth 로그인 적용이 필요합니다.<br>
+   ※ 두 기계에서 동시에 수정하면 마지막 저장이 우선됩니다. 처음 연결할 때 서버에 데이터가 있으면 서버 데이터가 이 기계 데이터를 덮어쓰니, 연결 전에 백업하세요.</div></div>`;
 }
 
 /* ═══ 동작 ═══ */
@@ -238,6 +312,7 @@ function restore(inp){const f=inp.files[0];if(!f)return;const r=new FileReader()
 
 const ai=document.getElementById('asof');ai.value=ASOF;ai.onchange=()=>{ASOF=ai.value||today();render()};
 render();
+sbInit();
 </script>
 </body>
 </html>
