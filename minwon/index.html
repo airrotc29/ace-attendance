@@ -1051,7 +1051,7 @@ function assign(id,v){
 function addLog(id,type){
   const it=issues[id];
   const title={progress:'진행 보고',done:'완료 처리',comment:'댓글'}[type];
-  const ph={progress:'예) 현장 확인했습니다. 1시간 후 조치 예정',done:'예) 경첩 교체 완료',comment:'내용'}[type];
+  const ph={progress:'진행 상황을 적어 주세요',done:'예) 경첩 교체 완료',comment:'내용'}[type];
   let photos=[];
   const draw=()=>{ $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="log-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-height:80vh">
     <div class="modal-head"><h2>${title}</h2><button class="modal-close" onclick="document.getElementById('log-modal').remove()">✕</button></div>
@@ -1076,7 +1076,9 @@ function addLog(id,type){
       logDraftText=''; const lm=$('#log-modal'); if(lm) lm.remove(); toast(type==='done'?'완료 처리되었습니다':'등록되었습니다');
     };
   };
-  logDraftText=''; draw();
+  // 자주 쓰는 문구를 미리 넣어 둠 (그대로 등록하거나 고쳐 쓰기)
+  logDraftText={progress:'현장 확인했습니다. 1시간 후 조치 예정',done:'조치 완료했습니다'}[type]||''; draw();
+  const ta=$('#log-text'); if(ta && ta.value){ try{ ta.focus({preventScroll:true}); ta.setSelectionRange(ta.value.length, ta.value.length); }catch{} }
 }
 let logDraftText='';
 function reopen(id){ const it=issues[id]; if(!confirm('이 민원을 다시 열까요? (재발/미해결)')) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`다시 열림 · ${it.title} · ${me.name} (재발)`, id); }
