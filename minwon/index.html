@@ -570,30 +570,34 @@ function rpc(name, args={}, c=auth){
 }
 
 // ── 쓰기 (서버 실패 시 대기열에 넣고 다음 동기화 때 재전송) ──
-const pending = ()=>lsGet(K.pending(),{issues:{},chat:{},del:{}});
-function queue(kind,id){ const p=pending(); p[kind][id]=true; lsSet(K.pending(),p); }
+// 전송 중인 항목: 저장이 끝나기 전에 도착한 동기화 결과가 방금 쓴 내용을 덮지 않도록
+const inflight = {issues:{}, chat:{}, del:{}};
+const pending = ()=>{ const p=lsGet(K.pending(),{issues:{},chat:{},del:{}}); ['issues','chat','del'].forEach(k=>Object.keys(inflight[k]).forEach(id=>p[k][id]=true)); return p; };
+const wroteAt = {issues:{}, chat:{}, del:{}};   // 이 기기에서 마지막으로 쓴 시각
+function track(kind,id,promise){ wroteAt[kind][id]=Date.now(); inflight[kind][id]=(inflight[kind][id]||0)+1; const done=()=>{ if(--inflight[kind][id]<=0) delete inflight[kind][id]; }; return promise.then(r=>{ done(); return r; }, e=>{ done(); throw e; }); }
+function queue(kind,id){ const p=lsGet(K.pending(),{issues:{},chat:{},del:{}}); p[kind][id]=true; lsSet(K.pending(),p); }
 function saveIssue(it){
   it.updatedAt = Date.now();
   issues[it.id] = it; lsSet(K.issues(), issues); render();
   if(!sbOn){ queue('issues',it.id); return; }
-  rpc('mw_issue_save',{p_row:issueToRow(it)}).catch(e=>{ console.warn(e); queue('issues',it.id); toast('서버 저장 실패 · 연결되면 자동 전송'); });
+  track('issues',it.id,rpc('mw_issue_save',{p_row:issueToRow(it)})).catch(e=>{ console.warn(e); queue('issues',it.id); toast('서버 저장 실패 · 연결되면 자동 전송'); });
 }
 function deleteIssue(id){
   delete issues[id]; lsSet(K.issues(), issues); render();
   if(!sbOn){ queue('del',id); return; }
-  rpc('mw_issue_delete',{p_id:id}).catch(e=>{ console.warn(e); queue('del',id); });
+  track('del',id,rpc('mw_issue_delete',{p_id:id})).catch(e=>{ console.warn(e); queue('del',id); });
 }
 function sendChat(msg){
   msg.id = msg.id||uid(); msg.ts = msg.ts||Date.now();
   chat[msg.id]=msg; lsSet(K.chat(), pruneChat(chat)); lsSet(K.seenChat(), msg.ts); render();
   if(!sbOn){ queue('chat',msg.id); return; }
-  rpc('mw_chat_save',{p_row:msgToRow(msg)}).catch(e=>{ console.warn(e); queue('chat',msg.id); toast('서버 전송 실패 · 연결되면 자동 전송'); });
+  track('chat',msg.id,rpc('mw_chat_save',{p_row:msgToRow(msg)})).catch(e=>{ console.warn(e); queue('chat',msg.id); toast('서버 전송 실패 · 연결되면 자동 전송'); });
 }
 function pruneChat(c){ const arr=Object.values(c).sort((a,b)=>a.ts-b.ts); const keep=arr.slice(-400); const o={}; keep.forEach(m=>o[m.id]=m); return o; }
 const sysMsg = (text, issueId)=>sendChat({ kind:'sys', text, issueId:issueId||null, by:{name:me.name,empId:me.empId,team:me.team} });
 
 async function flushPending(){
-  const p=pending(); const left={issues:{},chat:{},del:{}};
+  const p=lsGet(K.pending(),{issues:{},chat:{},del:{}}); const left={issues:{},chat:{},del:{}};
   for(const id of Object.keys(p.issues)){ const it=issues[id]; if(!it) continue; try{ await rpc('mw_issue_save',{p_row:issueToRow(it)}); }catch(e){ left.issues[id]=true; } }
   for(const id of Object.keys(p.chat)){ const m=chat[id]; if(!m) continue; try{ await rpc('mw_chat_save',{p_row:msgToRow(m)}); }catch(e){ left.chat[id]=true; } }
   for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id}); }catch(e){ left.del[id]=true; } }
@@ -633,9 +637,12 @@ async function fetchAll(forceFull){
     // 마지막으로 받은 시각 이후 바뀐 것만 받음 (처음 · 30분마다는 전체)
     const cur = lsGet(K.cursor(), null);
     const full = forceFull || !cur || !cur.since || (Date.now()-(cur.fullAt||0)>FULL_SYNC_MS);
+    const reqAt = Date.now();
     const r = await rpc('mw_sync', {p_since: full ? null : cur.since});
     const prev = {...issues}, prevN = Object.keys(chat).length;
     const p = pending(); let nChg = 0;
+    // 요청을 보낸 뒤에 이 기기에서 쓴 항목은 이번 응답이 옛 내용일 수 있으므로 기기 버전을 유지
+    ['issues','chat','del'].forEach(k=>Object.entries(wroteAt[k]).forEach(([id,ts])=>{ if(ts>=reqAt) p[k][id]=true; else if(Date.now()-ts>60000) delete wroteAt[k][id]; }));
     if(r.full){
       const ni={}; (r.issues||[]).forEach(x=>ni[x.id]=rowToIssue(x));
       const nc={}; (r.chat||[]).forEach(x=>nc[x.id]=rowToMsg(x));
