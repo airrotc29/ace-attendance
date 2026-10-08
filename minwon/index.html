@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="theme-color" content="#111111"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="민원처리"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"/>
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
 <title>민원 처리 공유 시스템</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
@@ -367,6 +374,22 @@ mark{background:#fff1a8;box-shadow:none}
 .rp-check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin:2px 0 14px;color:var(--ink2)}
 .rp-check input{width:18px;height:18px}
 .topbar .tb-btn + .tb-btn{margin-left:-4px}
+.login-box input{background-image:none;padding-right:14px}
+.lg-install{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;padding:12px;border:1px solid var(--line2);border-radius:var(--r-sm);background:#fff;font-size:14.5px;font-weight:700;color:var(--ink)}
+.lg-install svg{width:19px;height:19px}
+.tb-ic{display:inline-flex;align-items:center;justify-content:center;padding:6px 8px}
+.tb-ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.inst-app{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.inst-app img{width:56px;height:56px;border-radius:13px;flex:none}
+.inst-app b{display:block;font-size:16px}
+.inst-app small{display:block;font-size:13px;color:var(--mute);line-height:1.5;margin-top:2px}
+.ig h3{font-size:15px;font-weight:700;margin-bottom:8px}
+.ig ol{margin:0 0 6px 20px;font-size:14.5px;line-height:1.7}
+.ig ol li{margin-bottom:4px}
+.ig ol svg.i{width:18px;height:18px;vertical-align:-4px;stroke:var(--accent)}
+.ig.main{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.ig-more summary{font-size:13.5px;font-weight:600;color:var(--mute);cursor:pointer;padding:6px 0}
+.ig-more .ig{padding:10px 2px 0;border-top:1px solid var(--line);margin-top:8px}
 </style>
 </head>
 <body>
@@ -395,6 +418,7 @@ mark{background:#fff1a8;box-shadow:none}
       <button class="lg-back" onclick="showStep(1)">다른 사업소로 로그인</button>
     </div>
     <div id="lg-err" class="lg-err hidden"></div>
+    <button class="lg-install hidden" id="lg-install" onclick="installApp()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>앱으로 설치하기</button>
     <div class="login-hint">사업소 코드와 비밀번호는 본사 관리자에게 문의하세요.<br>한 번 입장하면 이 기기에서는 자동으로 다시 입장됩니다.</div>
   </div>
 </div>
@@ -403,6 +427,7 @@ mark{background:#fff1a8;box-shadow:none}
 <div id="admin" class="hidden">
   <div class="topbar">
     <div class="tb-title">본사 관리<small>사업소 생성 · 명단 · 비밀번호</small></div>
+    <button class="tb-btn tb-ic hidden" id="adm-install" onclick="installApp()" aria-label="앱으로 설치" title="앱으로 설치"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
   </div>
   <div class="content" id="adm-content"></div>
 </div>
@@ -412,6 +437,7 @@ mark{background:#fff1a8;box-shadow:none}
   <div class="topbar">
     <div class="tb-title"><span id="tb-office"></span><small><span class="sync-dot" id="sync-dot"></span><span id="sync-text">연결 중…</span></small></div>
     <div class="tb-user"><b id="tb-name"></b><span id="tb-team"></span></div>
+    <button class="tb-btn tb-ic hidden" id="tb-install" onclick="installApp()" aria-label="앱으로 설치" title="앱으로 설치"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
     <button class="tb-btn hidden" id="tb-staff" onclick="openStaff()">직원</button>
     <button class="tb-btn" onclick="logout()">나가기</button>
   </div>
@@ -1529,6 +1555,47 @@ thead{display:table-header-group}
 </div></body></html>`;
 }
 
+
+// ══════════════════════════════════════════════
+// 앱으로 설치 (홈 화면 · 바탕화면 아이콘)
+// ══════════════════════════════════════════════
+let installPrompt = null;
+const isStandalone = ()=>{ try{ return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; }catch{ return false; } };
+const platform = ()=>{ const ua=navigator.userAgent||''; if(/iphone|ipad|ipod/i.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)) return 'ios'; if(/android/i.test(ua)) return 'android'; return 'pc'; };
+function refreshInstallUI(){ const show=!isStandalone(); ['lg-install','tb-install','adm-install'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('hidden', !show); }); }
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installPrompt=e; refreshInstallUI(); });
+window.addEventListener('appinstalled', ()=>{ installPrompt=null; refreshInstallUI(); closeById('inst-modal'); toast('설치되었습니다. 홈 화면이나 바탕화면의 아이콘으로 여세요', 3500); });
+async function installApp(){
+  if(installPrompt){
+    try{ installPrompt.prompt(); const r=await installPrompt.userChoice; if(r && r.outcome==='accepted') toast('설치를 시작합니다'); }catch(e){ console.warn(e); }
+    installPrompt=null; refreshInstallUI(); return;
+  }
+  showInstallGuide();
+}
+function showInstallGuide(){
+  closeById('inst-modal');
+  const pf=platform();
+  const share='<svg class="i" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
+  const dots='<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/></svg>';
+  const inst='<svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M12 8v6M9 11l3 3 3-3"/></svg>';
+  const guides={
+    ios:{t:'아이폰 · 아이패드 (사파리)', s:[`화면 아래 <b>공유</b> 버튼 ${share} 을 누릅니다.`,'목록을 올려 <b>홈 화면에 추가</b>를 누릅니다.','오른쪽 위 <b>추가</b>를 누르면 홈 화면에 아이콘이 생깁니다.'], n:'사파리에서만 됩니다. 카카오톡 안에서 열었다면 오른쪽 아래 메뉴로 사파리에서 여세요.'},
+    android:{t:'안드로이드 (크롬 · 삼성 인터넷)', s:[`오른쪽 위 <b>메뉴</b> ${dots} 를 누릅니다.`,'<b>앱 설치</b> 또는 <b>홈 화면에 추가</b>를 누릅니다.','<b>설치</b>를 누르면 홈 화면에 아이콘이 생깁니다.'], n:'삼성 인터넷은 아래 메뉴 → 현재 페이지 추가 → 홈 화면입니다.'},
+    pc:{t:'PC (크롬 · 엣지)', s:[`주소창 오른쪽의 <b>설치</b> 아이콘 ${inst} 을 누릅니다.`,'안 보이면 오른쪽 위 <b>메뉴</b> → <b>앱</b> 또는 <b>설치</b>를 고릅니다.','<b>설치</b>를 누르면 바탕화면과 시작 메뉴에 아이콘이 생깁니다.'], n:'인터넷 익스플로러와 일부 브라우저는 지원하지 않습니다.'}
+  };
+  const order=[pf, ...['ios','android','pc'].filter(k=>k!==pf)];
+  const block=(k,main)=>{ const g=guides[k]; return `<div class="ig ${main?'main':''}"><h3>${g.t}</h3><ol>${g.s.map(x=>`<li>${x}</li>`).join('')}</ol><p class="hint">${g.n}</p></div>`; };
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="inst-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:460px">
+    <div class="modal-head"><h2>앱으로 설치하기</h2><button class="modal-close" onclick="closeById('inst-modal')">✕</button></div>
+    <div class="inst-app"><img src="icons/icon-192.png" alt=""><div><b>민원처리</b><small>홈 화면 · 바탕화면에 아이콘이 생기고<br>주소창 없이 앱처럼 열립니다</small></div></div>
+    ${block(order[0],true)}
+    <details class="ig-more"><summary>다른 기기에서 설치하는 법</summary>${order.slice(1).map(k=>block(k,false)).join('')}</details>
+  </div></div>`);
+}
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw', e)); });
+}
+refreshInstallUI();
 
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll(); if(tab==='chat') lsSet(K.seenChat(),Date.now()); updateBadges(); } });
 window.addEventListener('online',()=>{ if(sbOn) fetchAll(); });
