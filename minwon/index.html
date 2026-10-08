@@ -359,6 +359,14 @@ table.rep th{font-size:12.5px;color:var(--mute)}
 /* 기타 */
 #toast{font-size:14.5px;font-weight:600}
 mark{background:#fff1a8;box-shadow:none}
+.staff-list .st-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.staff-list .st-row:last-child{border-bottom:none}
+.st-row b{font-size:15.5px}
+.st-row small{display:block;color:var(--mute);font-size:13px;margin-top:1px}
+.st-me{font-size:12.5px;color:var(--mute);padding:0 6px}
+.rp-check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin:2px 0 14px;color:var(--ink2)}
+.rp-check input{width:18px;height:18px}
+.topbar .tb-btn + .tb-btn{margin-left:-4px}
 </style>
 </head>
 <body>
@@ -404,6 +412,7 @@ mark{background:#fff1a8;box-shadow:none}
   <div class="topbar">
     <div class="tb-title"><span id="tb-office"></span><small><span class="sync-dot" id="sync-dot"></span><span id="sync-text">연결 중…</span></small></div>
     <div class="tb-user"><b id="tb-name"></b><span id="tb-team"></span></div>
+    <button class="tb-btn hidden" id="tb-staff" onclick="openStaff()">직원</button>
     <button class="tb-btn" onclick="logout()">나가기</button>
   </div>
   <div class="content" id="content"></div>
@@ -669,6 +678,7 @@ function enter(empId){
   issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{});
   $('#login').classList.add('hidden'); $('#admin').classList.add('hidden'); $('#app').classList.remove('hidden');
   $('#tb-office').textContent = me.officeName; $('#tb-name').textContent = me.name; $('#tb-team').textContent = `${me.rank} · ${me.team}`;
+  $('#tb-staff').classList.toggle('hidden', !me.boss); mgrPw = null;
   try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch{}
   sbOn = true; setSync('on','자동 동기화 · 6초');
   startSync(); fetchAll();
@@ -715,15 +725,17 @@ function renderAdminHome(){
         <div class="form-row"><label>사업소 코드 (로그인용)</label><input id="ad-code" placeholder="예) GANGNAM" autocapitalize="characters"></div>
         <div class="form-row"><label>비밀번호 (6자 이상)</label><input id="ad-pw" type="text"></div>
       </div>
+      <div class="form-row"><label>소장 비밀번호 (직원 관리용 · 4자 이상 · 나중에 정해도 됨)</label><input id="ad-mgr" type="text"></div>
       <button class="btn btn-primary btn-block" onclick="adminCreate()">사업소 만들기</button>
     </div>
     <div class="card"><h3>사업소 목록 <small style="font-weight:400;color:var(--mute)">${adminOffices.length}곳</small></h3>
       ${adminOffices.length ? adminOffices.map(o=>`
         <div class="adm-item">
-          <div><b>${esc(o.name)}</b><small>코드 ${esc(o.code)} · 직원 ${o.count}명</small></div>
+          <div><b>${esc(o.name)}</b><small>코드 ${esc(o.code)} · 직원 ${o.count}명 · 소장 비밀번호 ${o.has_mgr?'설정됨':'<span style="color:var(--red)">미설정</span>'}</small></div>
           <div class="adm-acts">
             <button class="btn btn-gray btn-sm" onclick="adminRoster('${esc(o.id)}')">명단</button>
             <button class="btn btn-gray btn-sm" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">비밀번호</button>
+            <button class="btn btn-gray btn-sm" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}')">소장 비번</button>
             <button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">삭제</button>
           </div>
         </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>위에서 사업소를 만들어 주세요</div>'}
@@ -732,9 +744,12 @@ function renderAdminHome(){
 }
 async function adminCreate(){
   const name=$('#ad-name').value.trim(), code=$('#ad-code').value.trim().toUpperCase(), pw=$('#ad-pw').value;
+  const mg=$('#ad-mgr').value;
   if(!name || !code || pw.length<6){ toast('사업소 이름, 코드, 6자 이상 비밀번호를 입력하세요'); return; }
+  if(mg && mg.length<4){ toast('소장 비밀번호는 4자 이상이어야 합니다'); return; }
   try{
-    await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
+    const nid = await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
+    if(mg) await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
     toast('사업소를 만들었습니다'); adminHome();
   }catch(e){
     const dup = /duplicate|unique/i.test(e.message||'');
@@ -746,6 +761,12 @@ async function adminPw(id,name){
   if(np.length<6){ toast('6자 이상이어야 합니다'); return; }
   try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); toast('비밀번호를 바꿨습니다'); }
   catch(e){ toast('바꾸지 못했습니다'); }
+}
+async function adminMgrPw(id,name){
+  const np = prompt(`${name} 소장 비밀번호 (4자 이상, 직원 관리용)`); if(!np) return;
+  if(np.length<4){ toast('4자 이상이어야 합니다'); return; }
+  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); toast('소장 비밀번호를 정했습니다'); adminHome(); }
+  catch(e){ toast('정하지 못했습니다'); }
 }
 async function adminDelete(id,name){
   if(!confirm(`"${name}" 사업소를 삭제할까요?\n민원·채팅·직원 명단이 모두 지워집니다.`)) return;
@@ -1105,7 +1126,7 @@ function renderStats(){
     ${st.recv.sort((a,b)=>a.createdAt-b.createdAt).map(i=>`<tr><td>${fmtDate(i.createdAt)}</td><td>${esc(i.title)}</td><td>${esc(i.location)}</td><td>${esc(i.category)}</td><td>${esc(i.assignee?.name||'-')}</td><td>${STATUS[i.status]}</td><td>${i.doneAt?fmtDate(i.doneAt):'-'}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--gray4)">접수 내역 없음</td></tr>'}
     </tbody></table></div>
   </div>
-  <div class="btn-row no-print"><button class="btn btn-primary" onclick="window.print()">월간 보고서 인쇄 · PDF</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button></div>`;
+  <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button></div>`;
 }
 function exportExcel(){
   if(typeof XLSX==='undefined'){ toast('엑셀 모듈을 불러오지 못했습니다 (인터넷 확인)'); return; }
@@ -1145,6 +1166,240 @@ function renderSearch(){
 function renderOnly(t){ if(t==='search'){ const tmp=document.createElement('div'); tmp.innerHTML=renderSearch(); $('#s-res').innerHTML=tmp.querySelector('#s-res').innerHTML; const cnt=tmp.querySelector('.sec-title + .search-box + .form-grid + div'); } }
 
 // ── 시작 ─────────────────────────────────────
+// ══════════════════════════════════════════════
+// 소장: 직원 관리 (소장 비밀번호 필요)
+// ══════════════════════════════════════════════
+const RANKS = ['소장','관리과장','관리대리','경리과장','경리대리','경리주임','서무주임','시설과장','시설대리','시설주임','전기기사','기계기사','통신기사','미화반장','미화원(여)','미화원(남)','경비반장','경비원','주차요원','안내원'];
+let mgrPw = null;   // 이번 접속 동안만 기억 (기기에 저장하지 않음)
+function closeById(id){ const el=document.getElementById(id); if(el) el.remove(); }
+function openStaff(){ if(!mgrPw) return askMgrPw(); renderStaff(); }
+function askMgrPw(){
+  closeById('mgr-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="mgr-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:420px">
+    <div class="modal-head"><h2>직원 관리</h2><button class="modal-close" onclick="closeById('mgr-modal')">✕</button></div>
+    <p class="hint">소장 비밀번호를 입력하세요. 본사 관리자가 정해 준 비밀번호입니다.</p>
+    <div class="form-row"><input id="mgr-pw" type="password" placeholder="소장 비밀번호" onkeydown="if(event.key==='Enter')checkMgr()"></div>
+    <div id="mgr-err" class="lg-err hidden" style="margin:0 0 12px"></div>
+    <button class="btn btn-primary btn-block" onclick="checkMgr()">확인</button>
+  </div></div>`);
+  setTimeout(()=>{ const i=document.getElementById('mgr-pw'); if(i) i.focus(); }, 50);
+}
+async function checkMgr(){
+  const v=$('#mgr-pw').value; const err=$('#mgr-err'); if(!v) return;
+  try{ await rpc('mw_mgr_check',{p_mgr_pw:v}); mgrPw=v; closeById('mgr-modal'); renderStaff(); }
+  catch(e){
+    const m=String(e.message||'');
+    err.textContent = m.includes('manager_not_set') ? '소장 비밀번호가 아직 없습니다. 본사 관리자에게 설정을 요청하세요'
+                    : m.includes('manager_unauthorized') ? '비밀번호가 맞지 않습니다' : '확인하지 못했습니다. 인터넷을 확인하세요';
+    err.classList.remove('hidden');
+  }
+}
+function renderStaff(){
+  closeById('staff-modal');
+  const list=[...EMPLOYEES].sort(sortEmp);
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="staff-modal" onclick="if(event.target===this)this.remove()"><div class="modal">
+    <div class="modal-head"><h2>직원 관리 <small style="font-size:13px;color:var(--mute);font-weight:500">${list.length}명</small></h2><button class="modal-close" onclick="closeById('staff-modal')">✕</button></div>
+    <div class="card" style="margin-bottom:14px"><h3>직원 추가</h3>
+      <div class="form-grid">
+        <div class="form-row"><label>이름</label><input id="st-name" placeholder="홍길동"></div>
+        <div class="form-row"><label>직급</label><input id="st-rank" list="rank-list" placeholder="시설주임"></div>
+      </div>
+      <div class="form-row"><label>사번 (선택)</label><input id="st-emp" placeholder="비워도 됩니다"></div>
+      <datalist id="rank-list">${RANKS.map(r=>`<option value="${r}">`).join('')}</datalist>
+      <button class="btn btn-primary btn-block" onclick="staffAdd()">추가</button>
+    </div>
+    <div class="staff-list">${list.map(e=>`<div class="st-row"><div><b>${esc(e.name)}</b><small>${esc(e.rank)} · ${esc(teamOf(e.rank))}</small></div>${e.empId===me.empId?'<span class="st-me">본인</span>':`<button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="staffDel('${esc(e.empId)}','${esc(e.name)}')">삭제</button>`}</div>`).join('')}</div>
+  </div></div>`);
+}
+async function staffAdd(){
+  const name=$('#st-name').value.trim(), rank=$('#st-rank').value.trim(), emp=$('#st-emp').value.trim();
+  if(!name || !rank){ toast('이름과 직급을 입력하세요'); return; }
+  try{ await rpc('mw_staff_add',{p_mgr_pw:mgrPw, p_name:name, p_rank:rank, p_emp_id:emp||null}); EMPLOYEES = await loadEmployees(); toast(`${name} 님을 추가했습니다`); renderStaff(); render(); }
+  catch(e){ handleMgrErr(e,'추가하지 못했습니다'); }
+}
+async function staffDel(id,name){
+  if(!confirm(`${name} 님을 명단에서 삭제할까요?\n이미 처리한 민원 기록은 그대로 남습니다.`)) return;
+  try{ await rpc('mw_staff_delete',{p_mgr_pw:mgrPw, p_emp_key:id}); EMPLOYEES = await loadEmployees(); toast('삭제했습니다'); renderStaff(); render(); }
+  catch(e){ handleMgrErr(e,'삭제하지 못했습니다'); }
+}
+function handleMgrErr(e,msg){
+  if(String(e.message||'').includes('manager_')){ mgrPw=null; closeById('staff-modal'); toast('소장 비밀번호를 다시 입력하세요'); askMgrPw(); }
+  else toast(msg);
+}
+
+// ══════════════════════════════════════════════
+// 관리단 월간보고서
+// ══════════════════════════════════════════════
+const repKey = ()=>`mw_report_${me.officeId}`;
+function prevYm(ym){ const [y,m]=ym.split('-').map(Number); const d=new Date(y,m-2,1); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+function openReportDialog(){
+  const [y,m]=statMonth.split('-');
+  const saved=lsGet(repKey(),{}); const n=lsGet(repKey()+'_'+statMonth,{});
+  closeById('rep-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="rep-modal" onclick="if(event.target===this)this.remove()"><div class="modal">
+    <div class="modal-head"><h2>관리단 월간보고서 · ${y}년 ${+m}월</h2><button class="modal-close" onclick="closeById('rep-modal')">✕</button></div>
+    <div class="form-row"><label>수신</label><input id="rp-to" value="${esc(saved.to||me.officeName+' 관리단')}"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>보고일</label><input id="rp-date" type="date" value="${esc(n.date||fmtDate(Date.now()))}"></div>
+      <div class="form-row"><label>작성자</label><input id="rp-writer" value="${esc(n.writer||(me.rank+' '+me.name))}"></div>
+    </div>
+    <div class="form-row"><label>개선 건의 (반복 민원 대책, 예산 요청 등)</label><textarea id="rp-improve" placeholder="예) 2층 남자화장실 출입문 경첩 노후로 반복 발생. 문짝 교체 검토 요청">${esc(n.improve||'')}</textarea></div>
+    <div class="form-row"><label>특이사항</label><textarea id="rp-note" placeholder="예) 10월 15일 승강기 정기점검 실시, 이상 없음">${esc(n.note||'')}</textarea></div>
+    <label class="rp-check"><input type="checkbox" id="rp-photos" ${n.photos===false?'':'checked'}> 처리 사진 대장 포함</label>
+    <button class="btn btn-primary btn-block" onclick="makeReport()">보고서 만들기</button>
+    <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.</p>
+  </div></div>`);
+}
+function makeReport(){
+  const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked};
+  lsSet(repKey(),{to:o.to}); lsSet(repKey()+'_'+statMonth, o);
+  const html = buildReportHTML(statMonth, o);
+  const w = window.open('', '_blank');
+  if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  closeById('rep-modal');
+}
+function buildReportHTML(ym, o){
+  const [y,m]=ym.split('-').map(Number);
+  const st=monthStats(ym), pv=monthStats(prevYm(ym));
+  const [ms,me_]=monthRange(ym);
+  const lastDay=new Date(y,m,0).getDate();
+  const office=esc(me.officeName);
+  const dt=(o.date||fmtDate(Date.now())).replace(/-/g,'. ');
+  const boss=EMPLOYEES.find(e=>isBoss(e));
+  const rate=s=>s.recv.length?Math.round(s.recv.filter(i=>i.status==='done').length/s.recv.length*100):0;
+  const same=s=>s.done.length?Math.round(s.sameDay/s.done.length*100):0;
+  const delta=(a,b,u='')=>{ const d=a-b; return d===0?'-':`${d>0?'▲':'▼'} ${Math.abs(d)}${u}`; };
+  const avgH=s=>s.avg?s.avg/3600000:0;
+  const lastText=(i,type)=>{ const l=(i.logs||[]).filter(x=>(!type||x.type===type)&&x.text).pop(); return l?l.text:''; };
+  const md=ts=>{ const d=new Date(ts); return `${d.getMonth()+1}/${d.getDate()}`; };
+  const doneRows=[...st.done].sort((a,b)=>a.doneAt-b.doneAt);
+  const openRows=Object.values(issues).filter(i=>i.status!=='done' && i.createdAt<me_).sort((a,b)=>a.createdAt-b.createdAt);
+  const cats={}; st.recv.forEach(i=>{ const c=i.category||'기타'; (cats[c]=cats[c]||{r:0,d:0}).r++; if(i.status==='done') cats[c].d++; });
+  const catRows=Object.entries(cats).sort((a,b)=>b[1].r-a[1].r);
+  const catMax=Math.max(1,...catRows.map(c=>c[1].r));
+  const rep=repeatIssues();
+  const photoRows = o.photos ? doneRows.map(i=>({i, before:(i.photos||[])[0], after:((i.logs||[]).filter(l=>l.type==='done'&&l.photo).pop()||{}).photo})).filter(x=>x.before||x.after) : [];
+  let sec=0; const H=t=>`<h2>${++sec}. ${t}</h2>`;
+  const none=c=>`<tr><td colspan="${c}" class="c muted">해당 없음</td></tr>`;
+  const small=(rows,h1,h2)=>`<table class="t"><tr><th>${h1}</th><th>${h2}</th></tr>${rows.length?rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${v}건</td></tr>`).join(''):none(2)}</table>`;
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${y}년 ${m}월 민원 처리 현황 보고 - ${office}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+@page{size:A4;margin:15mm 14mm 16mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:#111;font-size:10.5pt;line-height:1.6;background:#ececE8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bar{position:sticky;top:0;z-index:5;background:#111;display:flex;gap:8px;justify-content:center;padding:10px}
+.bar button{font:inherit;font-weight:700;padding:9px 18px;border-radius:8px;border:none;background:#fff;color:#111;cursor:pointer}
+.bar button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
+.sheet{background:#fff;width:210mm;margin:16px auto;padding:15mm 14mm;box-shadow:0 4px 24px rgba(0,0,0,.12)}
+@media(max-width:820px){.sheet{width:auto;margin:10px;padding:18px 14px}}
+@media print{body{background:#fff}.bar{display:none}.sheet{margin:0;padding:0;width:auto;box-shadow:none}}
+.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5mm}
+.doc{font-size:9pt;color:#6b6b66;line-height:1.5}
+table.sign{border-collapse:collapse}
+table.sign th,table.sign td{border:1px solid #111;text-align:center;font-size:9pt}
+table.sign th.v{width:7mm;padding:1mm 0;line-height:1.3}
+table.sign th{background:#f3f3f0;width:21mm;padding:1mm 0;font-weight:700}
+table.sign td{height:17mm}
+h1{text-align:center;font-size:19pt;font-weight:800;letter-spacing:-.02em;margin:1mm 0 6mm}
+table.meta{width:100%;border-collapse:collapse;margin-bottom:5mm;font-size:10pt}
+table.meta th{width:22mm;background:#f3f3f0;text-align:center;padding:2mm;border:1px solid #bdbdb7;font-weight:700;white-space:nowrap}
+table.meta td{padding:2mm 3mm;border:1px solid #bdbdb7}
+h2{font-size:12pt;font-weight:800;margin:6mm 0 2.5mm;padding-bottom:1.2mm;border-bottom:1.4pt solid #111;break-after:avoid}
+table.t{width:100%;border-collapse:collapse;font-size:9.4pt;margin-bottom:2mm}
+table.t th{background:#f3f3f0;border:1px solid #bdbdb7;padding:1.6mm 1.8mm;font-weight:700;text-align:center;white-space:nowrap}
+table.t td{border:1px solid #bdbdb7;padding:1.6mm 1.8mm;vertical-align:top;word-break:keep-all}
+table.t td.c{text-align:center;white-space:nowrap}
+table.t td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.t tr{break-inside:avoid}
+.kpi td.n{font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.two h2{margin-top:4mm}
+.two{break-inside:avoid}
+.box{border:1px solid #bdbdb7;padding:3mm 4mm;min-height:16mm;white-space:pre-wrap;font-size:10pt}
+.muted{color:#7a7a75}
+.bar-c{display:inline-block;height:2.2mm;background:#2450d8;border-radius:1mm;vertical-align:middle}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.ph{border:1px solid #bdbdb7;padding:2.5mm;break-inside:avoid}
+.ph .cap{font-size:9pt;font-weight:700;margin-bottom:1.5mm}
+.ph .cap span{font-weight:500;color:#7a7a75}
+.ph .imgs{display:grid;grid-template-columns:1fr 1fr;gap:2mm}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #e3e3df;display:block}
+.ph .lb{font-size:8pt;color:#7a7a75;text-align:center;margin-top:.6mm}
+.ph .na{aspect-ratio:4/3;border:1px dashed #cfcfca;display:flex;align-items:center;justify-content:center;font-size:8pt;color:#a3a39d}
+.end{margin-top:9mm;text-align:center;font-size:11pt;line-height:2;break-inside:avoid}
+.end .sig{margin-top:3mm;font-size:12pt;font-weight:800}
+</style></head><body>
+<div class="bar"><button onclick="window.print()">인쇄 · PDF 저장</button><button class="ghost" onclick="window.close()">닫기</button></div>
+<div class="sheet">
+  <div class="top">
+    <div class="doc">${office} 관리사무소<br>민원 처리 공유 시스템 자동 집계</div>
+    <table class="sign"><tr><th class="v" rowspan="2">결<br>재</th><th>담 당</th><th>소 장</th></tr><tr><td></td><td></td></tr></table>
+  </div>
+  <h1>${y}년 ${m}월 민원 처리 현황 보고</h1>
+  <table class="meta">
+    <tr><th>수 신</th><td>${esc(o.to)}</td><th>보 고 일</th><td>${esc(dt)}</td></tr>
+    <tr><th>발 신</th><td>${office} 관리사무소</td><th>작 성 자</th><td>${esc(o.writer)}</td></tr>
+    <tr><th>보고 기간</th><td colspan="3">${y}. ${pad(m)}. 01 ~ ${y}. ${pad(m)}. ${lastDay}</td></tr>
+  </table>
+
+  ${H('총괄 현황')}
+  <table class="t kpi">
+    <tr><th>구분</th><th>${m}월</th><th>전월</th><th>증감</th></tr>
+    <tr><td>접수 건수</td><td class="n">${st.recv.length}건</td><td class="n">${pv.recv.length}건</td><td class="c">${delta(st.recv.length,pv.recv.length,'건')}</td></tr>
+    <tr><td>완료 건수</td><td class="n">${st.done.length}건</td><td class="n">${pv.done.length}건</td><td class="c">${delta(st.done.length,pv.done.length,'건')}</td></tr>
+    <tr><td>당월 처리율</td><td class="n">${rate(st)}%</td><td class="n">${rate(pv)}%</td><td class="c">${delta(rate(st),rate(pv),'%p')}</td></tr>
+    <tr><td>미완료 (보고일 기준)</td><td class="n">${openRows.length}건</td><td class="n">-</td><td class="c">-</td></tr>
+    <tr><td>평균 처리시간</td><td class="n">${dur(st.avg)}</td><td class="n">${dur(pv.avg)}</td><td class="c">${st.avg&&pv.avg?delta(Math.round(avgH(st)),Math.round(avgH(pv)),'시간'):'-'}</td></tr>
+    <tr><td>당일 처리율</td><td class="n">${same(st)}%</td><td class="n">${same(pv)}%</td><td class="c">${delta(same(st),same(pv),'%p')}</td></tr>
+    <tr><td>긴급 민원</td><td class="n">${st.urgent}건</td><td class="n">${pv.urgent}건</td><td class="c">${delta(st.urgent,pv.urgent,'건')}</td></tr>
+  </table>
+
+  ${H('분류별 현황')}
+  <table class="t">
+    <tr><th>분류</th><th>접수</th><th>완료</th><th>처리율</th><th style="width:38%">비중</th></tr>
+    ${catRows.length?catRows.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${v.r}건</td><td class="n">${v.d}건</td><td class="n">${Math.round(v.d/v.r*100)}%</td><td><span class="bar-c" style="width:${Math.max(3,v.r/catMax*100)}%"></span></td></tr>`).join(''):none(5)}
+  </table>
+
+  <div class="two">
+    <div>${H('접수 경로')}${small(st.bySrc,'경로','건수')}</div>
+    <div>${H('담당 팀별 배정')}${small(st.byTeam,'담당','건수')}</div>
+  </div>
+
+  ${H(`처리 완료 내역 (${doneRows.length}건)`)}
+  <table class="t">
+    <tr><th>No</th><th>완료일</th><th>장소</th><th>민원 내용</th><th>조치 내용</th><th>처리자</th><th>소요</th></tr>
+    ${doneRows.length?doneRows.map((i,n)=>`<tr><td class="c">${n+1}</td><td class="c">${md(i.doneAt)}</td><td>${esc(i.location||'-')}</td><td>${esc(i.title)}</td><td>${esc(lastText(i,'done')||lastText(i,'progress')||'-')}</td><td class="c">${esc(i.assignee&&i.assignee.name||'-')}</td><td class="c">${dur(i.doneAt-i.createdAt)}</td></tr>`).join(''):none(7)}
+  </table>
+
+  ${H(`미완료 민원 및 향후 조치 (${openRows.length}건)`)}
+  <table class="t">
+    <tr><th>No</th><th>접수일</th><th>장소</th><th>민원 내용</th><th>담당</th><th>경과</th><th>현재 상황</th></tr>
+    ${openRows.length?openRows.map((i,n)=>`<tr><td class="c">${n+1}</td><td class="c">${md(i.createdAt)}</td><td>${esc(i.location||'-')}</td><td>${i.urgent?'<b>[긴급]</b> ':''}${esc(i.title)}</td><td class="c">${esc(i.assignee&&i.assignee.type!=='none'?i.assignee.name:'미지정')}</td><td class="c">${Math.max(0,Math.floor((Date.now()-i.createdAt)/86400000))}일</td><td>${esc(lastText(i,'progress')||STATUS[i.status])}</td></tr>`).join(''):none(7)}
+  </table>
+
+  ${H('반복 민원 및 개선 건의')}
+  <table class="t">
+    <tr><th>장소</th><th>분류</th><th>횟수</th><th>발생 내역 (최근 6개월)</th></tr>
+    ${rep.length?rep.slice(0,10).map(g=>`<tr><td>${esc(g.items[0].location||g.items[0].title)}</td><td class="c">${esc(g.items[0].category)}</td><td class="c"><b>${g.count}회</b></td><td>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}`).join('<br>')}</td></tr>`).join(''):none(4)}
+  </table>
+  <div class="box">${o.improve?esc(o.improve):'<span class="muted">개선 건의 사항 없음</span>'}</div>
+
+  ${photoRows.length?`${H(`처리 사진 대장 (${photoRows.length}건)`)}
+  <div class="photos">${photoRows.map((x,n)=>`<div class="ph"><div class="cap">${n+1}. ${esc(x.i.title)} <span>· ${esc(x.i.location||'')} · ${md(x.i.doneAt)} 완료</span></div>
+    <div class="imgs"><div>${x.before?`<img src="${esc(x.before)}">`:'<div class="na">사진 없음</div>'}<div class="lb">접수 · 조치 전</div></div><div>${x.after?`<img src="${esc(x.after)}">`:'<div class="na">사진 없음</div>'}<div class="lb">완료 · 조치 후</div></div></div></div>`).join('')}</div>`:''}
+
+  ${H('특이사항')}
+  <div class="box">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div>
+
+  <div class="end">위와 같이 ${y}년 ${m}월 민원 처리 현황을 보고합니다.<br>${esc(dt)}
+    <div class="sig">${office} 관리사무소장 ${esc(boss?boss.name:'')} (인)</div></div>
+</div></body></html>`;
+}
+
+
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll(); if(tab==='chat') lsSet(K.seenChat(),Date.now()); updateBadges(); } });
 window.addEventListener('online',()=>{ if(sbOn) fetchAll(); });
 setInterval(()=>{ if(me && tab==='list') render(); },60000); // "n분 전" 갱신
