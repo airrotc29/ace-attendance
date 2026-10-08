@@ -1,7 +1,7 @@
 // 민원 처리 공유 시스템 · 서비스 워커
 // 앱 화면은 항상 최신 버전을 먼저 받고(네트워크 우선), 끊겼을 때만 저장본을 씁니다.
 // 서버 데이터(Supabase)는 저장하지 않습니다.
-const CACHE = 'minwon-v2';
+const CACHE = 'minwon-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/badge-72.png'];
 const CDN = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -17,7 +17,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin === location.origin) {
     // 같은 주소의 앱 파일: 네트워크 우선, 실패 시 저장본
-    e.respondWith(fetch(req).then(res => {
+    // 앱 파일은 브라우저 HTTP 캐시(최대 10분)를 건너뛰고 서버에 새 버전이 있는지 확인
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req).then(m => m || caches.match('./index.html'))));
