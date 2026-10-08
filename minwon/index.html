@@ -408,6 +408,12 @@ mark{background:#fff1a8;box-shadow:none}
 #tb-push .slash{display:inline}
 #tb-push.on .slash{display:none}
 #tb-push.on{color:var(--accent)}
+.qpick{margin-bottom:12px}
+.qpick .qp-l{font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:7px}
+.qpick .qp-l span{font-weight:400;color:var(--mute);margin-left:2px}
+.qpick .chips{gap:7px}
+.qpick .chip{font-size:14px;padding:9px 14px;font-weight:600;cursor:pointer}
+.qpick .chip.active{background:var(--navy);border-color:var(--navy);color:#fff}
 </style>
 </head>
 <body>
@@ -1048,17 +1054,40 @@ function assign(id,v){
   sysMsg(a.type==='none'?`담당 해제 · ${it.title}`:(a.empId===me.empId?`${me.name} · ${it.title} · 제가 처리합니다`:`담당 지정 · ${it.title} → ${a.name} (${me.name})`), id);
   toast('담당이 변경되었습니다');
 }
+// 진행 보고 · 완료 처리에서 골라 쓰는 답변 (고르면 문장이 자동으로 만들어지고, 직접 고쳐 쓸 수도 있음)
+const LOG_PICKS = {
+  progress:[
+    {key:'s', label:'지금 상황', opts:[['현장 확인','현장 확인했습니다.'],['출동 중','현장으로 가는 중입니다.'],['조치 중','조치 중입니다.'],['부품 주문','부품을 주문했습니다.'],['업체 요청','외부 업체에 수리를 요청했습니다.'],['민원인 부재','민원인 부재로 다시 방문하겠습니다.']], def:'현장 확인'},
+    {key:'t', label:'조치 예정', opts:[['30분 후','30분 후 조치 예정'],['1시간 후','1시간 후 조치 예정'],['오늘 중','오늘 중 조치 예정'],['내일','내일 조치 예정'],['부품 도착 후','부품 도착 후 조치 예정']], def:'1시간 후', optional:true}
+  ],
+  done:[
+    {key:'s', label:'처리 내용', opts:[['조치 완료','조치 완료했습니다.'],['부품 교체','부품 교체 완료했습니다.'],['수리 완료','수리 완료했습니다.'],['청소 완료','청소 완료했습니다.'],['업체 수리','업체 수리 완료했습니다.'],['이상 없음','점검 결과 이상 없습니다.']], def:'조치 완료'},
+    {key:'c', label:'민원인 안내', opts:[['안내 완료','민원인께 안내드렸습니다.'],['확인 받음','민원인 확인 받았습니다.']], optional:true}
+  ]
+};
+function composeLog(type, sel){
+  return (LOG_PICKS[type]||[]).map(g=>{ const o=g.opts.find(x=>x[0]===sel[g.key]); return o?o[1]:''; }).filter(Boolean).join(' ');
+}
 function addLog(id,type){
   const it=issues[id];
   const title={progress:'진행 보고',done:'완료 처리',comment:'댓글'}[type];
   const ph={progress:'진행 상황을 적어 주세요',done:'예) 경첩 교체 완료',comment:'내용'}[type];
+  const groups=LOG_PICKS[type]||[];
+  const sel={}; groups.forEach(g=>{ if(g.def) sel[g.key]=g.def; });
   let photos=[];
-  const draw=()=>{ $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="log-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-height:80vh">
+  const draw=()=>{ $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="log-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-height:86vh">
     <div class="modal-head"><h2>${title}</h2><button class="modal-close" onclick="document.getElementById('log-modal').remove()">✕</button></div>
-    <div class="form-row"><textarea id="log-text" placeholder="${ph}" style="min-height:80px">${esc(logDraftText)}</textarea></div>
+    ${groups.map(g=>`<div class="qpick"><div class="qp-l">${g.label}${g.optional?' <span>선택</span>':''}</div><div class="chips">${g.opts.map(([k])=>`<button type="button" class="chip ${sel[g.key]===k?'active':''}" data-g="${g.key}" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div></div>`).join('')}
+    <div class="form-row">${groups.length?'<label>보낼 내용 <span style="font-weight:400;color:var(--mute)">· 직접 고쳐 쓸 수 있습니다</span></label>':''}<textarea id="log-text" placeholder="${ph}" style="min-height:${groups.length?64:80}px">${esc(logDraftText)}</textarea></div>
     <div class="form-row"><label>${type==='done'?'완료 사진 (권장)':'사진'}</label><div class="photo-add" id="log-photos">${photos.map((p,i)=>`<img class="thumb" src="${p}">`).join('')}<div class="photo-btn" id="log-photo-btn"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</div></div></div>
     <button class="btn ${type==='done'?'btn-green':type==='progress'?'btn-amber':'btn-primary'} btn-block" id="log-submit">${type==='done'?'완료로 처리':'등록'}</button>
   </div></div>`);
+    $('#log-modal').querySelectorAll('.qpick .chip').forEach(b=>b.onclick=()=>{
+      const g=groups.find(x=>x.key===b.dataset.g), k=b.dataset.k;
+      sel[g.key] = (sel[g.key]===k && g.optional) ? null : k;   // '선택' 항목은 한 번 더 누르면 해제
+      b.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.k===sel[g.key]));
+      $('#log-text').value = composeLog(type, sel);
+    });
     $('#log-photo-btn').onclick=()=>{ logDraftText=$('#log-text').value; pickPhotos(ps=>{photos.push(...ps); $('#log-modal').remove(); draw();}); };
     $('#log-submit').onclick=async()=>{
       const text=$('#log-text').value.trim();
@@ -1076,9 +1105,8 @@ function addLog(id,type){
       logDraftText=''; const lm=$('#log-modal'); if(lm) lm.remove(); toast(type==='done'?'완료 처리되었습니다':'등록되었습니다');
     };
   };
-  // 자주 쓰는 문구를 미리 넣어 둠 (그대로 등록하거나 고쳐 쓰기)
-  logDraftText={progress:'현장 확인했습니다. 1시간 후 조치 예정',done:'조치 완료했습니다'}[type]||''; draw();
-  const ta=$('#log-text'); if(ta && ta.value){ try{ ta.focus({preventScroll:true}); ta.setSelectionRange(ta.value.length, ta.value.length); }catch{} }
+  // 기본 답변을 골라 둔 상태로 시작 (그대로 등록하거나 다른 답변을 고르기)
+  logDraftText=composeLog(type, sel); draw();
 }
 let logDraftText='';
 function reopen(id){ const it=issues[id]; if(!confirm('이 민원을 다시 열까요? (재발/미해결)')) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`다시 열림 · ${it.title} · ${me.name} (재발)`, id); }
