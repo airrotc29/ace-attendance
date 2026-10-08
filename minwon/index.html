@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#0f172a"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>민원 처리 공유 시스템</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2563eb;--primary-dark:#1d4ed8;--primary-light:#eff6ff;
+  --green:#059669;--green-light:#d1fae5;--red:#dc2626;--red-light:#fee2e2;
+  --amber:#d97706;--amber-light:#fef3c7;--purple:#7c3aed;--purple-light:#ede9fe;
+  --navy:#0f172a;--navy2:#1e293b;--gray1:#f8fafc;--gray2:#f1f5f9;--gray3:#e2e8f0;--gray4:#94a3b8;--gray5:#64748b;--gray6:#475569;
+  --text:#0f172a;--radius:14px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 14px rgba(0,0,0,.06);
+  --nav-h:62px;--top-h:56px;
+}
+html,body{height:100%}
+body{font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:var(--gray2);color:var(--text);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit;font-size:14px}
+button{cursor:pointer;border:none;background:none}
+a{color:var(--primary)}
+.hidden{display:none!important}
+
+/* ══ 로그인 ══ */
+.login-wrap{min-height:100vh;background:linear-gradient(145deg,#0f172a 0%,#1e3a8a 55%,#0369a1 100%);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:#fff;border-radius:24px;padding:36px 28px;width:min(420px,96vw);box-shadow:0 24px 80px rgba(0,0,0,.4)}
+.login-logo{text-align:center;margin-bottom:26px}
+.login-logo .icon{font-size:50px;display:block;margin-bottom:8px}
+.login-logo h1{font-size:22px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+.login-logo p{font-size:13px;color:var(--gray5);margin-top:6px;line-height:1.5}
+.login-box label{display:block;font-size:12px;font-weight:700;color:var(--gray6);margin:14px 0 6px}
+.login-box select,.login-box input{width:100%;padding:13px 14px;border:2px solid var(--gray3);border-radius:12px;font-size:15px;background:#fff}
+.login-box select:focus,.login-box input:focus{outline:none;border-color:var(--primary)}
+.btn-login{width:100%;margin-top:22px;padding:15px;background:var(--primary);color:#fff;font-size:16px;font-weight:700;border-radius:12px}
+.btn-login:disabled{background:var(--gray4)}
+.login-hint{font-size:12px;color:var(--gray5);margin-top:16px;line-height:1.6;background:var(--gray1);padding:12px;border-radius:10px}
+
+/* ══ 앱 공통 ══ */
+#app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:50;height:var(--top-h);background:var(--navy);color:#fff;display:flex;align-items:center;padding:0 14px;gap:10px}
+.topbar .tb-title{font-weight:800;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .tb-title small{display:block;font-size:11px;font-weight:500;color:#94a3b8}
+.topbar .tb-user{font-size:12px;text-align:right;line-height:1.3}
+.topbar .tb-user b{display:block;font-size:13px}
+.tb-btn{color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.12)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--gray4);display:inline-block;margin-right:4px}
+.sync-dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e}
+.sync-dot.off{background:#f59e0b}
+.content{flex:1;padding:14px 14px calc(var(--nav-h) + 20px);max-width:760px;width:100%;margin:0 auto}
+.bottomnav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:#fff;border-top:1px solid var(--gray3);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+.bottomnav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--gray5);position:relative}
+.bottomnav button .ni{font-size:21px}
+.bottomnav button.active{color:var(--primary)}
+.bottomnav .nbadge{position:absolute;top:6px;right:calc(50% - 22px);background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;min-width:18px;text-align:center}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+.card h3{font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sec-title{font-size:16px;font-weight:800;margin:4px 0 12px;display:flex;align-items:center;justify-content:space-between}
+.sec-title small{font-size:12px;color:var(--gray5);font-weight:500}
+
+/* ══ 폼 ══ */
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:12px;font-weight:700;color:var(--gray6);margin-bottom:6px}
+.form-row label .req{color:var(--red)}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:12px 13px;border:1.5px solid var(--gray3);border-radius:10px;font-size:15px;background:#fff}
+.form-row textarea{min-height:90px;resize:vertical;line-height:1.5}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:7px 12px;border-radius:20px;border:1.5px solid var(--gray3);background:#fff;font-size:12.5px;font-weight:600;color:var(--gray6);white-space:nowrap}
+.chip.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.chip.red.active{background:var(--red);border-color:var(--red)}
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.chips.scroll::-webkit-scrollbar{display:none}
+.photo-add{display:flex;gap:8px;flex-wrap:wrap}
+.photo-add .thumb{width:72px;height:72px;border-radius:10px;object-fit:cover;border:1px solid var(--gray3);position:relative}
+.photo-add .thumb-wrap{position:relative}
+.photo-add .thumb-del{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;width:20px;height:20px;border-radius:50%;font-size:12px;line-height:20px;text-align:center}
+.photo-btn{width:72px;height:72px;border:2px dashed var(--gray4);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--gray5);gap:2px;cursor:pointer}
+.photo-btn span{font-size:22px}
+.btn{padding:12px 16px;border-radius:10px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-amber{background:var(--amber);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-gray{background:var(--gray2);color:var(--gray6);border:1px solid var(--gray3)}
+.btn-block{width:100%}
+.btn-sm{padding:8px 12px;font-size:12.5px;border-radius:8px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-row .btn{flex:1}
+
+/* ══ 민원 카드 ══ */
+.issue{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:10px;cursor:pointer;border-left:5px solid var(--gray4);transition:.15s}
+.issue:active{transform:scale(.99)}
+.issue.s-open{border-left-color:var(--red)}
+.issue.s-progress{border-left-color:var(--amber)}
+.issue.s-done{border-left-color:var(--green);opacity:.85}
+.issue .i-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.issue .i-title{font-size:15px;font-weight:700;line-height:1.35;margin-bottom:4px}
+.issue .i-meta{font-size:12px;color:var(--gray5);display:flex;flex-wrap:wrap;gap:4px 10px}
+.issue .i-body{display:flex;gap:10px}
+.issue .i-body > div{flex:1;min-width:0}
+.issue .i-photo{width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.issue .i-foot{margin-top:8px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gray6);flex-wrap:wrap}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;line-height:1.4}
+.b-open{background:var(--red-light);color:var(--red)}
+.b-progress{background:var(--amber-light);color:var(--amber)}
+.b-done{background:var(--green-light);color:var(--green)}
+.b-cat{background:var(--gray2);color:var(--gray6)}
+.b-urgent{background:var(--red);color:#fff}
+.b-team{background:var(--primary-light);color:var(--primary-dark)}
+.b-none{background:var(--gray2);color:var(--gray4);border:1px dashed var(--gray4)}
+.b-me{background:var(--purple-light);color:var(--purple)}
+.empty{text-align:center;color:var(--gray4);padding:50px 20px;font-size:14px;line-height:1.7}
+.empty .big{font-size:40px;display:block;margin-bottom:8px}
+.summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat-tile{background:#fff;border-radius:12px;padding:12px 8px;text-align:center;box-shadow:var(--shadow)}
+.stat-tile .n{font-size:22px;font-weight:800;line-height:1.1}
+.stat-tile .l{font-size:11px;color:var(--gray5);margin-top:4px;font-weight:600}
+.stat-tile.red .n{color:var(--red)}.stat-tile.amber .n{color:var(--amber)}.stat-tile.green .n{color:var(--green)}.stat-tile.blue .n{color:var(--primary)}
+
+/* ══ 모달 ══ */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+@media(min-width:640px){.modal-bg{align-items:center}}
+.modal{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:18px 18px 28px;animation:up .2s}
+@media(min-width:640px){.modal{border-radius:20px}}
+.modal-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.modal-head h2{font-size:17px;font-weight:800;flex:1;line-height:1.4}
+.modal-close{font-size:22px;color:var(--gray4);padding:0 4px}
+.detail-meta{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px;margin:12px 0;background:var(--gray1);padding:12px;border-radius:10px}
+.detail-meta dt{color:var(--gray5);font-weight:600;white-space:nowrap}
+.detail-meta dd{font-weight:500;word-break:break-all}
+.detail-content{font-size:14.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;padding:4px 2px}
+.photos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.photos img{width:calc(33.33% - 6px);aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--gray3);cursor:pointer}
+.timeline{margin-top:14px;border-top:1px solid var(--gray3);padding-top:12px}
+.timeline h4{font-size:13px;font-weight:800;color:var(--gray6);margin-bottom:10px}
+.tl-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--gray3)}
+.tl-item:last-child{border-bottom:none}
+.tl-ic{width:30px;height:30px;border-radius:50%;background:var(--gray2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.tl-ic.done{background:var(--green-light)}.tl-ic.assign{background:var(--primary-light)}.tl-ic.progress{background:var(--amber-light)}.tl-ic.reopen{background:var(--red-light)}
+.tl-body{flex:1;min-width:0}
+.tl-body .who{font-size:12.5px;font-weight:700}
+.tl-body .who span{font-weight:500;color:var(--gray4);margin-left:6px;font-size:11.5px}
+.tl-body .txt{font-size:13.5px;line-height:1.5;white-space:pre-wrap;margin-top:2px}
+.tl-body img{max-width:140px;border-radius:8px;margin-top:6px;border:1px solid var(--gray3);cursor:pointer;display:block}
+.action-bar{position:sticky;bottom:-28px;background:#fff;padding:12px 0 0;margin-top:14px;border-top:1px solid var(--gray3)}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:flex;align-items:center;justify-content:center}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain}
+
+/* ══ 채팅 ══ */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - var(--top-h) - var(--nav-h));max-width:760px;margin:0 auto}
+.chat-list{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:8px}
+.msg{display:flex;flex-direction:column;max-width:82%;align-self:flex-start}
+.msg.mine{align-self:flex-end;align-items:flex-end}
+.msg .m-who{font-size:11.5px;color:var(--gray5);margin:0 4px 3px;font-weight:600}
+.msg .m-bubble{background:#fff;padding:9px 13px;border-radius:16px;border-top-left-radius:4px;font-size:14px;line-height:1.5;box-shadow:var(--shadow);white-space:pre-wrap;word-break:break-word}
+.msg.mine .m-bubble{background:#fef08a;border-top-left-radius:16px;border-top-right-radius:4px}
+.msg .m-bubble img{max-width:220px;border-radius:10px;display:block;cursor:pointer}
+.msg .m-time{font-size:10.5px;color:var(--gray4);margin:3px 4px 0}
+.msg.notice .m-bubble{background:var(--amber-light);border:1px solid #fcd34d;font-weight:600}
+.msg.sys{align-self:center;max-width:92%}
+.msg.sys .m-bubble{background:rgba(15,23,42,.07);box-shadow:none;font-size:12.5px;color:var(--gray6);text-align:center;border-radius:12px;cursor:pointer}
+.chat-date{align-self:center;font-size:11px;color:var(--gray5);background:rgba(15,23,42,.08);padding:3px 12px;border-radius:12px;margin:6px 0}
+.chat-input{background:#fff;border-top:1px solid var(--gray3);padding:8px 10px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+.chat-quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
+.chat-quick::-webkit-scrollbar{display:none}
+.chat-quick button{white-space:nowrap;padding:6px 11px;border-radius:16px;background:var(--gray2);font-size:12px;font-weight:600;color:var(--gray6);border:1px solid var(--gray3)}
+.chat-row{display:flex;gap:6px;align-items:flex-end}
+.chat-row textarea{flex:1;border:1.5px solid var(--gray3);border-radius:18px;padding:10px 14px;font-size:15px;max-height:120px;min-height:42px;resize:none;line-height:1.4}
+.chat-row textarea:focus{outline:none;border-color:var(--primary)}
+.chat-row .ic-btn{width:42px;height:42px;border-radius:50%;font-size:20px;display:flex;align-items:center;justify-content:center;background:var(--gray2);color:var(--gray6)}
+.chat-row .send{background:var(--primary);color:#fff;font-size:17px}
+.chat-pending{display:flex;gap:6px;padding:0 0 8px}
+.chat-pending img{height:54px;border-radius:8px;border:1px solid var(--gray3)}
+
+/* ══ 통계 ══ */
+.bar-list{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:grid;grid-template-columns:76px 1fr 38px;align-items:center;gap:8px;font-size:12.5px}
+.bar-row .bl{font-weight:600;color:var(--gray6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-row .bar{height:18px;background:var(--gray2);border-radius:6px;overflow:hidden}
+.bar-row .bar > div{height:100%;background:var(--primary);border-radius:6px;min-width:2px}
+.bar-row .bar > div.g{background:var(--green)}
+.bar-row .bn{font-weight:700;text-align:right}
+.month-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px}
+.month-nav b{font-size:17px}
+.month-nav button{font-size:18px;padding:4px 12px;border-radius:8px;background:#fff;box-shadow:var(--shadow)}
+table.rep{width:100%;border-collapse:collapse;font-size:12.5px}
+table.rep th,table.rep td{border:1px solid var(--gray3);padding:6px 7px;text-align:left;vertical-align:top}
+table.rep th{background:var(--gray2);font-weight:700;white-space:nowrap}
+.repeat-item{padding:10px 0;border-bottom:1px dashed var(--gray3);font-size:13.5px}
+.repeat-item:last-child{border-bottom:none}
+.repeat-item b{color:var(--red)}
+.repeat-item small{display:block;color:var(--gray5);font-size:12px;margin-top:2px}
+
+/* ══ 검색 ══ */
+.search-box{display:flex;gap:6px;margin-bottom:10px}
+.search-box input{flex:1;padding:12px 14px;border:1.5px solid var(--gray3);border-radius:12px;font-size:15px}
+.search-box input:focus{outline:none;border-color:var(--primary)}
+mark{background:#fef08a;padding:0 2px;border-radius:3px}
+
+/* ══ 토스트 ══ */
+#toast{position:fixed;bottom:calc(var(--nav-h) + 16px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;z-index:300;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ══ 인쇄 ══ */
+@media print{
+  body{background:#fff}
+  .topbar,.bottomnav,#toast,.no-print{display:none!important}
+  .content{padding:0;max-width:none}
+  .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+  .print-only{display:block!important}
+}
+.print-only{display:none}
+</style>
+</head>
+<body>
+
+<!-- ══ 로그인 ══ -->
+<div id="login" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="icon">📋</span>
+      <h1>민원 처리 공유 시스템</h1>
+      <p>접수 · 담당 지정 · 처리 보고 · 채팅 · 월간 통계<br>직원 누구나 올리고, 모두가 함께 확인합니다</p>
+    </div>
+    <label>사업소</label>
+    <select id="lg-office"></select>
+    <label>이름</label>
+    <select id="lg-emp"><option value="">-- 사업소를 먼저 선택 --</option></select>
+    <button class="btn-login" id="lg-btn" onclick="doLogin()" disabled>입장하기</button>
+    <div class="login-hint">💡 이름이 없으면 사업소 담당자에게 직원 등록을 요청하세요.<br>
+    한 번 입장하면 이 기기에서는 자동으로 다시 입장됩니다.</div>
+  </div>
+</div>
+
+<!-- ══ 앱 ══ -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="tb-title"><span id="tb-office"></span><small><span class="sync-dot" id="sync-dot"></span><span id="sync-text">연결 중…</span></small></div>
+    <div class="tb-user"><b id="tb-name"></b><span id="tb-team"></span></div>
+    <button class="tb-btn" onclick="logout()">나가기</button>
+  </div>
+  <div class="content" id="content"></div>
+  <div class="bottomnav">
+    <button data-tab="list" onclick="go('list')"><span class="ni">📋</span>민원<span class="nbadge hidden" id="nb-list"></span></button>
+    <button data-tab="new" onclick="go('new')"><span class="ni">➕</span>접수</button>
+    <button data-tab="chat" onclick="go('chat')"><span class="ni">💬</span>채팅<span class="nbadge hidden" id="nb-chat"></span></button>
+    <button data-tab="stats" onclick="go('stats')"><span class="ni">📊</span>통계</button>
+    <button data-tab="search" onclick="go('search')"><span class="ni">🔍</span>검색</button>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast"></div>
+<input type="file" id="file-input" accept="image/*" multiple class="hidden"/>
+
+<script>
+// ══════════════════════════════════════════════
+// 마스터 데이터 (사업소 · 직원) — 출퇴근 시스템과 동일 명단
+// ══════════════════════════════════════════════
+const OFFICES = [{"id":"office_001","name":"광교타워2"},{"id":"office_002","name":"대륭18차"},{"id":"office_003","name":"에이스태세라타워"},{"id":"office_004","name":"서울숲비즈포레"},{"id":"office_005","name":"에이스NS타워"},{"id":"office_006","name":"하이엔드타워클래식"},{"id":"office_007","name":"에이스비즈포레"},{"id":"office_008","name":"에이스1차"},{"id":"office_009","name":"삼성IT해링턴타워"},{"id":"office_010","name":"서울숲AK밸리"},{"id":"office_011","name":"에이스하이테크시티2차"},{"id":"office_012","name":"하이엔드6차"},{"id":"office_013","name":"에이스9차"},{"id":"office_014","name":"스타밸리"},{"id":"office_015","name":"에이스3차"},{"id":"office_016","name":"에이스8차"},{"id":"office_017","name":"문래에이스"},{"id":"office_018","name":"더스페이스타워"},{"id":"office_019","name":"성수AK밸리"},{"id":"office_020","name":"하이엔드타워1차"},{"id":"office_021","name":"에이스10차"},{"id":"office_022","name":"서울대 에이존"},{"id":"office_023","name":"디센터1976"},{"id":"office_024","name":"청라하이테크시티"},{"id":"office_025","name":"이천현대레전드"},{"id":"office_026","name":"의왕하이테크21"},{"id":"office_027","name":"메가시티"},{"id":"office_028","name":"본사/사업소관리팀"},{"id":"office_029","name":"서울숲에이원"},{"id":"office_030","name":"하이엔드8차"},{"id":"office_031","name":"하이테크시티"},{"id":"office_032","name":"하이엔드5차"},{"id":"office_033","name":"선명스퀘어"},{"id":"office_034","name":"길동요양병원"},{"id":"office_035","name":"수원에비뉴퍼스트"},{"id":"office_036","name":"광명무역센터"},{"id":"office_037","name":"하이엔드9차"},{"id":"office_038","name":"세종에이스타워"},{"id":"office_039","name":"파크텐삼성"},{"id":"office_040","name":"에이스5차"},{"id":"office_041","name":"가산한화비즈메트로2차"},{"id":"office_042","name":"시그니처광교"},{"id":"office_043","name":"건설현장"},{"id":"office_044","name":"가산비전파크"},{"id":"office_045","name":"감곡물류센터"},{"id":"office_046","name":"마스터밸류 에이스"},{"id":"office_047","name":"SH드림타워"},{"id":"office_048","name":"에이스101"},{"id":"office_049","name":"신화 더 플렉스시티"},{"id":"office_050","name":"아티스포럼"},{"id":"office_051","name":"익스콘"},{"id":"office_052","name":"더콜럼버스2차"},{"id":"office_053","name":"르꼼떼블루"},{"id":"office_054","name":"평택고덕STV"},{"id":"office_055","name":"애드윈타워"},{"id":"office_056","name":"벽산디지털밸리8차"},{"id":"office_057","name":"신화테크노밸리"},{"id":"office_058","name":"송도컨벤시아"},{"id":"office_059","name":"울산전시컨벤션센터"},{"id":"office_060","name":"강서한강자이타워"},{"id":"office_061","name":"아산하이테크복합물류센터"},{"id":"office_062","name":"제이에스더스카이타워3차"},{"id":"office_063","name":"송도브라운도트"},{"id":"office_064","name":"아트리움시티"},{"id":"office_065","name":"가림스위트2차"}];
+const EMPLOYEES = [{"empId":"20180402","name":"박민규","rank":"소장","officeId":"office_001","dept":"광교타워2"},{"empId":"2018040202","name":"이성재","rank":"관리과장","officeId":"office_001","dept":"광교타워2"},{"empId":"20180406","name":"황민숙","rank":"경리대리","officeId":"office_001","dept":"광교타워2"},{"empId":"20180521","name":"이준재","rank":"미화반장","officeId":"office_001","dept":"광교타워2"},{"empId":"20181210","name":"양희헌","rank":"소장","officeId":"office_002","dept":"대륭18차"},{"empId":"20181217","name":"송정환","rank":"소장","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2018121701","name":"이영진","rank":"시설대리","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"20190118","name":"정인덕","rank":"시설주임","officeId":"office_001","dept":"광교타워2"},{"empId":"20190604","name":"이대영","rank":"소장","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2019070902","name":"박향미","rank":"미화원(여)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2019080502","name":"정정국","rank":"시설대리","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2019081401","name":"손미령","rank":"경리대리","officeId":"office_008","dept":"에이스1차"},{"empId":"2019100109","name":"남옥선","rank":"미화원(여)","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2019100110","name":"이대희","rank":"소장","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2019100801","name":"이강욱","rank":"관리과장","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2019101701","name":"이교철","rank":"시설주임","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2019102305","name":"이금순","rank":"미화원(여)","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2019102402","name":"문진호","rank":"시설주임","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2019103001","name":"김갑렬","rank":"시설주임","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2019110104","name":"박지영","rank":"경리대리","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2019120202","name":"박춘","rank":"시설주임","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2019122003","name":"김세은","rank":"경리주임","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2019122301","name":"천미숙","rank":"경리대리","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2020011301","name":"조항덕","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2020012003","name":"강선옥","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2020030203","name":"유선영","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"2020031602","name":"강대현","rank":"관리과장","officeId":"office_008","dept":"에이스1차"},{"empId":"2020031701","name":"오미자","rank":"미화원(여)","officeId":"office_014","dept":"스타밸리"},{"empId":"2020040102","name":"박복태","rank":"경비원","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2020041001","name":"김희정","rank":"경리대리","officeId":"office_015","dept":"에이스3차"},{"empId":"2020042004","name":"이이록","rank":"미화원(여)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2020042301","name":"박도곤","rank":"시설대리","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2020050102","name":"김태호","rank":"소장","officeId":"office_016","dept":"에이스8차"},{"empId":"2020051201","name":"조길순","rank":"미화원(여)","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2020051802","name":"황인재","rank":"시설대리","officeId":"office_015","dept":"에이스3차"},{"empId":"2020061501","name":"전호삼","rank":"관리차장","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2020072001","name":"김원흥","rank":"경비원","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2020072802","name":"최병학","rank":"시설주임","officeId":"office_001","dept":"광교타워2"},{"empId":"2020072803","name":"황정순","rank":"미화원(여)","officeId":"office_017","dept":"문래에이스"},{"empId":"2020090101","name":"최영애","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"2020092701","name":"손정환","rank":"시설주임","officeId":"office_016","dept":"에이스8차"},{"empId":"2020110101","name":"정석주","rank":"경비원","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2020110102","name":"김원식A","rank":"경비원","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2020110104","name":"최병분","rank":"경리대리","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2020111601","name":"박순애","rank":"경리대리","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2020120401","name":"김선희","rank":"경리주임","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2020120402","name":"정효진B","rank":"소장","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2020121701","name":"이병석","rank":"시설과장","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2020122901","name":"남숙경","rank":"경리과장","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010104","name":"한상국","rank":"경비반장","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010105","name":"이선임","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010106","name":"백승복","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010107","name":"성은희","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010108","name":"조병란","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010110","name":"권현숙","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010112","name":"박찬순","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010115","name":"김종곤","rank":"미화반장","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021010203","name":"장동순","rank":"미화반장","officeId":"office_014","dept":"스타밸리"},{"empId":"2021010407","name":"최명순","rank":"미화원(여)","officeId":"office_021","dept":"에이스10차"},{"empId":"2021020107","name":"전창희","rank":"소장","officeId":"office_022","dept":"서울대 에이존"},{"empId":"2021030204","name":"조연임","rank":"미화원(여)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2021030301","name":"백승윤","rank":"소장","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2021031504","name":"정봉임","rank":"미화원(여)","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2021031505","name":"임명순","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021040102","name":"명경옥","rank":"미화원(여)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2021040104","name":"문관수","rank":"시설주임","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2021040501","name":"강순자","rank":"미화원(여)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2021040702","name":"김혜경","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2021041203","name":"김진숙","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2021041301","name":"김용섭","rank":"미화반장","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2021042602","name":"김성식","rank":"시설대리","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2021051001","name":"윤봉기","rank":"소장","officeId":"office_023","dept":"디센터1976"},{"empId":"2021051701","name":"신지해","rank":"미화반장","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2021052405","name":"김재겸","rank":"시설주임","officeId":"office_023","dept":"디센터1976"},{"empId":"2021060103","name":"이대종","rank":"시설주임","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2021060201","name":"신승자","rank":"미화원(여)","officeId":"office_014","dept":"스타밸리"},{"empId":"2021070101","name":"신은화","rank":"미화원(여)","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2021070103","name":"김숙희61","rank":"미화원(여)","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2021070107","name":"김혁배","rank":"시설주임","officeId":"office_022","dept":"서울대 에이존"},{"empId":"2021080204","name":"변명숙","rank":"미화원(여)","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2021082701","name":"전학수","rank":"관리요원","officeId":"office_023","dept":"디센터1976"},{"empId":"2021090103","name":"정근호","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021090105","name":"권동률","rank":"관리차장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021090109","name":"백귀만","rank":"소장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021092302","name":"최주원","rank":"경리과장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021092304","name":"고근명","rank":"미화반장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021092312","name":"박정숙","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021100109","name":"최재학","rank":"소장","officeId":"office_025","dept":"이천현대레전드"},{"empId":"2021100502","name":"이완수","rank":"관리과장","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2021101205","name":"김영상","rank":"시설대리","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2021101302","name":"백경진","rank":"서무주임","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2021101808","name":"권경희","rank":"경리주임","officeId":"office_027","dept":"메가시티"},{"empId":"2021101810","name":"장세권","rank":"시설주임","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2021101814","name":"윤용균","rank":"시설대리","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021101815","name":"김균섭","rank":"시설대리","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021102101","name":"김선영55","rank":"경비조장","officeId":"office_016","dept":"에이스8차"},{"empId":"2021102502","name":"이태희","rank":"대리","officeId":"office_028","dept":"본사/사업소관리팀"},{"empId":"202111","name":"임석곤","rank":"소장","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2021110101","name":"신선희","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2021111703","name":"김용영","rank":"미화반장","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2021112203","name":"신입비","rank":"미화원(여)","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2021121301","name":"박용봉","rank":"경비원","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2021122001","name":"박선자","rank":"미화원(여)","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2021122711","name":"변명자","rank":"미화원(여)","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2021122712","name":"김인호","rank":"소장","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2022010110","name":"김정옥","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010115","name":"안명식","rank":"미화원(남)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010126","name":"하운순","rank":"미화조장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010134","name":"송영숙","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010141","name":"이영윤","rank":"경비팀장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010142","name":"김현명","rank":"경비반장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010143","name":"김원식B","rank":"경비반장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010144","name":"이상복","rank":"경비조장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010146","name":"하명구","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010147","name":"이이성","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010151","name":"김인철","rank":"경비조장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010156","name":"조진만","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010157","name":"이강순","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022010161","name":"이경수","rank":"소장","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2022010162","name":"박미라","rank":"경리과장","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010163","name":"이지영","rank":"서무주임","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010164","name":"전찬호","rank":"시설과장","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010165","name":"윤원영","rank":"시설주임","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010166","name":"김상원","rank":"시설주임","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010167","name":"김승태","rank":"시설주임","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010171","name":"김관태","rank":"미화원(남)","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010172","name":"권석백","rank":"경비원","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010178","name":"김부순","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010308","name":"김종래","rank":"미화원(남)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2022010401","name":"정주환","rank":"관리과장","officeId":"office_002","dept":"대륭18차"},{"empId":"2022010405","name":"박순자","rank":"미화원(여)","officeId":"office_032","dept":"하이엔드5차"},{"empId":"2022012201","name":"윤일섭","rank":"시설주임","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2022012701","name":"강동희","rank":"관리과장","officeId":"office_021","dept":"에이스10차"},{"empId":"2022021802","name":"구공주","rank":"미화원(여)","officeId":"office_017","dept":"문래에이스"},{"empId":"2022022202","name":"김진구","rank":"소장","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2022030201","name":"공영채","rank":"경비원","officeId":"office_013","dept":"에이스9차"},{"empId":"2022030203","name":"구본문","rank":"시설주임","officeId":"office_013","dept":"에이스9차"},{"empId":"2022030703","name":"고정섭","rank":"시설과장","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2022030706","name":"김태완","rank":"시설대리","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2022031401","name":"강상운","rank":"시설주임","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2022032104","name":"김일덕","rank":"경비원","officeId":"office_015","dept":"에이스3차"},{"empId":"2022040602","name":"최정운","rank":"시설주임","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2022050303","name":"이문상","rank":"주차요원","officeId":"office_034","dept":"길동요양병원"},{"empId":"2022050401","name":"이동규61","rank":"시설주임","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2022051601","name":"진성희","rank":"미화원(여)","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2022053001","name":"장세영","rank":"시설과장","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2022053002","name":"박재형","rank":"시설주임","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2022070602","name":"목기수","rank":"직영반장","officeId":"office_028","dept":"본사/사업소관리팀"},{"empId":"2022070603","name":"김주일","rank":"미화반장","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2022071102","name":"조회숙","rank":"미화원(여)","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2022071801","name":"서석구","rank":"미화원(남)","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2022072002","name":"서효순","rank":"미화원(여)","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2022072101","name":"박명숙","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022080103","name":"박창만","rank":"소장","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2022080104","name":"차일환","rank":"시설주임","officeId":"office_035","dept":"수원에비뉴퍼스트"},{"empId":"2022080106","name":"강정기","rank":"미화조장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022080201","name":"진옥자","rank":"미화원(여)","officeId":"office_001","dept":"광교타워2"},{"empId":"2022081101","name":"국혜성","rank":"미화원(여)","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2022092201","name":"남궁윤철","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022092702","name":"김애선","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2022100401","name":"박세정","rank":"관리과장","officeId":"office_013","dept":"에이스9차"},{"empId":"2022100403","name":"임용명","rank":"경비조장","officeId":"office_001","dept":"광교타워2"},{"empId":"2022101203","name":"최정선","rank":"서무주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2022101401","name":"김종신","rank":"미화원(남)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2022101704","name":"김지영","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2022102402","name":"김상금","rank":"미화원(여)","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2022110105","name":"서정순","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2022110112","name":"정삼봉","rank":"미화원(남)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2022112101","name":"백영희","rank":"미화원(여)","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2022112103","name":"장영애","rank":"미화원(여)","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2022112802","name":"한승재","rank":"조경원","officeId":"office_028","dept":"본사/사업소관리팀"},{"empId":"2022120104","name":"최미숙","rank":"경리대리","officeId":"office_021","dept":"에이스10차"},{"empId":"2022120501","name":"최수정","rank":"경리주임","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2023010102","name":"권영곤","rank":"관리과장","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023010103","name":"차애희","rank":"미화원(여)","officeId":"office_017","dept":"문래에이스"},{"empId":"2023010106","name":"한전상","rank":"시설대리","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023010109","name":"한동일","rank":"경비원","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023010110","name":"이종화","rank":"경비원","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023010111","name":"김인전","rank":"서무주임","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023010113","name":"김용연","rank":"경비반장","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023010119","name":"김선행","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023010125","name":"최종숙","rank":"미화원(여)","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2023010127","name":"허은수","rank":"미화원(여)","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2023010128","name":"윤춘식","rank":"미화원(여)","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2023010141","name":"김향임67","rank":"미화원(여)","officeId":"office_014","dept":"스타밸리"},{"empId":"2023010202","name":"최영숙55","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2023010203","name":"신정옥","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2023010204","name":"송금덕","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2023010205","name":"김혜수","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2023010206","name":"윤창순","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2023010210","name":"윤성만","rank":"경비원","officeId":"office_016","dept":"에이스8차"},{"empId":"2023010213","name":"주태순","rank":"미화원(여)","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2023010217","name":"박영순55","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2023010232","name":"김영임B","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2023010234","name":"이춘섭","rank":"미화원(여)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2023010302","name":"박혁훈","rank":"시설주임","officeId":"office_001","dept":"광교타워2"},{"empId":"2023010405","name":"박춘이","rank":"미화반장","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2023011604","name":"김철근","rank":"미화반장","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2023011901","name":"강인실","rank":"경리주임","officeId":"office_035","dept":"수원에비뉴퍼스트"},{"empId":"2023020102","name":"조정인","rank":"미화원(여)","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2023022003","name":"권석원","rank":"미화원(남)","officeId":"office_035","dept":"수원에비뉴퍼스트"},{"empId":"2023022701","name":"한수연","rank":"소장","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2023030205","name":"신미순","rank":"미화원(여)","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2023030206","name":"장은희","rank":"미화원(여)","officeId":"office_021","dept":"에이스10차"},{"empId":"2023031002","name":"고승규","rank":"소장","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023032202","name":"김연란","rank":"미화원(여)","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2023032901","name":"강정우","rank":"시설과장","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2023040101","name":"이재훈","rank":"관리주임","officeId":"office_038","dept":"세종에이스타워"},{"empId":"2023040103","name":"채종민","rank":"시설주임","officeId":"office_039","dept":"파크텐삼성"},{"empId":"2023040104","name":"손원호","rank":"시설주임","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2023040201","name":"김이석","rank":"시설보조기사","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2023040402","name":"조규승","rank":"시설주임","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023041702","name":"조수형","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2023041713","name":"유영기","rank":"시설주임","officeId":"office_021","dept":"에이스10차"},{"empId":"2023050801","name":"박경애","rank":"경리대리","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2023051503","name":"서혜리","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023051701","name":"정재봉","rank":"시설주임","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2023052201","name":"김주철","rank":"시설주임","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2023052302","name":"최재숙","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023052601","name":"최성우","rank":"미화원(남)","officeId":"office_002","dept":"대륭18차"},{"empId":"2023060107","name":"오익환","rank":"시설주임","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2023060801","name":"김경혜","rank":"경리과장","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2023061204","name":"전순화","rank":"미화원(여)","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2023070301","name":"한우동","rank":"경비원","officeId":"office_040","dept":"에이스5차"},{"empId":"2023070502","name":"이성찬","rank":"미화원(남)","officeId":"office_013","dept":"에이스9차"},{"empId":"2023071001","name":"최초덕","rank":"미화원(여)","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2023071004","name":"김종두","rank":"미화원(남)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2023071802","name":"윤종순","rank":"미화원(여)","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2023080402","name":"이형수","rank":"미화반장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2023080701","name":"김민주","rank":"경리과장","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2023082801","name":"이강호","rank":"시설주임","officeId":"office_016","dept":"에이스8차"},{"empId":"2023090102","name":"이성우","rank":"미화원(남)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023090103","name":"김석희","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2023090104","name":"김윤상","rank":"관리과장","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2023090401","name":"정병옥","rank":"경비원","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2023091301","name":"김옥태","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2023100101","name":"최민실","rank":"미화반장","officeId":"office_023","dept":"디센터1976"},{"empId":"2023100402","name":"박종진","rank":"미화원(남)","officeId":"office_013","dept":"에이스9차"},{"empId":"2023101004","name":"경부영","rank":"시설주임","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2023101105","name":"김일근","rank":"시설주임","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2023101108","name":"이해영","rank":"경비원","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2023101110","name":"김세한","rank":"미화반장","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2023101111","name":"김병태","rank":"미화원(남)","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2023101114","name":"길수연","rank":"미화원(여)","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2023101201","name":"김연춘","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2023101802","name":"민안순","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2023101803","name":"김창하","rank":"시설대리","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2023110106","name":"고금순","rank":"미화원(여)","officeId":"office_001","dept":"광교타워2"},{"empId":"2023110109","name":"김기영","rank":"미화반장","officeId":"office_040","dept":"에이스5차"},{"empId":"2023110201","name":"홍신의","rank":"미화원(여)","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2023110603","name":"정옥순","rank":"미화원(여)","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2023110701","name":"권영옥","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2023110801","name":"신수철","rank":"소장","officeId":"office_035","dept":"수원에비뉴퍼스트"},{"empId":"2023111602","name":"황정미","rank":"경리대리","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2023112001","name":"김진우","rank":"시설주임","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2023112701","name":"장금순","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2023121301","name":"신봉하","rank":"시설대리","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2023122102","name":"박영환","rank":"시설주임","officeId":"office_042","dept":"시그니처광교"},{"empId":"2023122602","name":"홍석환","rank":"미화반장","officeId":"office_042","dept":"시그니처광교"},{"empId":"2023122701","name":"최유정","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"202340304","name":"박인춘","rank":"시설주임","officeId":"office_013","dept":"에이스9차"},{"empId":"202340405","name":"진미경","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"2024010104","name":"허영무","rank":"경비원","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2024010105","name":"김병익","rank":"경비원","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2024010108","name":"박광재","rank":"시설주임","officeId":"office_008","dept":"에이스1차"},{"empId":"2024010109","name":"송서인","rank":"경리대리","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2024010202","name":"김주환","rank":"시설주임","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2024010206","name":"정복자","rank":"미화원(여)","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2024010208","name":"장현주","rank":"서무주임","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2024010213","name":"김주식","rank":"경비조장","officeId":"office_001","dept":"광교타워2"},{"empId":"2024010215","name":"안순환","rank":"미화조장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024010217","name":"김기분","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024010301","name":"남봉진","rank":"경비원","officeId":"office_040","dept":"에이스5차"},{"empId":"2024010601","name":"김덕규","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024010801","name":"김윤환","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2024011001","name":"김갑열","rank":"경비원","officeId":"office_017","dept":"문래에이스"},{"empId":"2024011101","name":"이동희","rank":"경비원","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2024011201","name":"이경화","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"2024011501","name":"강호석","rank":"안전요원","officeId":"office_043","dept":"건설현장"},{"empId":"2024011601","name":"김재경","rank":"안전요원","officeId":"office_043","dept":"건설현장"},{"empId":"2024011702","name":"이상옥","rank":"미화원(여)","officeId":"office_034","dept":"길동요양병원"},{"empId":"2024011801","name":"이형월","rank":"미화원(여)","officeId":"office_015","dept":"에이스3차"},{"empId":"2024011902","name":"최민경","rank":"미화원(여)","officeId":"office_016","dept":"에이스8차"},{"empId":"2024012901","name":"손영권","rank":"소장","officeId":"office_039","dept":"파크텐삼성"},{"empId":"2024020104","name":"이동현","rank":"시설주임","officeId":"office_023","dept":"디센터1976"},{"empId":"2024020201","name":"노재현","rank":"미화원(남)","officeId":"office_023","dept":"디센터1976"},{"empId":"2024020203","name":"정춘자","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"2024021302","name":"허우규","rank":"미화원(남)","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2024021501","name":"김주철62","rank":"시설과장","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2024022801","name":"양정승","rank":"시설주임","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2024030101","name":"강준형","rank":"미화원(남)","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2024030703","name":"채영익","rank":"시설주임","officeId":"office_036","dept":"광명무역센터"},{"empId":"2024031101","name":"노성철","rank":"경비원","officeId":"office_044","dept":"가산비전파크"},{"empId":"2024031106","name":"김아미","rank":"경리대리","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2024031201","name":"최종수","rank":"주차요원","officeId":"office_039","dept":"파크텐삼성"},{"empId":"2024031202","name":"장윤석","rank":"시설과장","officeId":"office_036","dept":"광명무역센터"},{"empId":"2024031203","name":"박종윤","rank":"시설주임","officeId":"office_021","dept":"에이스10차"},{"empId":"2024031401","name":"조정인63","rank":"미화원(여)","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2024031801","name":"한선자","rank":"미화원(여)","officeId":"office_042","dept":"시그니처광교"},{"empId":"2024031802","name":"심현옥","rank":"미화원(여)","officeId":"office_042","dept":"시그니처광교"},{"empId":"2024031807","name":"김문영","rank":"시설대리","officeId":"office_042","dept":"시그니처광교"},{"empId":"2024032102","name":"서재승","rank":"시설대리","officeId":"office_034","dept":"길동요양병원"},{"empId":"2024032503","name":"조수호","rank":"시설주임","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2024032601","name":"박현주","rank":"미화원(여)","officeId":"office_042","dept":"시그니처광교"},{"empId":"2024040106","name":"최은희","rank":"미화원(여)","officeId":"office_015","dept":"에이스3차"},{"empId":"2024040109","name":"이현구","rank":"시설주임","officeId":"office_045","dept":"감곡물류센터"},{"empId":"2024040110","name":"김남민","rank":"시설주임","officeId":"office_045","dept":"감곡물류센터"},{"empId":"2024040121","name":"정철","rank":"시설주임","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2024040122","name":"김성호","rank":"시설주임","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2024040126","name":"김경희","rank":"미화원(여)","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2024040128","name":"현준영","rank":"시설주임","officeId":"office_023","dept":"디센터1976"},{"empId":"2024041101","name":"서승무","rank":"관리과장","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2024041104","name":"윤순남","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024041501","name":"김두옥","rank":"소장","officeId":"office_047","dept":"SH드림타워"},{"empId":"2024041702","name":"한광석","rank":"시설주임","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2024042001","name":"김득","rank":"관리요원","officeId":"office_021","dept":"에이스10차"},{"empId":"2024042201","name":"이순남","rank":"미화원(여)","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2024042901","name":"방시혁","rank":"미화반장","officeId":"office_048","dept":"에이스101"},{"empId":"2024043001","name":"심태운","rank":"소장","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024050101","name":"백명기","rank":"소장","officeId":"office_013","dept":"에이스9차"},{"empId":"2024050103","name":"이정숙","rank":"경리대리","officeId":"office_050","dept":"아티스포럼"},{"empId":"2024050104","name":"양인무","rank":"미화원(남)","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2024050106","name":"유병찬","rank":"주차요원","officeId":"office_051","dept":"익스콘"},{"empId":"2024050202","name":"김미선","rank":"경리대리","officeId":"office_036","dept":"광명무역센터"},{"empId":"2024050203","name":"배애순","rank":"미화원(여)","officeId":"office_047","dept":"SH드림타워"},{"empId":"2024050205","name":"노동규","rank":"미화원(남)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2024050210","name":"허문","rank":"관리요원","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024050211","name":"유정원84","rank":"경리대리","officeId":"office_044","dept":"가산비전파크"},{"empId":"2024050901","name":"노동열","rank":"경비원","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2024051302","name":"이기자","rank":"미화원(여)","officeId":"office_001","dept":"광교타워2"},{"empId":"2024051601","name":"고승화","rank":"미화원(남)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024051602","name":"남재숙","rank":"미화반장","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024051603","name":"안태숙","rank":"미화원(여)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024060301","name":"이병환","rank":"관리과장","officeId":"office_016","dept":"에이스8차"},{"empId":"2024060302","name":"유병천","rank":"관리과장","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2024060304","name":"이양옥","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024060309","name":"김연임","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024062403","name":"홍송균","rank":"경비원","officeId":"office_050","dept":"아티스포럼"},{"empId":"2024062404","name":"한오용","rank":"미화반장","officeId":"office_047","dept":"SH드림타워"},{"empId":"2024062405","name":"정점순51","rank":"미화원(여)","officeId":"office_047","dept":"SH드림타워"},{"empId":"2024062406","name":"김영숙","rank":"미화원(여)","officeId":"office_047","dept":"SH드림타워"},{"empId":"2024062701","name":"신권철","rank":"시설주임","officeId":"office_035","dept":"수원에비뉴퍼스트"},{"empId":"2024070101","name":"김원중","rank":"소장","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2024070103","name":"김말순","rank":"미화원(여)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024070107","name":"박복순","rank":"미화원(여)","officeId":"office_015","dept":"에이스3차"},{"empId":"2024070110","name":"한준호","rank":"시설주임","officeId":"office_050","dept":"아티스포럼"},{"empId":"2024070202","name":"이동각","rank":"시설대리","officeId":"office_050","dept":"아티스포럼"},{"empId":"2024070203","name":"이형철","rank":"시설주임","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2024070205","name":"이종숙63","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024070401","name":"이태권","rank":"시설주임","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024071001","name":"김진철","rank":"시설주임","officeId":"office_036","dept":"광명무역센터"},{"empId":"2024071002","name":"김중조","rank":"미화반장","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2024072201","name":"강봉규","rank":"소장","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2024072503","name":"오민석","rank":"소장","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2024072903","name":"이재구","rank":"시설대리","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2024073003","name":"김인숙58","rank":"미화원(여)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024080102","name":"이병우","rank":"미화원(남)","officeId":"office_042","dept":"시그니처광교"},{"empId":"2024080105","name":"김현종","rank":"소장","officeId":"office_053","dept":"르꼼떼블루"},{"empId":"2024080503","name":"박미나","rank":"경리대리","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024080505","name":"김유나","rank":"경리주임","officeId":"office_039","dept":"파크텐삼성"},{"empId":"2024080801","name":"이상범","rank":"소장","officeId":"office_044","dept":"가산비전파크"},{"empId":"2024081601","name":"고명숙68","rank":"미화원(여)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024081901","name":"유홍석","rank":"시설과장","officeId":"office_048","dept":"에이스101"},{"empId":"2024081902","name":"노정석","rank":"시설주임","officeId":"office_044","dept":"가산비전파크"},{"empId":"2024082101","name":"도현남","rank":"시설주임","officeId":"office_047","dept":"SH드림타워"},{"empId":"2024082201","name":"유양순","rank":"미화원(여)","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2024082202","name":"박선주","rank":"미화원(여)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024082602","name":"유재옥","rank":"미화원(여)","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2024082603","name":"이춘수","rank":"시설주임","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2024082701","name":"윤종헌","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024090102","name":"임한준","rank":"소장","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2024090105","name":"우학송","rank":"소장","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2024090201","name":"박노국","rank":"시설과장","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2024090302","name":"장춘만","rank":"경비원","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2024090401","name":"서정원","rank":"시설주임","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2024090901","name":"황금영","rank":"시설주임","officeId":"office_048","dept":"에이스101"},{"empId":"2024090902","name":"변용철","rank":"경비원","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024091901","name":"장규운","rank":"경비원","officeId":"office_042","dept":"시그니처광교"},{"empId":"2024091902","name":"김수호","rank":"시설과장","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2024092001","name":"이수용","rank":"시설주임","officeId":"office_044","dept":"가산비전파크"},{"empId":"2024092002","name":"박화용","rank":"시설보조기사","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2024092303","name":"정석영","rank":"시설주임","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2024092501","name":"최희영","rank":"미화원(남)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024093001","name":"이정근","rank":"관리과장","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2024100202","name":"이경숙60","rank":"미화원(여)","officeId":"office_044","dept":"가산비전파크"},{"empId":"2024100204","name":"정진영","rank":"시설주임","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2024100207","name":"최이순","rank":"미화원(여)","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2024100703","name":"이길자","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024100801","name":"안영갑","rank":"미화반장","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2024101001","name":"박근락","rank":"시설주임","officeId":"office_036","dept":"광명무역센터"},{"empId":"2024101604","name":"김윤자","rank":"미화원(여)","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2024102101","name":"조천범","rank":"시설대리","officeId":"office_014","dept":"스타밸리"},{"empId":"2024102302","name":"심재숙","rank":"미화원(여)","officeId":"office_051","dept":"익스콘"},{"empId":"2024103001","name":"김상수","rank":"경비원","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2024110101","name":"박순옥","rank":"미화원(여)","officeId":"office_040","dept":"에이스5차"},{"empId":"2024110103","name":"박재희","rank":"시설주임","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2024110401","name":"강동수","rank":"관리과장","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2024110403","name":"남영희","rank":"미화원(여)","officeId":"office_038","dept":"세종에이스타워"},{"empId":"2024110502","name":"권해근","rank":"시설주임","officeId":"office_023","dept":"디센터1976"},{"empId":"2024111101","name":"정종을","rank":"미화원(남)","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2024111103","name":"오기호","rank":"미화원(남)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2024111301","name":"유상호","rank":"시설주임","officeId":"office_048","dept":"에이스101"},{"empId":"2024112509","name":"이강민","rank":"미화원(남)","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2024112602","name":"김정희","rank":"미화원(여)","officeId":"office_042","dept":"시그니처광교"},{"empId":"2024120203","name":"김덕순","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024120205","name":"임정숙","rank":"미화원(여)","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2024120301","name":"한동주","rank":"관리요원","officeId":"office_021","dept":"에이스10차"},{"empId":"2024121001","name":"김상간","rank":"시설주임","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2024121301","name":"김정순","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2024122302","name":"박수열","rank":"관리요원","officeId":"office_014","dept":"스타밸리"},{"empId":"2025010101","name":"임상복","rank":"소장","officeId":"office_038","dept":"세종에이스타워"},{"empId":"2025010102","name":"김은경","rank":"경리대리","officeId":"office_047","dept":"SH드림타워"},{"empId":"2025010111","name":"박시창","rank":"경비원","officeId":"office_001","dept":"광교타워2"},{"empId":"2025010113","name":"이명숙","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2025010114","name":"기춘옥","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2025010115","name":"원종빈","rank":"경비원","officeId":"office_002","dept":"대륭18차"},{"empId":"2025010116","name":"박중섭","rank":"시설주임","officeId":"office_002","dept":"대륭18차"},{"empId":"2025010117","name":"임영빈","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025010118","name":"서춘교","rank":"경비원","officeId":"office_008","dept":"에이스1차"},{"empId":"2025010119","name":"박종오","rank":"주차요원","officeId":"office_051","dept":"익스콘"},{"empId":"2025010120","name":"박현","rank":"시설주임","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2025010121","name":"이재흥","rank":"소장","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2025010124","name":"채규오","rank":"관리과장","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2025010125","name":"박광성","rank":"시설대리","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2025010204","name":"박경상","rank":"경비원","officeId":"office_001","dept":"광교타워2"},{"empId":"2025010205","name":"김연옥62","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025010206","name":"차용철","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025010208","name":"오세옥","rank":"미화원(여)","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2025010209","name":"김순이","rank":"미화원(여)","officeId":"office_009","dept":"삼성IT해링턴타워"},{"empId":"2025010210","name":"김경섭","rank":"미화원(남)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2025010211","name":"박성림","rank":"경비원","officeId":"office_040","dept":"에이스5차"},{"empId":"2025010212","name":"김옥봉","rank":"미화원(여)","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2025010214","name":"전세진","rank":"미화원(남)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2025010215","name":"김인식","rank":"경비원","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2025010220","name":"양성석","rank":"미화반장","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2025010301","name":"손경이","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2025010901","name":"송덕원","rank":"미화원(남)","officeId":"office_039","dept":"파크텐삼성"},{"empId":"2025011001","name":"박춘희","rank":"미화원(여)","officeId":"office_021","dept":"에이스10차"},{"empId":"2025011303","name":"박형규","rank":"미화반장","officeId":"office_015","dept":"에이스3차"},{"empId":"2025011304","name":"박상숙","rank":"미화원(여)","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2025011305","name":"권영길","rank":"미화반장","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2025011501","name":"오창민","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025020101","name":"정장우","rank":"시설주임","officeId":"office_023","dept":"디센터1976"},{"empId":"2025020102","name":"이경희61","rank":"미화원(여)","officeId":"office_045","dept":"감곡물류센터"},{"empId":"2025020301","name":"조민형","rank":"관리과장","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2025020308","name":"심희윤","rank":"미화원(여)","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2025020401","name":"이미숙","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025020502","name":"어윤기","rank":"미화원(남)","officeId":"office_042","dept":"시그니처광교"},{"empId":"2025020506","name":"정경우","rank":"시설주임","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2025020601","name":"이재춘","rank":"미화원(남)","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2025021001","name":"김윤미","rank":"미화원(여)","officeId":"office_001","dept":"광교타워2"},{"empId":"2025021002","name":"조예은","rank":"경리주임","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2025021101","name":"박영석","rank":"시설대리","officeId":"office_042","dept":"시그니처광교"},{"empId":"2025021701","name":"조이순","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025021901","name":"노현주","rank":"서무주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025022503","name":"김수옥","rank":"경리대리","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2025022801","name":"나찬순","rank":"서무주임","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"202502601","name":"이승호","rank":"시설주임","officeId":"office_040","dept":"에이스5차"},{"empId":"2025030102","name":"안중희","rank":"미화반장","officeId":"office_036","dept":"광명무역센터"},{"empId":"2025030103","name":"양동철","rank":"소장","officeId":"office_055","dept":"애드윈타워"},{"empId":"2025030401","name":"최재우","rank":"과장","officeId":"office_028","dept":"본사/사업소관리팀"},{"empId":"2025030402","name":"문영래","rank":"소장","officeId":"office_045","dept":"감곡물류센터"},{"empId":"2025030404","name":"고경임","rank":"미화원(여)","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2025030501","name":"김순옥58","rank":"미화원(여)","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2025030601","name":"권광택","rank":"미화반장","officeId":"office_002","dept":"대륭18차"},{"empId":"2025030701","name":"박옥희","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025031001","name":"이숙의","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2025031701","name":"윤상철","rank":"경비원","officeId":"office_042","dept":"시그니처광교"},{"empId":"2025031801","name":"정봉자","rank":"미화원(여)","officeId":"office_021","dept":"에이스10차"},{"empId":"2025031901","name":"전영희","rank":"미화원(여)","officeId":"office_055","dept":"애드윈타워"},{"empId":"2025032802","name":"구길현","rank":"미화팀장","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025040101","name":"홍재영","rank":"경비원","officeId":"office_008","dept":"에이스1차"},{"empId":"2025040104","name":"이평옥","rank":"미화원(여)","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2025040105","name":"안명기","rank":"시설주임","officeId":"office_045","dept":"감곡물류센터"},{"empId":"2025040108","name":"현태근","rank":"미화원(남)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025040201","name":"김정숙","rank":"미화원(여)","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2025040501","name":"박승식","rank":"시설주임","officeId":"office_047","dept":"SH드림타워"},{"empId":"2025040801","name":"조현복","rank":"시설주임","officeId":"office_027","dept":"메가시티"},{"empId":"2025041401","name":"노영희","rank":"미화원(여)","officeId":"office_022","dept":"서울대 에이존"},{"empId":"2025041501","name":"심온주","rank":"미화원(여)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2025041503","name":"이삼식","rank":"시설주임","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2025042101","name":"박주하","rank":"시설주임","officeId":"office_032","dept":"하이엔드5차"},{"empId":"2025042201","name":"이선옥","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025042401","name":"이재우","rank":"시설과장","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2025050102","name":"정충현","rank":"시설주임","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2025050109","name":"권훈민","rank":"시설과장","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2025050110","name":"오상연","rank":"경리과장","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2025050111","name":"안도영","rank":"소장","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2025050701","name":"박점희","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025051201","name":"하세현","rank":"시설주임","officeId":"office_014","dept":"스타밸리"},{"empId":"2025051901","name":"안병율","rank":"시설주임","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2025052001","name":"이정자","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025052401","name":"박종숙","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025052602","name":"김한경","rank":"시설주임","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2025060101","name":"김주윤","rank":"경비원","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2025060102","name":"김진호","rank":"주차요원","officeId":"office_034","dept":"길동요양병원"},{"empId":"2025060103","name":"박영화","rank":"시설주임","officeId":"office_021","dept":"에이스10차"},{"empId":"2025060601","name":"유재화","rank":"시설주임","officeId":"office_047","dept":"SH드림타워"},{"empId":"2025061101","name":"윤영길","rank":"시설과장","officeId":"office_025","dept":"이천현대레전드"},{"empId":"2025062001","name":"정금섭","rank":"경비원","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2025062601","name":"서영화","rank":"미화원(여)","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2025070101","name":"최정미","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025070102","name":"김인수","rank":"시설대리","officeId":"office_008","dept":"에이스1차"},{"empId":"2025070107","name":"김재연","rank":"미화원(남)","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2025070110","name":"김영숙60","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"2025070116","name":"김나윤","rank":"경리대리","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2025070117","name":"김판수","rank":"소장","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2025070119","name":"조우영","rank":"시설과장","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2025070120","name":"차미경","rank":"경리대리","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2025070122","name":"정재성","rank":"시설보조기사","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2025070123","name":"이명숙56","rank":"미화반장","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2025070124","name":"황영숙","rank":"미화원(여)","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2025070301","name":"김복화","rank":"미화원(여)","officeId":"office_021","dept":"에이스10차"},{"empId":"2025070304","name":"한우선","rank":"미화원(여)","officeId":"office_039","dept":"파크텐삼성"},{"empId":"2025070701","name":"남궁영국","rank":"경비원","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2025070702","name":"장현숙","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2025071401","name":"전재설","rank":"미화반장","officeId":"office_017","dept":"문래에이스"},{"empId":"2025071601","name":"배송미","rank":"미화원(여)","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2025071602","name":"신승의","rank":"경비원","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2025071701","name":"심상열","rank":"미화원(남)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025072401","name":"김재영","rank":"시설주임","officeId":"office_042","dept":"시그니처광교"},{"empId":"2025072801","name":"하영기","rank":"시설대리","officeId":"office_019","dept":"성수AK밸리"},{"empId":"2025080102","name":"김선자","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025080401","name":"박세연","rank":"시설대리","officeId":"office_032","dept":"하이엔드5차"},{"empId":"2025080402","name":"변경숙","rank":"미화원(여)","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2025080403","name":"최경미","rank":"미화원(여)","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2025080701","name":"유금열","rank":"주차요원","officeId":"office_034","dept":"길동요양병원"},{"empId":"2025081302","name":"유용대","rank":"미화원(남)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2025081801","name":"이현순","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2025090101","name":"남윤옥","rank":"미화원(여)","officeId":"office_035","dept":"수원에비뉴퍼스트"},{"empId":"2025090102","name":"반태근","rank":"소장","officeId":"office_021","dept":"에이스10차"},{"empId":"2025090401","name":"방경배","rank":"시설과장","officeId":"office_042","dept":"시그니처광교"},{"empId":"2025091001","name":"민병옥","rank":"시설주임","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025091101","name":"한영섭","rank":"관리대리","officeId":"office_048","dept":"에이스101"},{"empId":"2025092202","name":"김국환","rank":"소장","officeId":"office_048","dept":"에이스101"},{"empId":"2025092203","name":"박명능","rank":"안전요원","officeId":"office_043","dept":"건설현장"},{"empId":"2025092301","name":"엄기배","rank":"안전요원","officeId":"office_043","dept":"건설현장"},{"empId":"2025101301","name":"노현지","rank":"미화원(여)","officeId":"office_023","dept":"디센터1976"},{"empId":"2025101401","name":"노명완","rank":"관리과장","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2025102101","name":"임성주","rank":"미화반장","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2025102401","name":"박상근","rank":"시설주임","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2025102701","name":"김성수","rank":"시설주임","officeId":"office_040","dept":"에이스5차"},{"empId":"2025110301","name":"조정우","rank":"시설주임","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025110401","name":"엄용순","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025110502","name":"전재호","rank":"시설주임","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2025111101","name":"신은우","rank":"미화원(여)","officeId":"office_016","dept":"에이스8차"},{"empId":"2025111103","name":"최인호","rank":"시설주임","officeId":"office_014","dept":"스타밸리"},{"empId":"2025111702","name":"송영호","rank":"미화원(남)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2025111703","name":"이완근","rank":"시설주임","officeId":"office_042","dept":"시그니처광교"},{"empId":"2025111704","name":"박현섭","rank":"시설주임","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2025111801","name":"안지은","rank":"서무주임","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2025112001","name":"이상하","rank":"시설대리","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2025112102","name":"이현주","rank":"미화원(여)","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2025120301","name":"이후창","rank":"미화반장","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025120901","name":"박영미","rank":"미화원(여)","officeId":"office_048","dept":"에이스101"},{"empId":"2025121601","name":"김거환","rank":"미화원(남)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025121602","name":"최병남","rank":"미화원(여)","officeId":"office_010","dept":"서울숲AK밸리"},{"empId":"2025121701","name":"박남숙","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2025122401","name":"정선영","rank":"경리대리","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2025122901","name":"진순자","rank":"미화원(여)","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2025123110","name":"송지수","rank":"시설주임","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2025707012","name":"김영순","rank":"미화원(여)","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2026010101","name":"유승만","rank":"소장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010102","name":"김윤성","rank":"통신팀장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010105","name":"이돈섭","rank":"전기팀장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010107","name":"장민수","rank":"건축과장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010108","name":"송광동","rank":"기계팀장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010109","name":"유순상","rank":"건축대리","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010110","name":"윤병남","rank":"통신기사","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010111","name":"남경우","rank":"소방과장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010112","name":"남승완","rank":"기계기사","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010113","name":"장원","rank":"전기기사","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010114","name":"장경율","rank":"기계과장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010115","name":"김유준","rank":"건축대리","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010116","name":"이영배","rank":"건축팀장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010117","name":"최원배","rank":"기계대리","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010118","name":"이성민","rank":"기계대리","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010119","name":"임두영","rank":"전기과장","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026010120","name":"김이진","rank":"경리대리","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2026010122","name":"김대혁","rank":"경비원","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2026010123","name":"백윤억","rank":"영선반장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010124","name":"김태원","rank":"건축과장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010125","name":"김윤종","rank":"방재실장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010126","name":"이연학","rank":"전기과장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010127","name":"김상현","rank":"전기기사","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010128","name":"장인수","rank":"기계과장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010129","name":"허영태","rank":"소방과장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010130","name":"황정환","rank":"통신과장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010131","name":"이경호","rank":"통신대리","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010132","name":"김영기","rank":"경비원","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010133","name":"최영화","rank":"경비원","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010134","name":"유동현","rank":"소장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010135","name":"김종주","rank":"경비원","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010136","name":"이원석","rank":"전기기사","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010137","name":"이성헌","rank":"기계주임","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010138","name":"이상원","rank":"기계주임","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010139","name":"김진성","rank":"시설기사","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010141","name":"이성훈","rank":"기계기사","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010142","name":"민병권","rank":"소방기사","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010143","name":"김동민","rank":"통신기사","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010144","name":"박이국","rank":"전기주임","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010145","name":"장유경","rank":"행사지원주임","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010146","name":"안성근","rank":"행사지원과장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010147","name":"최우정","rank":"안내원","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010148","name":"유시형","rank":"안내원","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010149","name":"민다연","rank":"행사지원주임","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010150","name":"최진봉","rank":"미화반장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010151","name":"장병규","rank":"미화원(남)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010152","name":"조영배","rank":"미화원(남)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010153","name":"윤순연","rank":"미화원(여)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010154","name":"김나연","rank":"미화원(여)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010155","name":"김세인","rank":"미화원(여)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010156","name":"김선희70","rank":"미화원(여)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010157","name":"김영희","rank":"미화원(여)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010158","name":"심복주","rank":"미화원(여)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010159","name":"박서영","rank":"미화원(여)","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010160","name":"김태규","rank":"경비반장","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026010162","name":"민영선","rank":"시설주임","officeId":"office_004","dept":"서울숲비즈포레"},{"empId":"2026010163","name":"박용제","rank":"소장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010164","name":"류도성","rank":"관리과장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010165","name":"최경화","rank":"시설과장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010166","name":"이숙","rank":"경리과장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010167","name":"임수미","rank":"서무주임","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010168","name":"김홍석","rank":"시설과장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010169","name":"이호철","rank":"시설대리","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010170","name":"노계호","rank":"시설대리","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010171","name":"이주호","rank":"시설반장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010172","name":"공준영","rank":"시설반장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010173","name":"홍판석","rank":"시설주임","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010174","name":"박기남","rank":"경비팀장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010175","name":"김진업","rank":"경비원","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010176","name":"임수성","rank":"경비원","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010177","name":"최남규","rank":"경비원","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010179","name":"강용구","rank":"미화반장","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010181","name":"안봉준","rank":"미화원(남)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010183","name":"이충현","rank":"미화원(남)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010184","name":"이명화","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010185","name":"김민주58","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010186","name":"남춘자","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010187","name":"문태숙","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010188","name":"이미화","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010189","name":"이종미","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010191","name":"유수자","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010192","name":"장동례","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010193","name":"허명희","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010206","name":"김현주","rank":"미화원(여)","officeId":"office_014","dept":"스타밸리"},{"empId":"2026010207","name":"이진숙","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2026010208","name":"이재주","rank":"미화원(남)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2026010209","name":"주지혁","rank":"경비원","officeId":"office_050","dept":"아티스포럼"},{"empId":"2026010211","name":"변혜정","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2026010220","name":"윤정환","rank":"경비원","officeId":"office_031","dept":"하이테크시티"},{"empId":"2026010221","name":"조창옥","rank":"미화원(여)","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2026010222","name":"박동화","rank":"시설주임","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2026010223","name":"최호순","rank":"미화원(여)","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2026010224","name":"홍승규","rank":"미화원(남)","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2026010225","name":"고영주","rank":"시설주임","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2026010226","name":"김진욱","rank":"시설주임","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2026010501","name":"황대중","rank":"관리과장","officeId":"office_047","dept":"SH드림타워"},{"empId":"2026010502","name":"서기영","rank":"시설주임","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026010601","name":"이명철","rank":"시설주임","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2026010701","name":"권기선","rank":"미화원(여)","officeId":"office_023","dept":"디센터1976"},{"empId":"2026010801","name":"김수자","rank":"미화원(여)","officeId":"office_023","dept":"디센터1976"},{"empId":"2026010901","name":"박연숙","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2026011001","name":"김영호","rank":"경비원","officeId":"office_029","dept":"서울숲에이원"},{"empId":"2026011201","name":"이채경","rank":"미화원(여)","officeId":"office_036","dept":"광명무역센터"},{"empId":"2026011204","name":"최재형","rank":"시설주임","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2026011301","name":"김강후","rank":"미화원(남)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026011901","name":"김세훈","rank":"행사지원주임","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026011904","name":"김윤숙","rank":"미화원(여)","officeId":"office_042","dept":"시그니처광교"},{"empId":"2026011905","name":"김학균","rank":"미화반장","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2026011906","name":"박수녀","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"2026011910","name":"유병일","rank":"시설과장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026012101","name":"정윤숙","rank":"경리대리","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2026012601","name":"김상한","rank":"통신대리","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026020101","name":"김선희64","rank":"경리대리","officeId":"office_048","dept":"에이스101"},{"empId":"2026020102","name":"이진용","rank":"안전요원","officeId":"office_043","dept":"건설현장"},{"empId":"2026020201","name":"류병윤","rank":"시설주임","officeId":"office_057","dept":"신화테크노밸리"},{"empId":"2026020203","name":"최상용","rank":"경비원","officeId":"office_017","dept":"문래에이스"},{"empId":"2026020204","name":"이경미","rank":"미화원(여)","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2026020207","name":"이혜정","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2026020301","name":"박재성","rank":"시설주임","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2026020401","name":"차정환","rank":"시설주임","officeId":"office_049","dept":"신화 더 플렉스시티"},{"empId":"2026020501","name":"김연자","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026020502","name":"이무선","rank":"미화원(여)","officeId":"office_046","dept":"마스터밸류 에이스"},{"empId":"2026021101","name":"김경화","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2026021301","name":"김종환","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026021901","name":"임용식","rank":"관리과장","officeId":"office_050","dept":"아티스포럼"},{"empId":"2026022301","name":"김관수","rank":"관리과장","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2026022601","name":"임태순","rank":"시설주임","officeId":"office_007","dept":"에이스비즈포레"},{"empId":"2026022801","name":"김명수","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026030101","name":"이승엽","rank":"행사지원주임","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026030201","name":"손상식","rank":"방재실장","officeId":"office_056","dept":"벽산디지털밸리8차"},{"empId":"2026030302","name":"김인숙","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2026030303","name":"박서정","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2026030304","name":"최영화62","rank":"미화원(여)","officeId":"office_047","dept":"SH드림타워"},{"empId":"2026030306","name":"정상순","rank":"미화원(여)","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2026030401","name":"허두석","rank":"관리과장","officeId":"office_015","dept":"에이스3차"},{"empId":"2026030402","name":"안재순","rank":"미화원(여)","officeId":"office_003","dept":"에이스태세라타워"},{"empId":"2026030501","name":"강민성","rank":"경비원","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"2026030601","name":"최준이","rank":"미화원(여)","officeId":"office_018","dept":"더스페이스타워"},{"empId":"2026030902","name":"방윤복","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2026030903","name":"이용욱","rank":"미화원(남)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2026030904","name":"정옥희","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026031501","name":"김병수","rank":"경비원","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2026031601","name":"오세분","rank":"미화원(여)","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2026031602","name":"배옥분","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"2026031603","name":"강병완","rank":"미화원(남)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026031701","name":"문형기","rank":"미화반장","officeId":"office_037","dept":"하이엔드9차"},{"empId":"2026032301","name":"박연순","rank":"미화원(여)","officeId":"office_048","dept":"에이스101"},{"empId":"2026032501","name":"권병목","rank":"시설주임","officeId":"office_061","dept":"아산하이테크복합물류센터"},{"empId":"2026032502","name":"양춘호","rank":"시설주임","officeId":"office_061","dept":"아산하이테크복합물류센터"},{"empId":"2026032601","name":"김임순","rank":"미화원(여)","officeId":"office_016","dept":"에이스8차"},{"empId":"2026032602","name":"김세환","rank":"기계기사","officeId":"office_058","dept":"송도컨벤시아"},{"empId":"2026033001","name":"정수호","rank":"시설주임","officeId":"office_044","dept":"가산비전파크"},{"empId":"2026033002","name":"차의근","rank":"시설주임","officeId":"office_061","dept":"아산하이테크복합물류센터"},{"empId":"2026033101","name":"양춘자","rank":"미화원(여)","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2026040101","name":"우남미","rank":"미화원(여)","officeId":"office_002","dept":"대륭18차"},{"empId":"2026040102","name":"손영승","rank":"소장","officeId":"office_062","dept":"제이에스더스카이타워3차"},{"empId":"2026040103","name":"배동한","rank":"안전요원","officeId":"office_043","dept":"건설현장"},{"empId":"2026040104","name":"최종인","rank":"경비원","officeId":"office_030","dept":"하이엔드8차"},{"empId":"2026040106","name":"이가선","rank":"미화원(여)","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2026040107","name":"이현흥","rank":"시설주임","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2026040108","name":"김종문","rank":"경비원","officeId":"office_013","dept":"에이스9차"},{"empId":"2026040109","name":"정근휘","rank":"미화반장","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2026040110","name":"황성옥","rank":"미화원(여)","officeId":"office_027","dept":"메가시티"},{"empId":"2026040111","name":"장정자","rank":"미화원(여)","officeId":"office_031","dept":"하이테크시티"},{"empId":"2026040113","name":"김기송","rank":"미화원(남)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026040114","name":"박라혜","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026040115","name":"강희석","rank":"시설과장","officeId":"office_063","dept":"송도브라운도트"},{"empId":"2026040201","name":"전영애","rank":"경리대리","officeId":"office_042","dept":"시그니처광교"},{"empId":"2026040301","name":"김경희57","rank":"미화원(여)","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026041302","name":"정주석","rank":"소장","officeId":"office_064","dept":"아트리움시티"},{"empId":"2026041701","name":"경성수","rank":"경비원","officeId":"office_060","dept":"강서한강자이타워"},{"empId":"2026041702","name":"임용순","rank":"시설주임","officeId":"office_039","dept":"파크텐삼성"},{"empId":"2026042001","name":"이순종","rank":"안전요원","officeId":"office_043","dept":"건설현장"},{"empId":"2026042101","name":"황태섭","rank":"소장","officeId":"office_061","dept":"아산하이테크복합물류센터"},{"empId":"2026042102","name":"전광현","rank":"시설주임","officeId":"office_052","dept":"더콜럼버스2차"},{"empId":"2026042401","name":"최화자","rank":"미화원(여)","officeId":"office_033","dept":"선명스퀘어"},{"empId":"2026042402","name":"김정언","rank":"시설주임","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2026042701","name":"이정엽","rank":"관리과장","officeId":"office_064","dept":"아트리움시티"},{"empId":"2026042702","name":"김창현","rank":"시설주임","officeId":"office_064","dept":"아트리움시티"},{"empId":"2026042703","name":"이종문","rank":"시설주임","officeId":"office_064","dept":"아트리움시티"},{"empId":"2026042704","name":"윤영숙","rank":"경리대리","officeId":"office_064","dept":"아트리움시티"},{"empId":"2026042705","name":"허정표","rank":"시설주임","officeId":"office_064","dept":"아트리움시티"},{"empId":"2026042901","name":"강나현","rank":"매니저","officeId":"office_065","dept":"가림스위트2차"},{"empId":"2026050101","name":"이일만","rank":"소장","officeId":"office_032","dept":"하이엔드5차"},{"empId":"2026050102","name":"강형욱","rank":"소장","officeId":"office_006","dept":"하이엔드타워클래식"},{"empId":"2026050401","name":"김윤하","rank":"시설주임","officeId":"office_034","dept":"길동요양병원"},{"empId":"2026050402","name":"안정기","rank":"미화원(남)","officeId":"office_005","dept":"에이스NS타워"},{"empId":"2026050801","name":"이한우","rank":"소장","officeId":"office_065","dept":"가림스위트2차"},{"empId":"2026051102","name":"이지향","rank":"경리대리","officeId":"office_023","dept":"디센터1976"},{"empId":"2026051103","name":"백용순","rank":"미화원(남)","officeId":"office_054","dept":"평택고덕STV"},{"empId":"2026051104","name":"이상봉","rank":"미화반장","officeId":"office_032","dept":"하이엔드5차"},{"empId":"2026051201","name":"송재효","rank":"전기기사","officeId":"office_059","dept":"울산전시컨벤션센터"},{"empId":"2026051202","name":"최도화","rank":"미화원(여)","officeId":"office_050","dept":"아티스포럼"},{"empId":"2026051203","name":"하재범","rank":"경비원","officeId":"office_002","dept":"대륭18차"},{"empId":"2026051501","name":"공준","rank":"시설주임","officeId":"office_065","dept":"가림스위트2차"},{"empId":"2026051601","name":"이용상","rank":"시설주임","officeId":"office_065","dept":"가림스위트2차"},{"empId":"2026051801","name":"백승","rank":"소장","officeId":"office_042","dept":"시그니처광교"},{"empId":"2026051802","name":"안귀순","rank":"미화원(여)","officeId":"office_065","dept":"가림스위트2차"},{"empId":"2026052201","name":"박인철","rank":"시설주임","officeId":"office_027","dept":"메가시티"},{"empId":"2026052601","name":"이동열","rank":"시설주임","officeId":"office_041","dept":"가산한화비즈메트로2차"},{"empId":"2026052701","name":"송병하","rank":"관리과장","officeId":"office_023","dept":"디센터1976"},{"empId":"2026052801","name":"김영숙66","rank":"미화원(여)","officeId":"office_008","dept":"에이스1차"},{"empId":"2026060101","name":"문기환","rank":"경비원","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026060102","name":"김수정","rank":"경리대리","officeId":"office_065","dept":"가림스위트2차"},{"empId":"2026060103","name":"박형진","rank":"소장","officeId":"office_026","dept":"의왕하이테크21"},{"empId":"2026060201","name":"박창열","rank":"","officeId":"office_043","dept":"건설현장"},{"empId":"2026060801","name":"배장원","rank":"대리","officeId":"office_028","dept":"본사/사업소관리팀"},{"empId":"2026060802","name":"김용범","rank":"직영반장","officeId":"office_028","dept":"본사/사업소관리팀"},{"empId":"26031901","name":"박은수","rank":"미화원(여)","officeId":"office_055","dept":"애드윈타워"},{"empId":"A1002","name":"최양희","rank":"소장","officeId":"office_015","dept":"에이스3차"},{"empId":"A1071","name":"장향자","rank":"미화원(여)","officeId":"office_032","dept":"하이엔드5차"},{"empId":"A1087","name":"신준식","rank":"시설대리","officeId":"office_013","dept":"에이스9차"},{"empId":"A117","name":"최윤호","rank":"소장","officeId":"office_051","dept":"익스콘"},{"empId":"A1201","name":"장은자","rank":"미화반장","officeId":"office_013","dept":"에이스9차"},{"empId":"A1270","name":"김미희","rank":"경리주임","officeId":"office_017","dept":"문래에이스"},{"empId":"A1293","name":"이순자","rank":"미화원(여)","officeId":"office_032","dept":"하이엔드5차"},{"empId":"A1452","name":"박정순","rank":"경리대리","officeId":"office_005","dept":"에이스NS타워"},{"empId":"A1504","name":"장성옥","rank":"미화원(여)","officeId":"office_040","dept":"에이스5차"},{"empId":"A1572","name":"정순자","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"A1613","name":"나규정","rank":"미화원(여)","officeId":"office_008","dept":"에이스1차"},{"empId":"A172","name":"김복심","rank":"미화원(여)","officeId":"office_040","dept":"에이스5차"},{"empId":"A1734","name":"정은영","rank":"경리주임","officeId":"office_022","dept":"서울대 에이존"},{"empId":"A1777","name":"한두오","rank":"미화원(남)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"A1811","name":"이문원","rank":"경비원","officeId":"office_016","dept":"에이스8차"},{"empId":"A1829","name":"신통영","rank":"소장","officeId":"office_008","dept":"에이스1차"},{"empId":"A1843","name":"장순희","rank":"미화원(여)","officeId":"office_014","dept":"스타밸리"},{"empId":"A188","name":"하정봉","rank":"소장","officeId":"office_040","dept":"에이스5차"},{"empId":"A2110","name":"윤승순","rank":"미화원(여)","officeId":"office_008","dept":"에이스1차"},{"empId":"A2153","name":"이승재","rank":"시설대리","officeId":"office_015","dept":"에이스3차"},{"empId":"A2279","name":"신종균","rank":"미화반장","officeId":"office_016","dept":"에이스8차"},{"empId":"A2281","name":"지현식","rank":"관리과장","officeId":"office_012","dept":"하이엔드6차"},{"empId":"A2309","name":"강재명","rank":"시설대리","officeId":"office_040","dept":"에이스5차"},{"empId":"A2310","name":"유효진","rank":"소장","officeId":"office_014","dept":"스타밸리"},{"empId":"A2333","name":"이호주","rank":"소장","officeId":"office_017","dept":"문래에이스"},{"empId":"A2408","name":"김우진","rank":"시설과장","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"A2426","name":"이종복","rank":"관리요원","officeId":"office_014","dept":"스타밸리"},{"empId":"A2440","name":"안문찬","rank":"시설주임","officeId":"office_015","dept":"에이스3차"},{"empId":"A2441","name":"조성일","rank":"경비원","officeId":"office_015","dept":"에이스3차"},{"empId":"A2459","name":"김금자57","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"A2561","name":"윤행진","rank":"시설주임","officeId":"office_017","dept":"문래에이스"},{"empId":"A2574","name":"손창주","rank":"미화원(여)","officeId":"office_040","dept":"에이스5차"},{"empId":"A2577","name":"임정한","rank":"시설과장","officeId":"office_014","dept":"스타밸리"},{"empId":"A2590","name":"손금순","rank":"미화원(여)","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"A2637","name":"정재용","rank":"시설주임","officeId":"office_032","dept":"하이엔드5차"},{"empId":"A2806","name":"박명순","rank":"미화반장","officeId":"office_021","dept":"에이스10차"},{"empId":"A2827","name":"조현미","rank":"경리대리","officeId":"office_032","dept":"하이엔드5차"},{"empId":"A2850","name":"윤종실","rank":"시설주임","officeId":"office_022","dept":"서울대 에이존"},{"empId":"A2891","name":"박창석","rank":"경비반장","officeId":"office_008","dept":"에이스1차"},{"empId":"A2899","name":"유영식","rank":"관리차장","officeId":"office_020","dept":"하이엔드타워1차"},{"empId":"A2913","name":"김경애","rank":"경리대리","officeId":"office_016","dept":"에이스8차"},{"empId":"A2963","name":"조규표","rank":"소장","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"A2968","name":"김성현A","rank":"시설주임","officeId":"office_022","dept":"서울대 에이존"},{"empId":"A2975","name":"정정하","rank":"관리과장","officeId":"office_040","dept":"에이스5차"},{"empId":"A2979","name":"이경희","rank":"경리대리","officeId":"office_040","dept":"에이스5차"},{"empId":"A2991","name":"정효진A","rank":"시설주임","officeId":"office_017","dept":"문래에이스"},{"empId":"A3023","name":"최규호","rank":"경비원","officeId":"office_037","dept":"하이엔드9차"},{"empId":"A3039","name":"현용주","rank":"시설주임","officeId":"office_013","dept":"에이스9차"},{"empId":"A305","name":"이춘우","rank":"경비조장","officeId":"office_016","dept":"에이스8차"},{"empId":"A3056","name":"정문자","rank":"미화원(여)","officeId":"office_013","dept":"에이스9차"},{"empId":"A3058","name":"이순금","rank":"미화원(여)","officeId":"office_032","dept":"하이엔드5차"},{"empId":"A3064","name":"한현정","rank":"경리과장","officeId":"office_013","dept":"에이스9차"},{"empId":"A3070","name":"강안식","rank":"경비조장","officeId":"office_017","dept":"문래에이스"},{"empId":"A3085","name":"최희식","rank":"시설주임","officeId":"office_032","dept":"하이엔드5차"},{"empId":"A3088","name":"윤관식","rank":"관리과장","officeId":"office_017","dept":"문래에이스"},{"empId":"A3090","name":"정봉교","rank":"미화반장","officeId":"office_008","dept":"에이스1차"},{"empId":"A3106","name":"윤진희","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"A3118","name":"성무경","rank":"시설주임","officeId":"office_011","dept":"에이스하이테크시티2차"},{"empId":"A3170","name":"이시호","rank":"시설대리","officeId":"office_008","dept":"에이스1차"},{"empId":"A3198","name":"이지수","rank":"미화원(여)","officeId":"office_012","dept":"하이엔드6차"},{"empId":"A3219","name":"김순금","rank":"미화원(여)","officeId":"office_015","dept":"에이스3차"},{"empId":"A423","name":"임영규","rank":"미화원(여)","officeId":"office_016","dept":"에이스8차"},{"empId":"A469","name":"최영복","rank":"소장","officeId":"office_050","dept":"아티스포럼"},{"empId":"A523","name":"이야실","rank":"미화원(여)","officeId":"office_016","dept":"에이스8차"},{"empId":"A773","name":"윤순이","rank":"미화원(여)","officeId":"office_015","dept":"에이스3차"},{"empId":"A774","name":"양창근","rank":"소장","officeId":"office_012","dept":"하이엔드6차"},{"empId":"A803","name":"김인숙62","rank":"미화원(여)","officeId":"office_008","dept":"에이스1차"},{"empId":"A836","name":"백영수","rank":"관리차장","officeId":"office_014","dept":"스타밸리"},{"empId":"A839","name":"김태환58","rank":"미화원(남)","officeId":"office_014","dept":"스타밸리"},{"empId":"A850","name":"최영숙","rank":"미화원(여)","officeId":"office_014","dept":"스타밸리"},{"empId":"A919","name":"김순옥64","rank":"미화원(여)","officeId":"office_014","dept":"스타밸리"},{"empId":"A94","name":"이점예","rank":"미화원(여)","officeId":"office_040","dept":"에이스5차"}];
+
+const CATEGORIES = ['시설·설비','전기','누수·배관','청소·미화','보안·경비','주차','엘리베이터','냉난방','소음·악취','조경','기타'];
+const SOURCES = ['전화','방문','순찰 발견','직원 요청','입주사 메신저','기타'];
+const TEAMS = ['사무실','시설팀','미화팀','보안팀','주차','기타'];
+
+// 직급 → 팀 자동 분류
+function teamOf(rank=''){
+  if(/미화|조경|환경/.test(rank)) return '미화팀';
+  if(/경비|보안|안전|방재|관리요원|안내/.test(rank)) return '보안팀';
+  if(/주차/.test(rank)) return '주차';
+  if(/시설|전기|기계|통신|소방|건축|기사|직영|영선/.test(rank)) return '시설팀';
+  if(/소장|과장|차장|대리|경리|서무|주임|행사/.test(rank)) return '사무실';
+  return '기타';
+}
+const isBoss = e=>/소장/.test(e.rank||'');
+
+// ══════════════════════════════════════════════
+// 유틸
+// ══════════════════════════════════════════════
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n=>String(n).padStart(2,'0');
+const fmtDate = ts=>{ const d=new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const fmtTime = ts=>{ const d=new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtDT = ts=>fmtDate(ts)+' '+fmtTime(ts);
+const fmtKo = ts=>{ const d=new Date(ts); return `${d.getMonth()+1}월 ${d.getDate()}일 ${fmtTime(ts)}`; };
+const ago = ts=>{ const s=(Date.now()-ts)/1000; if(s<60)return '방금'; if(s<3600)return Math.floor(s/60)+'분 전'; if(s<86400)return Math.floor(s/3600)+'시간 전'; if(s<86400*7)return Math.floor(s/86400)+'일 전'; return fmtDate(ts); };
+const dur = ms=>{ if(ms<=0)return '-'; const h=ms/3600000; if(h<1)return Math.round(ms/60000)+'분'; if(h<24)return h.toFixed(1)+'시간'; return (h/24).toFixed(1)+'일'; };
+const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const toast = (m,ms=2200)=>{ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); };
+const STATUS = {open:'접수',progress:'진행중',done:'완료'};
+const lsGet = (k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch{ return d; } };
+const lsSet = (k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ console.warn('ls',e); } };
+
+// 사진 압축 (최대 1000px, JPEG)
+function compressImage(file, max=1000, q=0.72){
+  return new Promise(res=>{
+    const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let {width:w,height:h}=img; const r=Math.min(1,max/Math.max(w,h)); w=Math.round(w*r); h=Math.round(h*r);
+      const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg',q));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); res(null); };
+    img.src=url;
+  });
+}
+function pickPhotos(cb){
+  const inp=$('#file-input'); inp.value='';
+  inp.onchange=async()=>{ const out=[]; for(const f of inp.files){ const d=await compressImage(f); if(d) out.push(d); } cb(out); };
+  inp.click();
+}
+
+// ══════════════════════════════════════════════
+// 상태 & 저장소 (Supabase 실시간 + localStorage 캐시)
+// ══════════════════════════════════════════════
+const SUPABASE_URL = 'https://yqmlesdwcuaqlqzrptpp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxbWxlc2R3Y3VhcWxxenJwdHBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4OTEzODMsImV4cCI6MjEwNjQ2NzM4M30.KINWLaylHPKsaxvIm4GcXt1Pbio1GOqr3cvHlCvUtCk';
+const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+const PHOTO_BUCKET = 'mw-photos';
+
+let me = null;            // {empId,name,rank,officeId,officeName,team,boss}
+let issues = {};          // id → issue (앱 내부 형식: ms 타임스탬프, camelCase)
+let chat = {};            // id → message
+let tab = 'list';
+let listFilter = 'active';
+let statMonth = fmtDate(Date.now()).slice(0,7);
+let sb = null;            // supabase client
+let sbOn = false;         // 서버 연결 여부
+let sbChannel = null;
+
+const K = { pending:()=>`mw_pending_${me.officeId}`, me:'mw_me', issues:()=>`mw_issues_${me.officeId}`, chat:()=>`mw_chat_${me.officeId}`, seenChat:()=>`mw_seen_chat_${me.officeId}`, seenIssue:()=>`mw_seen_issue_${me.officeId}` };
+
+// ── 행 ↔ 앱 객체 변환 ──
+const tsMs = v=>v==null?null:(typeof v==='number'?v:new Date(v).getTime());
+const tsIso = v=>v==null?null:new Date(v).toISOString();
+function rowToIssue(r){ return { id:r.id, title:r.title, content:r.content||'', location:r.location||'', category:r.category||'기타', source:r.source||'', urgent:!!r.urgent, photos:r.photos||[], reporter:r.reporter||null, assignee:r.assignee||{type:'none'}, assignedBy:r.assigned_by||null, status:r.status||'open', logs:r.logs||[], reopened:r.reopened||0, createdAt:tsMs(r.created_at), updatedAt:tsMs(r.updated_at), doneAt:tsMs(r.done_at) }; }
+function issueToRow(it){ return { id:it.id, office_id:me.officeId, title:it.title, content:it.content||'', location:it.location||'', category:it.category||'기타', source:it.source||'', urgent:!!it.urgent, photos:it.photos||[], reporter:it.reporter||null, assignee:it.assignee||{type:'none'}, assigned_by:it.assignedBy||null, status:it.status, logs:it.logs||[], reopened:it.reopened||0, created_at:tsIso(it.createdAt), updated_at:tsIso(it.updatedAt), done_at:tsIso(it.doneAt) }; }
+function rowToMsg(r){ return { id:r.id, kind:r.kind||'msg', text:r.text||'', photo:r.photo||null, issueId:r.issue_id||null, by:r.by||null, ts:tsMs(r.ts) }; }
+function msgToRow(m){ return { id:m.id, office_id:me.officeId, kind:m.kind||'msg', text:m.text||'', photo:m.photo||null, issue_id:m.issueId||null, by:m.by||null, ts:tsIso(m.ts) }; }
+
+// ── 쓰기 (서버 실패/오프라인 시 대기열에 넣고 재연결 때 전송) ──
+const pending = ()=>lsGet(K.pending(),{issues:{},chat:{},del:{}});
+function queue(kind,id){ const p=pending(); p[kind][id]=true; lsSet(K.pending(),p); }
+function saveIssue(it){
+  it.updatedAt = Date.now();
+  issues[it.id] = it; lsSet(K.issues(), issues); render();
+  if(!sbOn){ queue('issues',it.id); return; }
+  sb.from('mw_issues').upsert(issueToRow(it)).then(({error})=>{ if(error){ console.warn(error); queue('issues',it.id); toast('⚠️ 서버 저장 실패 · 재연결 시 자동 전송'); } });
+}
+function deleteIssue(id){
+  delete issues[id]; lsSet(K.issues(), issues); render();
+  if(!sbOn){ queue('del',id); return; }
+  sb.from('mw_issues').delete().eq('id',id).then(({error})=>{ if(error){ console.warn(error); queue('del',id); } });
+}
+function sendChat(msg){
+  msg.id = msg.id||uid(); msg.ts = msg.ts||Date.now();
+  chat[msg.id]=msg; lsSet(K.chat(), pruneChat(chat)); lsSet(K.seenChat(), msg.ts); render();
+  if(!sbOn){ queue('chat',msg.id); return; }
+  sb.from('mw_chat').upsert(msgToRow(msg)).then(({error})=>{ if(error){ console.warn(error); queue('chat',msg.id); toast('⚠️ 서버 전송 실패 · 재연결 시 자동 전송'); } });
+}
+async function flushPending(){
+  const p=pending(); const left={issues:{},chat:{},del:{}};
+  for(const id of Object.keys(p.issues)){ const it=issues[id]; if(!it) continue; const {error}=await sb.from('mw_issues').upsert(issueToRow(it)); if(error) left.issues[id]=true; }
+  for(const id of Object.keys(p.chat)){ const m=chat[id]; if(!m) continue; const {error}=await sb.from('mw_chat').upsert(msgToRow(m)); if(error) left.chat[id]=true; }
+  for(const id of Object.keys(p.del)){ const {error}=await sb.from('mw_issues').delete().eq('id',id); if(error) left.del[id]=true; }
+  lsSet(K.pending(),left);
+}
+function pruneChat(c){ const arr=Object.values(c).sort((a,b)=>a.ts-b.ts); const keep=arr.slice(-400); const o={}; keep.forEach(m=>o[m.id]=m); return o; }
+const sysMsg = (text, issueId)=>sendChat({ kind:'sys', text, issueId:issueId||null, by:{name:me.name,empId:me.empId,team:me.team} });
+
+// ── 사진 업로드 (Storage) : 실패 시 data URL 그대로 저장 ──
+function dataUrlToBlob(d){ const [h,b]=d.split(','); const mime=(h.match(/data:(.*?);/)||[])[1]||'image/jpeg'; const bin=atob(b); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new Blob([u],{type:mime}); }
+async function uploadPhotos(dataUrls){
+  const out=[];
+  for(const d of dataUrls){
+    if(!d || !d.startsWith('data:') || !sbOn){ out.push(d); continue; }
+    try{
+      const path=`${me.officeId}/${fmtDate(Date.now())}/${uid()}.jpg`;
+      const {error}=await sb.storage.from(PHOTO_BUCKET).upload(path, dataUrlToBlob(d), {contentType:'image/jpeg', upsert:false});
+      if(error) throw error;
+      out.push(sb.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl);
+    }catch(e){ console.warn('photo upload', e); out.push(d); }
+  }
+  return out;
+}
+
+// ── 연결 ──
+function loadScript(src){ return new Promise((res,rej)=>{ if(window.supabase) return res(); const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('script load fail')); document.head.appendChild(s); }); }
+async function connectSupabase(){
+  setSync('off','기기 저장 모드 (오프라인)');
+  try{
+    await loadScript(SUPABASE_JS);
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { realtime:{ params:{ eventsPerSecond:10 } } });
+    sbOn = true;
+    await fetchAll();
+    setSync('on','서버 연결됨');
+    subscribeRealtime();
+  }catch(e){
+    console.warn('Supabase 연결 실패 → 기기 저장 모드', e);
+    sbOn=false; setSync('off','기기 저장 모드 (서버 연결 안 됨)');
+  }
+}
+function setSync(state,text){ const d=$('#sync-dot'); d.className='sync-dot '+state; $('#sync-text').textContent=text; }
+
+let fetching=false;
+async function fetchAll(){
+  if(fetching) return; fetching=true;
+  try{
+  if(sb) await flushPending().catch(console.warn);
+  const [ri, rc] = await Promise.all([
+    sb.from('mw_issues').select('*').eq('office_id', me.officeId).order('created_at',{ascending:false}).limit(2000),
+    sb.from('mw_chat').select('*').eq('office_id', me.officeId).order('ts',{ascending:false}).limit(400)
+  ]);
+  if(ri.error) throw ri.error; if(rc.error) throw rc.error;
+  const prev = issues; const prevChatN = Object.keys(chat).length;
+  const ni={}; ri.data.forEach(r=>ni[r.id]=rowToIssue(r));
+  const nc={}; rc.data.forEach(r=>nc[r.id]=rowToMsg(r));
+  // 아직 전송 못 한 대기열 항목은 로컬 버전 유지
+  const p=pending(); Object.keys(p.issues).forEach(id=>{ if(issues[id]) ni[id]=issues[id]; }); Object.keys(p.chat).forEach(id=>{ if(chat[id]) nc[id]=chat[id]; });
+  issues = ni; chat = nc;
+  lsSet(K.issues(), issues); lsSet(K.chat(), pruneChat(chat));
+  notifyNewAssignments(prev, issues);
+  if(Object.keys(chat).length>prevChatN){ const last=Object.values(chat).sort((a,b)=>b.ts-a.ts)[0]; if(last && last.ts>lsGet(K.seenChat(),0)) notifyNewChat(last); }
+  render();
+  } finally { fetching=false; }
+}
+// 실시간(WebSocket)이 막힌 환경을 위한 폴링 대체 + 화면 복귀 시 새로고침
+let pollTimer=null, realtimeOk=false;
+function setPolling(on){
+  if(on && pollTimer) return;            // 이미 폴링 중이면 타이머 유지 (채널 재시도마다 리셋 방지)
+  clearInterval(pollTimer); pollTimer=null;
+  if(on) pollTimer=setInterval(()=>{ if(document.visibilityState==='visible') fetchAll().catch(e=>{ console.warn(e); setSync('off','서버 연결 안 됨 · 기기 저장 모드'); }); }, 8000);
+}
+setInterval(()=>{ if(sbOn && realtimeOk && document.visibilityState==='visible') fetchAll().catch(console.warn); }, 90000);
+function subscribeRealtime(){
+  if(sbChannel){ try{ sb.removeChannel(sbChannel); }catch{} }
+  sbChannel = sb.channel('mw-'+me.officeId)
+    .on('postgres_changes',{event:'*',schema:'public',table:'mw_issues',filter:`office_id=eq.${me.officeId}`}, p=>{
+      const prev={...issues};
+      if(p.eventType==='DELETE'){ delete issues[p.old.id]; }
+      else { const it=rowToIssue(p.new); if(!issues[it.id] || (it.updatedAt||0)>=(issues[it.id].updatedAt||0)) issues[it.id]=it; }
+      lsSet(K.issues(), issues); notifyNewAssignments(prev, issues); render();
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mw_chat',filter:`office_id=eq.${me.officeId}`}, p=>{
+      const m=rowToMsg(p.new); const isNew=!chat[m.id]; chat[m.id]=m; lsSet(K.chat(), pruneChat(chat));
+      if(isNew) notifyNewChat(m); render();
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'mw_chat'}, p=>{ if(p.old&&chat[p.old.id]){ delete chat[p.old.id]; render(); } })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){ realtimeOk=true; setPolling(false); setSync('on','실시간 연결됨'); fetchAll().catch(console.warn); }
+      else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){ realtimeOk=false; if(sbOn){ setSync('on','서버 연결됨 · 8초마다 자동 새로고침'); setPolling(true); } }
+    });
+  // 실시간 채널이 몇 초 안에 붙지 않으면 우선 폴링으로 시작
+  setTimeout(()=>{ if(!realtimeOk && sbOn){ setSync('on','서버 연결됨 · 8초마다 자동 새로고침'); setPolling(true); } }, 6000);
+}
+
+// 새 담당 지정 알림 (내 이름 또는 내 팀)
+let notifInit=false;
+function notifyNewAssignments(prev, cur){
+  if(!notifInit){ notifInit=true; return; }
+  Object.values(cur).forEach(it=>{
+    const p = prev[it.id];
+    if(isMine(it) && (!p || !isMine(p)) && it.status!=='done' && (it.assignedBy||'')!==me.empId){
+      toast(`🔔 새 담당 민원: ${it.title}`, 4000); notify('새 담당 민원', it.title); vibrate();
+    }
+  });
+}
+function notifyNewChat(last){
+  if(tab==='chat' && document.visibilityState==='visible'){ lsSet(K.seenChat(), Date.now()); return; }
+  if(last && last.by && last.by.empId!==me.empId && last.kind!=='sys'){ notify('💬 '+last.by.name, last.text||'(사진)'); }
+}
+function notify(title, body){ try{ if('Notification' in window && Notification.permission==='granted' && document.visibilityState!=='visible') new Notification(title,{body}); }catch{} }
+function vibrate(){ try{ navigator.vibrate && navigator.vibrate([120,60,120]); }catch{} }
+function isMine(it){ const a=it.assignee||{}; return (a.type==='person'&&a.empId===me.empId)||(a.type==='team'&&a.name===me.team); }
+
+// ══════════════════════════════════════════════
+// 로그인
+// ══════════════════════════════════════════════
+function initLogin(){
+  const os = [...OFFICES].sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  $('#lg-office').innerHTML = '<option value="">-- 사업소 선택 --</option>'+os.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
+  $('#lg-office').onchange = ()=>{
+    const oid=$('#lg-office').value;
+    const emps = EMPLOYEES.filter(e=>e.officeId===oid).sort((a,b)=>(isBoss(b)-isBoss(a))||a.name.localeCompare(b.name,'ko'));
+    $('#lg-emp').innerHTML = '<option value="">-- 이름 선택 --</option>'+emps.map(e=>`<option value="${e.empId}">${esc(e.name)} (${esc(e.rank)})</option>`).join('');
+    $('#lg-btn').disabled=true;
+  };
+  $('#lg-emp').onchange = ()=>{ $('#lg-btn').disabled = !$('#lg-emp').value; };
+  const saved = lsGet(K.me,null);
+  if(saved && EMPLOYEES.find(e=>e.empId===saved.empId)) enter(saved.empId);
+}
+function doLogin(){ enter($('#lg-emp').value); }
+function enter(empId){
+  const e = EMPLOYEES.find(x=>x.empId===empId); if(!e) return;
+  const o = OFFICES.find(x=>x.id===e.officeId);
+  me = { empId:e.empId, name:e.name, rank:e.rank, officeId:e.officeId, officeName:o?o.name:e.dept, team:teamOf(e.rank), boss:isBoss(e) };
+  lsSet(K.me, me);
+  issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{});
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#tb-office').textContent = me.officeName; $('#tb-name').textContent = me.name; $('#tb-team').textContent = `${me.rank} · ${me.team}`;
+  try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch{}
+  connectSupabase();
+  go('list');
+}
+function logout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.me); location.reload(); }
+
+// ══════════════════════════════════════════════
+// 라우팅 / 렌더
+// ══════════════════════════════════════════════
+function go(t){ tab=t; document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); if(t==='chat') lsSet(K.seenChat(), Date.now()); if(t==='list') lsSet(K.seenIssue(), Date.now()); render(); window.scrollTo(0,0); }
+let newDraft = null;
+function render(){
+  if(!me) return;
+  const c = $('#content');
+  if(tab==='list') c.innerHTML = renderList();
+  else if(tab==='new'){ if(!newDraft) newDraft={title:'',content:'',location:'',category:'',source:'전화',urgent:false,photos:[],assignee:{type:'none'}}; c.innerHTML = renderNew(); }
+  else if(tab==='chat'){ c.innerHTML = renderChat(); scrollChat(); }
+  else if(tab==='stats') c.innerHTML = renderStats();
+  else if(tab==='search') c.innerHTML = renderSearch();
+  updateBadges();
+  if(openDetailId && issues[openDetailId]) refreshDetail();
+}
+function updateBadges(){
+  const seenC = lsGet(K.seenChat(),0);
+  const nc = Object.values(chat).filter(m=>m.ts>seenC && m.by && m.by.empId!==me.empId).length;
+  const b=$('#nb-chat'); b.textContent=nc>99?'99+':nc; b.classList.toggle('hidden',!nc||tab==='chat');
+  const mine = Object.values(issues).filter(it=>it.status!=='done'&&isMine(it)).length;
+  const bl=$('#nb-list'); bl.textContent=mine; bl.classList.toggle('hidden',!mine);
+  document.title = (nc?`(${nc}) `:'')+'민원 처리 공유 시스템';
+}
+
+// ── 민원 목록 ────────────────────────────────
+function assigneeLabel(it){
+  const a=it.assignee||{type:'none'};
+  if(a.type==='person') return `<span class="badge ${a.empId===me.empId?'b-me':'b-team'}">👤 ${esc(a.name)}</span>`;
+  if(a.type==='team') return `<span class="badge ${a.name===me.team?'b-me':'b-team'}">👥 ${esc(a.name)}</span>`;
+  return `<span class="badge b-none">담당 미지정</span>`;
+}
+function issueCard(it){
+  const logs=(it.logs||[]); const cmts=logs.filter(l=>l.type!=='create').length;
+  return `<div class="issue s-${it.status}" onclick="openDetail('${it.id}')">
+    <div class="i-head"><span class="badge b-${it.status}">${STATUS[it.status]}</span>${it.urgent?'<span class="badge b-urgent">긴급</span>':''}<span class="badge b-cat">${esc(it.category||'기타')}</span><span style="margin-left:auto;font-size:11.5px;color:var(--gray4)">${ago(it.createdAt)}</span></div>
+    <div class="i-body"><div>
+      <div class="i-title">${esc(it.title)}</div>
+      <div class="i-meta">${it.location?`<span>📍 ${esc(it.location)}</span>`:''}<span>접수 ${esc(it.reporter?.name||'')} · ${esc(it.source||'')}</span></div>
+    </div>${(it.photos&&it.photos[0])?`<img class="i-photo" src="${it.photos[0]}" alt="">`:''}</div>
+    <div class="i-foot">${assigneeLabel(it)}${cmts?`<span>💬 ${cmts}</span>`:''}${it.status==='done'&&it.doneAt?`<span style="color:var(--green)">✔ ${fmtKo(it.doneAt)} 완료</span>`:''}</div>
+  </div>`;
+}
+function renderList(){
+  const all = Object.values(issues).sort((a,b)=>(b.urgent-a.urgent)||(b.createdAt-a.createdAt));
+  const filters = [['active','진행 중 전체'],['mine','내 담당'],['none','미지정'],['open','접수'],['progress','진행중'],['done','완료'],['all','전체']];
+  const list = all.filter(it=>{
+    if(listFilter==='active') return it.status!=='done';
+    if(listFilter==='mine') return isMine(it)&&it.status!=='done';
+    if(listFilter==='none') return (!it.assignee||it.assignee.type==='none')&&it.status!=='done';
+    if(listFilter==='all') return true;
+    return it.status===listFilter;
+  });
+  const n = s=>all.filter(i=>i.status===s).length;
+  return `
+    <div class="summary-row">
+      <div class="stat-tile red"><div class="n">${n('open')}</div><div class="l">접수</div></div>
+      <div class="stat-tile amber"><div class="n">${n('progress')}</div><div class="l">진행중</div></div>
+      <div class="stat-tile green"><div class="n">${all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length}</div><div class="l">오늘 완료</div></div>
+      <div class="stat-tile blue"><div class="n">${all.filter(i=>isMine(i)&&i.status!=='done').length}</div><div class="l">내 담당</div></div>
+    </div>
+    <div class="chips scroll" style="margin-bottom:12px">${filters.map(([k,l])=>`<button class="chip ${listFilter===k?'active':''}" onclick="listFilter='${k}';render()">${l}</button>`).join('')}</div>
+    ${list.length?list.map(issueCard).join(''):`<div class="empty"><span class="big">${listFilter==='done'?'📭':'✨'}</span>${listFilter==='done'?'완료된 민원이 없습니다':'처리할 민원이 없습니다'}<br><small>➕ 접수 탭에서 새 민원을 올릴 수 있어요</small></div>`}`;
+}
+
+// ── 접수 ─────────────────────────────────────
+function assigneeOptions(sel){
+  const emps = EMPLOYEES.filter(e=>e.officeId===me.officeId).sort((a,b)=>(isBoss(b)-isBoss(a))||a.name.localeCompare(b.name,'ko'));
+  const v = sel?(sel.type==='team'?'t:'+sel.name:sel.type==='person'?'p:'+sel.empId:''):'';
+  return `<option value="">미지정 (누구나 가져가기)</option>
+    <option value="p:${me.empId}" ${v==='p:'+me.empId?'selected':''}>✋ 내가 처리 (${esc(me.name)})</option>
+    <optgroup label="팀 전체에게">${TEAMS.map(t=>`<option value="t:${t}" ${v==='t:'+t?'selected':''}>👥 ${t}</option>`).join('')}</optgroup>
+    <optgroup label="직원 지정">${emps.map(e=>`<option value="p:${e.empId}" ${v==='p:'+e.empId?'selected':''}>${esc(e.name)} (${esc(e.rank)})</option>`).join('')}</optgroup>`;
+}
+function parseAssignee(v){
+  if(!v) return {type:'none'};
+  if(v.startsWith('t:')) return {type:'team',name:v.slice(2)};
+  const e=EMPLOYEES.find(x=>x.empId===v.slice(2)); return e?{type:'person',empId:e.empId,name:e.name,team:teamOf(e.rank)}:{type:'none'};
+}
+function renderNew(){
+  const d=newDraft;
+  return `<div class="sec-title">➕ 민원 접수 <small>전화·방문·순찰 중 발견 모두 OK</small></div>
+  <div class="card">
+    <div class="form-row"><label>내용 (한 줄 요약) <span class="req">*</span></label><input id="n-title" value="${esc(d.title)}" placeholder="예) 2층 화장실 문 삐걱거림" oninput="newDraft.title=this.value"></div>
+    <div class="form-row"><label>장소</label><input id="n-loc" value="${esc(d.location)}" placeholder="예) 2층 남자화장실 / 지하1층 주차장" oninput="newDraft.location=this.value"></div>
+    <div class="form-row"><label>분류</label><div class="chips">${CATEGORIES.map(c=>`<button class="chip ${d.category===c?'active':''}" onclick="newDraft.category='${c}';render()">${c}</button>`).join('')}</div></div>
+    <div class="form-row"><label>접수 경로</label><div class="chips">${SOURCES.map(s=>`<button class="chip ${d.source===s?'active':''}" onclick="newDraft.source='${s}';render()">${s}</button>`).join('')}</div></div>
+    <div class="form-row"><label>상세 내용 / 민원인 정보 (선택)</label><textarea id="n-content" placeholder="호실·연락처·상세 상황 등" oninput="newDraft.content=this.value">${esc(d.content)}</textarea></div>
+    <div class="form-row"><label>사진</label><div class="photo-add">${d.photos.map((p,i)=>`<div class="thumb-wrap"><img class="thumb" src="${p}"><button class="thumb-del" onclick="newDraft.photos.splice(${i},1);render()">✕</button></div>`).join('')}<div class="photo-btn" onclick="pickPhotos(ps=>{newDraft.photos.push(...ps);render()})"><span>📷</span>추가</div></div></div>
+    <div class="form-row"><label>담당</label><select onchange="newDraft.assignee=parseAssignee(this.value)">${assigneeOptions(d.assignee)}</select></div>
+    <div class="form-row"><button class="chip red ${d.urgent?'active':''}" onclick="newDraft.urgent=!newDraft.urgent;render()">🚨 긴급 민원</button></div>
+    <button class="btn btn-primary btn-block" style="padding:15px;font-size:16px" onclick="submitNew()">접수하기</button>
+  </div>`;
+}
+let submitting=false;
+async function submitNew(){
+  const d=newDraft; d.title=d.title.trim();
+  if(!d.title){ toast('내용을 입력해 주세요'); $('#n-title').focus(); return; }
+  if(submitting) return; submitting=true;
+  if(d.photos.length) toast('사진 업로드 중…',8000);
+  const photos = await uploadPhotos(d.photos);
+  submitting=false;
+  const now=Date.now(); const id=uid();
+  const it = { id, title:d.title, content:d.content.trim(), location:d.location.trim(), category:d.category||'기타', source:d.source, urgent:!!d.urgent, photos,
+    reporter:{empId:me.empId,name:me.name,team:me.team}, assignee:d.assignee||{type:'none'}, assignedBy:me.empId,
+    status: (d.assignee&&d.assignee.type!=='none')?'progress':'open', createdAt:now, updatedAt:now, doneAt:null,
+    logs:[{ts:now,type:'create',by:{empId:me.empId,name:me.name},text:'민원 접수'}] };
+  if(it.assignee.type!=='none') it.logs.push({ts:now,type:'assign',by:{empId:me.empId,name:me.name},text:`담당 지정 → ${it.assignee.name}`});
+  saveIssue(it);
+  sysMsg(`📋 새 민원 접수: ${it.title}${it.location?' ('+it.location+')':''} · 담당: ${it.assignee.type==='none'?'미지정':it.assignee.name}${it.urgent?' 🚨긴급':''}`, id);
+  newDraft=null; toast('✅ 접수되었습니다'); go('list');
+}
+
+// ── 상세 ─────────────────────────────────────
+let openDetailId=null;
+function openDetail(id){ openDetailId=id; refreshDetail(); }
+function closeModal(){ openDetailId=null; $('#modal-root').innerHTML=''; }
+function refreshDetail(){
+  const it=issues[openDetailId]; if(!it){ closeModal(); return; }
+  const logs=[...(it.logs||[])].sort((a,b)=>a.ts-b.ts);
+  const ic={create:'📋',assign:'👉',progress:'🔧',comment:'💬',done:'✅',reopen:'↩️',edit:'✏️'};
+  const canDel = me.boss || (it.reporter&&it.reporter.empId===me.empId);
+  const html = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h2><span class="badge b-${it.status}">${STATUS[it.status]}</span> ${it.urgent?'<span class="badge b-urgent">긴급</span> ':''}${esc(it.title)}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <dl class="detail-meta">
+      <dt>장소</dt><dd>${esc(it.location||'-')}</dd>
+      <dt>분류</dt><dd>${esc(it.category)} · ${esc(it.source)}</dd>
+      <dt>접수</dt><dd>${esc(it.reporter?.name)} · ${fmtDT(it.createdAt)}</dd>
+      <dt>담당</dt><dd>${assigneeLabel(it)}</dd>
+      ${it.status==='done'?`<dt>완료</dt><dd style="color:var(--green);font-weight:700">${fmtDT(it.doneAt)} (${dur(it.doneAt-it.createdAt)} 소요)</dd>`:''}
+    </dl>
+    ${it.content?`<div class="detail-content">${esc(it.content)}</div>`:''}
+    ${it.photos&&it.photos.length?`<div class="photos">${it.photos.map(p=>`<img src="${p}" onclick="viewImg(this.src)">`).join('')}</div>`:''}
+    <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item"><div class="tl-ic ${l.type}">${ic[l.type]||'•'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(l.text)}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this.src)">`:''}</div></div>`).join('')}</div>
+    <div class="action-bar">
+      ${it.status!=='done'?`
+      <div class="form-row"><label>담당 변경</label><select onchange="assign('${it.id}',this.value)">${assigneeOptions(it.assignee)}</select></div>
+      <div class="btn-row" style="margin-bottom:8px">
+        ${!isMine(it)?`<button class="btn btn-primary" onclick="assign('${it.id}','p:${me.empId}')">✋ 내가 처리</button>`:''}
+        <button class="btn btn-amber" onclick="addLog('${it.id}','progress')">🔧 진행 보고</button>
+        <button class="btn btn-green" onclick="addLog('${it.id}','done')">✅ 완료 처리</button>
+      </div>
+      <div class="btn-row"><button class="btn btn-gray btn-sm" onclick="addLog('${it.id}','comment')">💬 댓글</button><button class="btn btn-gray btn-sm" onclick="editIssue('${it.id}')">✏️ 수정</button>${canDel?`<button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="delIssue('${it.id}')">🗑 삭제</button>`:''}</div>`
+      :`<div class="btn-row"><button class="btn btn-gray" onclick="addLog('${it.id}','comment')">💬 댓글</button><button class="btn btn-gray" onclick="reopen('${it.id}')">↩️ 다시 열기 (재발)</button>${canDel?`<button class="btn btn-gray btn-sm" style="color:var(--red);flex:0" onclick="delIssue('${it.id}')">🗑</button>`:''}</div>`}
+    </div>
+  </div></div>`;
+  $('#modal-root').innerHTML=html;
+}
+function viewImg(src){ const v=document.createElement('div'); v.className='viewer'; v.innerHTML=`<img src="${src}">`; v.onclick=()=>v.remove(); document.body.appendChild(v); }
+function assign(id,v){
+  const it=issues[id]; const a=parseAssignee(v); it.assignee=a; it.assignedBy=me.empId;
+  if(a.type!=='none' && it.status==='open') it.status='progress';
+  if(a.type==='none' && it.status==='progress') it.status='open';
+  it.logs.push({ts:Date.now(),type:'assign',by:{empId:me.empId,name:me.name},text:a.type==='none'?'담당 해제':(a.type==='person'&&a.empId===me.empId?'내가 처리하겠습니다':`담당 지정 → ${a.name}`)});
+  saveIssue(it);
+  sysMsg(a.type==='none'?`👉 [${it.title}] 담당 해제`:(a.empId===me.empId?`✋ ${me.name}: [${it.title}] 제가 처리합니다`:`👉 [${it.title}] 담당 지정 → ${a.name} (${me.name})`), id);
+  toast('담당이 변경되었습니다');
+}
+function addLog(id,type){
+  const it=issues[id];
+  const title={progress:'🔧 진행 보고',done:'✅ 완료 처리',comment:'💬 댓글'}[type];
+  const ph={progress:'예) 현장 확인했습니다. 1시간 후 조치 예정',done:'예) 경첩 교체 완료',comment:'내용'}[type];
+  let photos=[];
+  const draw=()=>{ $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="log-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-height:80vh">
+    <div class="modal-head"><h2>${title}</h2><button class="modal-close" onclick="document.getElementById('log-modal').remove()">✕</button></div>
+    <div class="form-row"><textarea id="log-text" placeholder="${ph}" style="min-height:80px">${esc(logDraftText)}</textarea></div>
+    <div class="form-row"><label>${type==='done'?'완료 사진 (권장)':'사진'}</label><div class="photo-add" id="log-photos">${photos.map((p,i)=>`<img class="thumb" src="${p}">`).join('')}<div class="photo-btn" id="log-photo-btn"><span>📷</span>추가</div></div></div>
+    <button class="btn ${type==='done'?'btn-green':type==='progress'?'btn-amber':'btn-primary'} btn-block" id="log-submit">${type==='done'?'완료로 처리':'등록'}</button>
+  </div></div>`);
+    $('#log-photo-btn').onclick=()=>{ logDraftText=$('#log-text').value; pickPhotos(ps=>{photos.push(...ps); $('#log-modal').remove(); draw();}); };
+    $('#log-submit').onclick=async()=>{
+      const text=$('#log-text').value.trim();
+      if(!text && !photos.length && type!=='done'){ toast('내용이나 사진을 넣어 주세요'); return; }
+      const btn=$('#log-submit'); if(btn.disabled) return; btn.disabled=true; btn.textContent='저장 중…';
+      photos = await uploadPhotos(photos);
+      const now=Date.now();
+      photos.forEach((p,i)=>it.logs.push({ts:now+i,type,by:{empId:me.empId,name:me.name},text:i===0?text:'',photo:p}));
+      if(!photos.length) it.logs.push({ts:now,type,by:{empId:me.empId,name:me.name},text:text||(type==='done'?'처리 완료':'')});
+      if(type==='done'){ it.status='done'; it.doneAt=now; if(!it.assignee||it.assignee.type==='none') it.assignee={type:'person',empId:me.empId,name:me.name,team:me.team}; }
+      else if(type==='progress' && it.status==='open'){ it.status='progress'; if(!it.assignee||it.assignee.type==='none') it.assignee={type:'person',empId:me.empId,name:me.name,team:me.team}; }
+      saveIssue(it);
+      const sysText = type==='done'?`✅ ${me.name}: [${it.title}] 처리 완료${text?' · '+text:''}`:type==='progress'?`🔧 ${me.name}: [${it.title}] ${text||'진행 중'}`:`💬 ${me.name}: [${it.title}] ${text}`;
+      sendChat({kind:'sys',text:sysText,issueId:id,photo:photos[0]||null,by:{name:me.name,empId:me.empId,team:me.team}});
+      logDraftText=''; const lm=$('#log-modal'); if(lm) lm.remove(); toast(type==='done'?'✅ 완료 처리되었습니다':'등록되었습니다');
+    };
+  };
+  logDraftText=''; draw();
+}
+let logDraftText='';
+function reopen(id){ const it=issues[id]; if(!confirm('이 민원을 다시 열까요? (재발/미해결)')) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`↩️ ${me.name}: [${it.title}] 재발로 다시 열림`, id); }
+function delIssue(id){ const it=issues[id]; if(!confirm(`삭제하시겠습니까?\n"${it.title}"`)) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
+function editIssue(id){
+  const it=issues[id];
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="edit-modal" onclick="if(event.target===this)this.remove()"><div class="modal">
+    <div class="modal-head"><h2>✏️ 민원 수정</h2><button class="modal-close" onclick="document.getElementById('edit-modal').remove()">✕</button></div>
+    <div class="form-row"><label>내용 (한 줄)</label><input id="e-title" value="${esc(it.title)}"></div>
+    <div class="form-row"><label>장소</label><input id="e-loc" value="${esc(it.location)}"></div>
+    <div class="form-grid"><div class="form-row"><label>분류</label><select id="e-cat">${CATEGORIES.map(c=>`<option ${it.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="form-row"><label>접수 경로</label><select id="e-src">${SOURCES.map(c=>`<option ${it.source===c?'selected':''}>${c}</option>`).join('')}</select></div></div>
+    <div class="form-row"><label>상세</label><textarea id="e-content">${esc(it.content)}</textarea></div>
+    <div class="form-row"><label><input type="checkbox" id="e-urgent" ${it.urgent?'checked':''}> 🚨 긴급</label></div>
+    <button class="btn btn-primary btn-block" onclick="saveEdit('${id}')">저장</button></div></div>`);
+}
+function saveEdit(id){ const it=issues[id]; const t=$('#e-title').value.trim(); if(!t){toast('내용을 입력해 주세요');return;} it.title=t; it.location=$('#e-loc').value.trim(); it.category=$('#e-cat').value; it.source=$('#e-src').value; it.content=$('#e-content').value.trim(); it.urgent=$('#e-urgent').checked; it.logs.push({ts:Date.now(),type:'edit',by:{empId:me.empId,name:me.name},text:'내용 수정'}); saveIssue(it); const em=$('#edit-modal'); if(em) em.remove(); toast('수정되었습니다'); }
+
+// ── 채팅 ─────────────────────────────────────
+const QUICK = ['🔧 작업 안내: ___ 작업 중입니다. 민원 전화 오면 "작업 중" 안내 부탁드립니다.','🚰 수돗물 잠금: ___ 수도 잠시 잠급니다 (약 __분).','⚡ 정전/점검: ___ 전기 점검 중입니다.','🛗 엘리베이터 점검 중입니다 (___호기).','✅ 작업 끝났습니다. 정상 운영합니다.','👀 확인했습니다. 1시간 내 가겠습니다.','🚶 지금 현장 갑니다.'];
+let chatPhotos=[]; let chatDraft='';
+function renderChat(){
+  const msgs=Object.values(chat).sort((a,b)=>a.ts-b.ts);
+  let html='', lastDate='';
+  msgs.forEach(m=>{
+    const d=fmtDate(m.ts); if(d!==lastDate){ html+=`<div class="chat-date">${d} (${['일','월','화','수','목','금','토'][new Date(m.ts).getDay()]})</div>`; lastDate=d; }
+    const mine=m.by&&m.by.empId===me.empId;
+    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`onclick="openDetail('${m.issueId}')"`:''}><div class="m-bubble">${esc(m.text)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
+    html+=`<div class="msg ${mine?'mine':''} ${m.kind==='notice'?'notice':''}">${!mine?`<div class="m-who">${esc(m.by?.name)} <span style="font-weight:400">· ${esc(m.by?.team||'')}</span></div>`:''}<div class="m-bubble">${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="viewImg(this.src)">`:''}</div><div class="m-time">${fmtTime(m.ts)}</div></div>`;
+  });
+  if(!msgs.length) html=`<div class="empty"><span class="big">💬</span>아직 대화가 없습니다<br><small>작업 안내, 민원 공유, 현장 사진을 자유롭게 올려 주세요</small></div>`;
+  return `<div class="chat-wrap" style="margin:-14px -14px calc(-1 * (var(--nav-h) + 20px))">
+    <div class="chat-list" id="chat-list">${html}</div>
+    <div class="chat-input">
+      <div class="chat-quick">${QUICK.map((q,i)=>`<button onclick="quickMsg(${i})">${q.split(':')[0].slice(0,14)}</button>`).join('')}</div>
+      ${chatPhotos.length?`<div class="chat-pending">${chatPhotos.map((p,i)=>`<img src="${p}" onclick="chatPhotos.splice(${i},1);render()">`).join('')}</div>`:''}
+      <div class="chat-row"><button class="ic-btn" onclick="chatDraft=document.getElementById('chat-text').value;pickPhotos(ps=>{chatPhotos.push(...ps);render()})">📷</button>
+      <textarea id="chat-text" rows="1" placeholder="메시지 입력" oninput="chatDraft=this.value;this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendChatText()}">${esc(chatDraft)}</textarea>
+      <button class="ic-btn send" onclick="sendChatText()">➤</button></div>
+    </div></div>`;
+}
+function scrollChat(){ const l=$('#chat-list'); if(l) l.scrollTop=l.scrollHeight; }
+function quickMsg(i){ const t=$('#chat-text'); t.value=QUICK[i]; chatDraft=QUICK[i]; t.focus(); t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,120)+'px'; }
+async function sendChatText(){
+  const t=$('#chat-text'); const text=t.value.trim();
+  if(!text && !chatPhotos.length) return;
+  const notice=/작업 안내|수돗물|잠급|정전|점검 중/.test(text);
+  if(chatPhotos.length){ toast('사진 업로드 중…',6000); chatPhotos = await uploadPhotos(chatPhotos); chatPhotos.forEach((p,i)=>sendChat({kind:notice?'notice':'msg',text:i===0?text:'',photo:p,by:{name:me.name,empId:me.empId,team:me.team}})); }
+  else sendChat({kind:notice?'notice':'msg',text,by:{name:me.name,empId:me.empId,team:me.team}});
+  chatPhotos=[]; chatDraft=''; render();
+}
+
+// ── 통계 ─────────────────────────────────────
+function monthRange(ym){ const [y,m]=ym.split('-').map(Number); return [new Date(y,m-1,1).getTime(), new Date(y,m,1).getTime()]; }
+function shiftMonth(n){ const [y,m]=statMonth.split('-').map(Number); const d=new Date(y,m-1+n,1); statMonth=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; render(); }
+function monthStats(ym){
+  const [s,e]=monthRange(ym); const all=Object.values(issues);
+  const recv=all.filter(i=>i.createdAt>=s&&i.createdAt<e);
+  const done=all.filter(i=>i.status==='done'&&i.doneAt>=s&&i.doneAt<e);
+  const open=all.filter(i=>i.createdAt<e&&i.status!=='done');
+  const durs=done.map(i=>i.doneAt-i.createdAt).filter(x=>x>0);
+  const avg=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:0;
+  const by=(arr,f)=>{ const o={}; arr.forEach(i=>{ const k=f(i)||'기타'; o[k]=(o[k]||0)+1; }); return Object.entries(o).sort((a,b)=>b[1]-a[1]); };
+  const sameDay=done.filter(i=>i.doneAt-i.createdAt<86400000).length;
+  return { recv, done, open, avg, sameDay,
+    byCat: by(recv,i=>i.category), bySrc: by(recv,i=>i.source),
+    byTeam: by(recv.filter(i=>i.assignee&&i.assignee.type!=='none'),i=>i.assignee.type==='team'?i.assignee.name:(i.assignee.team||'개인')),
+    byPerson: by(done,i=>i.assignee&&i.assignee.type==='person'?i.assignee.name:(i.assignee&&i.assignee.name)||'미지정'),
+    urgent: recv.filter(i=>i.urgent).length };
+}
+function repeatIssues(days=180){
+  const since=Date.now()-days*86400000; const all=Object.values(issues).filter(i=>i.createdAt>=since);
+  const norm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+  const groups={};
+  all.forEach(i=>{ const key=(norm(i.location)||'?')+'|'+(i.category||''); (groups[key]=groups[key]||[]).push(i); });
+  // 장소가 없으면 제목 앞 6글자로 묶기
+  all.filter(i=>!norm(i.location)).forEach(i=>{ const key='t|'+norm(i.title).slice(0,6)+'|'+(i.category||''); (groups[key]=groups[key]||[]).push(i); });
+  const out=Object.values(groups).filter(g=>g.length>=2 || g.some(i=>i.reopened)).map(g=>({items:g.sort((a,b)=>b.createdAt-a.createdAt),count:g.length+g.reduce((a,i)=>a+(i.reopened||0),0)}));
+  const seen=new Set(); return out.filter(g=>{ const k=g.items.map(i=>i.id).join(); if(seen.has(k))return false; seen.add(k); return true; }).sort((a,b)=>b.count-a.count);
+}
+function bars(entries,cls=''){ const mx=Math.max(1,...entries.map(e=>e[1])); return entries.length?`<div class="bar-list">${entries.map(([k,v])=>`<div class="bar-row"><div class="bl" title="${esc(k)}">${esc(k)}</div><div class="bar"><div class="${cls}" style="width:${v/mx*100}%"></div></div><div class="bn">${v}</div></div>`).join('')}</div>`:'<div style="color:var(--gray4);font-size:13px">자료 없음</div>'; }
+function renderStats(){
+  const st=monthStats(statMonth); const [y,m]=statMonth.split('-');
+  const rate=st.recv.length?Math.round(st.recv.filter(i=>i.status==='done').length/st.recv.length*100):0;
+  const rep=repeatIssues();
+  const daily={}; st.recv.forEach(i=>{ const d=new Date(i.createdAt).getDate(); daily[d]=(daily[d]||0)+1; });
+  const dmax=Math.max(1,...Object.values(daily)); const dim=new Date(+y,+m,0).getDate();
+  return `<div class="month-nav no-print"><button onclick="shiftMonth(-1)">‹</button><b>${y}년 ${+m}월</b><button onclick="shiftMonth(1)">›</button></div>
+  <div class="print-only" style="text-align:center;margin-bottom:14px"><h2 style="font-size:20px">${esc(me.officeName)} 민원 처리 월간 보고</h2><div style="font-size:13px;color:#555">${y}년 ${+m}월 · 출력 ${fmtDT(Date.now())} · 작성 ${esc(me.name)}</div></div>
+  <div class="summary-row">
+    <div class="stat-tile blue"><div class="n">${st.recv.length}</div><div class="l">접수</div></div>
+    <div class="stat-tile green"><div class="n">${st.done.length}</div><div class="l">완료</div></div>
+    <div class="stat-tile amber"><div class="n">${rate}%</div><div class="l">당월 처리율</div></div>
+    <div class="stat-tile red"><div class="n">${st.open.length}</div><div class="l">미완료 누적</div></div>
+  </div>
+  <div class="summary-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-tile"><div class="n" style="font-size:17px">${dur(st.avg)}</div><div class="l">평균 처리시간</div></div>
+    <div class="stat-tile"><div class="n">${st.done.length?Math.round(st.sameDay/st.done.length*100):0}%</div><div class="l">당일 처리</div></div>
+    <div class="stat-tile"><div class="n">${st.urgent}</div><div class="l">긴급 민원</div></div>
+  </div>
+  <div class="card"><h3>📅 일별 접수</h3><div style="display:flex;align-items:flex-end;gap:2px;height:70px;border-bottom:1px solid var(--gray3)">${Array.from({length:dim},(_,i)=>`<div title="${i+1}일: ${daily[i+1]||0}건" style="flex:1;background:${daily[i+1]?'var(--primary)':'var(--gray3)'};height:${Math.max(3,(daily[i+1]||0)/dmax*66)}px;border-radius:2px 2px 0 0"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray4);margin-top:3px"><span>1일</span><span>15일</span><span>${dim}일</span></div></div>
+  <div class="card"><h3>🏷 분류별 접수</h3>${bars(st.byCat)}</div>
+  <div class="card"><h3>👥 담당 팀별 배정</h3>${bars(st.byTeam,'g')}</div>
+  <div class="card"><h3>🏆 처리자별 완료</h3>${bars(st.byPerson,'g')}</div>
+  <div class="card"><h3>📞 접수 경로</h3>${bars(st.bySrc)}</div>
+  <div class="card"><h3>🔁 반복 민원 (최근 6개월, 같은 장소·분류 2회 이상)</h3>
+    ${rep.length?rep.slice(0,12).map(g=>`<div class="repeat-item"><b>${g.count}회</b> ${esc(g.items[0].location||g.items[0].title)} <span class="badge b-cat">${esc(g.items[0].category)}</span><small>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}${i.reopened?' (재발 '+i.reopened+'회)':''}`).join(' · ')}</small><small style="color:var(--amber)">→ 근본 원인 점검 권장</small></div>`).join(''):'<div style="color:var(--gray4);font-size:13px">반복 민원 없음</div>'}
+  </div>
+  <div class="card"><h3>📑 ${+m}월 처리 내역</h3>
+    <div style="overflow-x:auto"><table class="rep"><thead><tr><th>접수일</th><th>내용</th><th>장소</th><th>분류</th><th>담당</th><th>상태</th><th>완료일</th></tr></thead><tbody>
+    ${st.recv.sort((a,b)=>a.createdAt-b.createdAt).map(i=>`<tr><td>${fmtDate(i.createdAt)}</td><td>${esc(i.title)}</td><td>${esc(i.location)}</td><td>${esc(i.category)}</td><td>${esc(i.assignee?.name||'-')}</td><td>${STATUS[i.status]}</td><td>${i.doneAt?fmtDate(i.doneAt):'-'}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--gray4)">접수 내역 없음</td></tr>'}
+    </tbody></table></div>
+  </div>
+  <div class="btn-row no-print"><button class="btn btn-primary" onclick="window.print()">🖨 월간 보고서 인쇄/PDF</button><button class="btn btn-green" onclick="exportExcel()">📥 엑셀 다운로드</button></div>`;
+}
+function exportExcel(){
+  if(typeof XLSX==='undefined'){ toast('엑셀 모듈을 불러오지 못했습니다 (인터넷 확인)'); return; }
+  const st=monthStats(statMonth);
+  const rows=st.recv.sort((a,b)=>a.createdAt-b.createdAt).map((i,n)=>({'번호':n+1,'접수일시':fmtDT(i.createdAt),'내용':i.title,'상세':i.content,'장소':i.location,'분류':i.category,'접수경로':i.source,'긴급':i.urgent?'Y':'','접수자':i.reporter?.name||'','담당':i.assignee?.name||'미지정','상태':STATUS[i.status],'완료일시':i.doneAt?fmtDT(i.doneAt):'','소요시간':i.doneAt?dur(i.doneAt-i.createdAt):'','처리과정':(i.logs||[]).filter(l=>l.type!=='create').map(l=>`[${fmtKo(l.ts)} ${l.by?.name}] ${l.text||'(사진)'}`).join('\n')}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), `${statMonth} 민원내역`);
+  const sum=[['항목','값'],['접수',st.recv.length],['완료',st.done.length],['미완료 누적',st.open.length],['평균 처리시간',dur(st.avg)],['긴급',st.urgent],[],['분류','건수'],...st.byCat,[],['담당 팀','건수'],...st.byTeam,[],['처리자','완료 건수'],...st.byPerson];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sum), '요약');
+  XLSX.writeFile(wb, `${me.officeName}_민원처리_${statMonth}.xlsx`);
+}
+
+// ── 검색 ─────────────────────────────────────
+let searchQ=''; let searchFrom=''; let searchTo='';
+function renderSearch(){
+  const q=searchQ.trim().toLowerCase(); const terms=q.split(/\s+/).filter(Boolean);
+  let res=[];
+  if(terms.length||searchFrom||searchTo){
+    res=Object.values(issues).filter(i=>{
+      if(searchFrom && fmtDate(i.createdAt)<searchFrom) return false;
+      if(searchTo && fmtDate(i.createdAt)>searchTo) return false;
+      const hay=[i.title,i.content,i.location,i.category,i.reporter?.name,i.assignee?.name,...(i.logs||[]).map(l=>l.text+' '+(l.by?.name||''))].join(' ').toLowerCase();
+      return terms.every(t=>hay.includes(t));
+    }).sort((a,b)=>b.createdAt-a.createdAt);
+  }
+  const hl=s=>{ let h=esc(s); terms.forEach(t=>{ if(!t)return; h=h.replace(new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${m}</mark>`); }); return h; };
+  return `<div class="sec-title">🔍 민원 검색 <small>"2층 화장실" 처럼 입력</small></div>
+  <div class="search-box"><input id="s-q" value="${esc(searchQ)}" placeholder="장소·내용·담당자·처리내용 검색" oninput="searchQ=this.value;renderOnly('search')"></div>
+  <div class="form-grid" style="margin-bottom:12px"><input type="date" value="${searchFrom}" onchange="searchFrom=this.value;render()" style="padding:10px;border:1.5px solid var(--gray3);border-radius:10px"><input type="date" value="${searchTo}" onchange="searchTo=this.value;render()" style="padding:10px;border:1.5px solid var(--gray3);border-radius:10px"></div>
+  ${(terms.length||searchFrom||searchTo)?`<div style="font-size:13px;color:var(--gray5);margin-bottom:8px">${res.length}건</div>`:''}
+  <div id="s-res">${res.map(i=>{ const lastDone=(i.logs||[]).filter(l=>l.type==='done').pop();
+    return `<div class="issue s-${i.status}" onclick="openDetail('${i.id}')"><div class="i-head"><span class="badge b-${i.status}">${STATUS[i.status]}</span><span class="badge b-cat">${esc(i.category)}</span><span style="margin-left:auto;font-size:11.5px;color:var(--gray4)">${fmtDate(i.createdAt)}</span></div>
+    <div class="i-title">${hl(i.title)}</div><div class="i-meta">${i.location?`<span>📍 ${hl(i.location)}</span>`:''}<span>접수 ${esc(i.reporter?.name)}</span></div>
+    ${i.status==='done'?`<div class="i-foot" style="color:var(--green)">✔ ${fmtKo(i.doneAt)} ${esc(i.assignee?.name||'')} 완료${lastDone&&lastDone.text?' · '+hl(lastDone.text):''}</div>`:`<div class="i-foot">${assigneeLabel(i)}</div>`}</div>`; }).join('')||((terms.length||searchFrom||searchTo)?'<div class="empty">검색 결과가 없습니다</div>':'<div class="empty"><span class="big">🗂</span>예) "화장실 문", "누수", "김과장"<br><small>처리 과정의 댓글 내용까지 함께 검색됩니다</small></div>')}</div>`;
+}
+// 입력 중 포커스 유지용: 검색 결과 영역만 갱신
+function renderOnly(t){ if(t==='search'){ const tmp=document.createElement('div'); tmp.innerHTML=renderSearch(); $('#s-res').innerHTML=tmp.querySelector('#s-res').innerHTML; const cnt=tmp.querySelector('.sec-title + .search-box + .form-grid + div'); } }
+
+// ── 시작 ─────────────────────────────────────
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll().catch(console.warn); if(tab==='chat') lsSet(K.seenChat(),Date.now()); updateBadges(); } });
+window.addEventListener('online',()=>{ if(sbOn) fetchAll().catch(console.warn); });
+setInterval(()=>{ if(me && tab==='list') render(); },60000); // "n분 전" 갱신
+initLogin();
+</script>
+</body>
+</html>
