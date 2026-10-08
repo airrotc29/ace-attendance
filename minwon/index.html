@@ -392,14 +392,19 @@ mark{background:#fff1a8;box-shadow:none}
 .ig-more .ig{padding:10px 2px 0;border-top:1px solid var(--line);margin-top:8px}
 
 /* 휴대폰 알림 */
-.push-card{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:14px 16px;margin-bottom:14px}
-.push-card .pc-ic{flex:none;width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
-.push-card .pc-ic svg{width:21px;height:21px}
-.push-card .pc-tx{flex:1;min-width:0}
-.push-card .pc-tx b{display:block;font-size:15px;color:var(--navy)}
-.push-card .pc-tx small{display:block;font-size:13px;color:var(--mute);margin-top:3px;line-height:1.45}
-.push-card .pc-bt{display:flex;gap:6px;flex:none}
-@media (max-width:560px){.push-card{flex-wrap:wrap}.push-card .pc-bt{width:100%}.push-card .pc-bt .btn{flex:1}}
+.push-card{position:relative;display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 14px 14px 14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(17,17,17,.04),0 10px 28px -20px rgba(17,17,17,.35)}
+.push-card .pc-ic{position:relative;flex:none;width:42px;height:42px;border-radius:13px;background:#111;color:#fff;display:grid;place-items:center}
+.push-card .pc-ic svg{width:20px;height:20px}
+.push-card .pc-ic i{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px #111}
+.push-card .pc-tx{flex:1;min-width:0;padding-right:18px}
+.push-card .pc-tx b{display:block;font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-.01em}
+.push-card .pc-tx small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.45;word-break:keep-all}
+.push-card .pc-go{flex:none;border:0;background:var(--accent);color:#fff;font:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px -6px rgba(36,80,216,.7)}
+.push-card .pc-go:active{transform:scale(.97)}
+.push-card .pc-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border:0;background:none;color:var(--mute2);border-radius:8px;display:grid;place-items:center;cursor:pointer;padding:0}
+.push-card .pc-x svg{width:14px;height:14px}
+.push-card .pc-x:hover{background:#f3f3f1;color:var(--ink)}
+.push-card:has(.pc-x) .pc-go{margin-right:16px}
 #tb-push .slash{display:inline}
 #tb-push.on .slash{display:none}
 #tb-push.on{color:var(--accent)}
@@ -1653,10 +1658,12 @@ function pushBanner(){
   if(st==='on' || st==='none' || st==='denied') return '';
   if(Date.now()-lsGet(K.pushLater,0) < 7*86400000) return '';   // '나중에' 누르면 7일간 숨김
   const ios = st==='ios-install';
+  const bell='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
   return `<div class="push-card">
-    <div class="pc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
-    <div class="pc-tx"><b>휴대폰 알림 켜기</b><small>${ios?'아이폰은 홈 화면에 앱을 설치한 뒤 알림을 켤 수 있습니다':'앱을 닫아 두어도 내 담당 · 긴급 민원과 작업 안내를 바로 알려드립니다'}</small></div>
-    <div class="pc-bt"><button class="btn btn-primary btn-sm" onclick="${ios?'showInstallGuide()':'syncPushSub(true).then(render)'}">${ios?'설치 방법':'알림 켜기'}</button><button class="btn btn-gray btn-sm" onclick="pushLater()">나중에</button></div>
+    <div class="pc-ic">${bell}<i></i></div>
+    <div class="pc-tx"><b>${ios?'아이폰에서 알림 받기':'휴대폰 알림 켜기'}</b><small>${ios?'홈 화면에 앱을 설치하면 알림을 켤 수 있습니다':'앱을 닫아도 내 담당 · 긴급 민원을 바로 알려드립니다'}</small></div>
+    <button class="pc-go" onclick="${ios?'showInstallGuide()':'syncPushSub(true).then(render)'}">${ios?'설치 방법':'켜기'}</button>
+    <button class="pc-x" onclick="pushLater()" aria-label="나중에" title="나중에 (7일간 숨김)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>`;
 }
 function pushMenu(){
