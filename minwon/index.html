@@ -236,6 +236,20 @@ mark{background:var(--gold-soft);color:var(--ink);padding:0 2px;border-radius:3p
   .print-only{display:block!important}
 }
 .print-only{display:none}
+.lg-err{color:var(--red);font-size:12.5px;margin-top:14px;text-align:center;line-height:1.5}
+.lg-office{font-size:12.5px;color:var(--mute);background:var(--bg);border-radius:9px;padding:10px 12px;margin-bottom:4px}
+.lg-office b{color:var(--navy);font-weight:600}
+.lg-back{display:block;width:100%;margin-top:14px;font-size:12.5px;color:var(--mute);text-align:center;padding:6px}
+.adm-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.adm-item:last-child{border-bottom:none}
+.adm-item small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.adm-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ro-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 32px;gap:6px;margin-bottom:6px;align-items:center}
+.ro-row input{padding:9px 10px;border:1px solid var(--line2);border-radius:8px;font-size:14px;width:100%;background:#fff}
+.ro-del{color:var(--red);font-size:20px;line-height:1}
+.hint{font-size:12px;color:var(--mute);margin-bottom:10px;line-height:1.6}
+.roster{max-height:55vh;overflow-y:auto;padding-right:2px}
+#ro-paste{min-height:84px}
 </style>
 </head>
 <body>
@@ -247,15 +261,33 @@ mark{background:var(--gold-soft);color:var(--ink);padding:0 2px;border-radius:3p
       <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M15 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg></div>
       <h1>민원 처리 공유 시스템</h1>
       <div class="rule"></div>
-      <p>접수 · 담당 · 처리 보고 · 채팅 · 월간 통계<br>직원 누구나 올리고, 모두가 함께 확인합니다</p>
+      <p>접수 · 담당 · 처리 보고 · 채팅 · 월간 통계</p>
     </div>
-    <label>사업소</label>
-    <select id="lg-office"></select>
-    <label>이름</label>
-    <select id="lg-emp"><option value="">-- 사업소를 먼저 선택 --</option></select>
-    <button class="btn-login" id="lg-btn" onclick="doLogin()" disabled>입장하기</button>
-    <div class="login-hint">이름이 없으면 사업소 담당자에게 직원 등록을 요청하세요.<br>한 번 입장하면 이 기기에서는 자동으로 다시 입장됩니다.</div>
+    <div id="lg-step1">
+      <label>사업소 코드</label>
+      <input id="lg-code" autocomplete="username" autocapitalize="characters" placeholder="사업소 코드 입력">
+      <label>비밀번호</label>
+      <input id="lg-pw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginSubmit()" placeholder="비밀번호 입력">
+      <button class="btn-login" id="lg-btn1" onclick="loginSubmit()">확인</button>
+    </div>
+    <div id="lg-step2" class="hidden">
+      <div class="lg-office">사업소 · <b id="lg-office-name"></b></div>
+      <label>이름</label>
+      <select id="lg-emp"></select>
+      <button class="btn-login" id="lg-btn2" onclick="doLogin()" disabled>입장하기</button>
+      <button class="lg-back" onclick="showStep(1)">다른 사업소로 로그인</button>
+    </div>
+    <div id="lg-err" class="lg-err hidden"></div>
+    <div class="login-hint">사업소 코드와 비밀번호는 본사 관리자에게 문의하세요.<br>한 번 입장하면 이 기기에서는 자동으로 다시 입장됩니다.</div>
   </div>
+</div>
+
+<!-- ══ 본사 관리 ══ -->
+<div id="admin" class="hidden">
+  <div class="topbar">
+    <div class="tb-title">본사 관리<small>사업소 생성 · 명단 · 비밀번호</small></div>
+  </div>
+  <div class="content" id="adm-content"></div>
 </div>
 
 <!-- ══ 앱 ══ -->
@@ -281,10 +313,8 @@ mark{background:var(--gold-soft);color:var(--ink);padding:0 2px;border-radius:3p
 
 <script>
 // ══════════════════════════════════════════════
-// 마스터 데이터 (사업소 · 직원) — 출퇴근 시스템과 동일 명단
+// 직원 명단은 사업소 로그인 후 서버에서 불러옵니다
 // ══════════════════════════════════════════════
-const OFFICES = [{"id":"office_024","name":"청라하이테크시티"}];
-const EMPLOYEES = [{"empId":"2021090103","name":"정근호","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021090105","name":"권동률","rank":"관리차장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021090109","name":"백귀만","rank":"소장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021092302","name":"최주원","rank":"경리과장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021092304","name":"고근명","rank":"미화반장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021092312","name":"박정숙","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021101814","name":"윤용균","rank":"시설대리","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2021101815","name":"김균섭","rank":"시설대리","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2022092702","name":"김애선","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2022101203","name":"최정선","rank":"서무주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2022101704","name":"김지영","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2023010232","name":"김영임B","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024060304","name":"이양옥","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024070205","name":"이종숙63","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024090902","name":"변용철","rank":"경비원","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2024092501","name":"최희영","rank":"미화원(남)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025010205","name":"김연옥62","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025011501","name":"오창민","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025020401","name":"이미숙","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025021701","name":"조이순","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025021901","name":"노현주","rank":"서무주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2025040108","name":"현태근","rank":"미화원(남)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026011910","name":"유병일","rank":"시설과장","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026020501","name":"김연자","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026021301","name":"김종환","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026022801","name":"김명수","rank":"시설주임","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026030904","name":"정옥희","rank":"미화원(여)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026031603","name":"강병완","rank":"미화원(남)","officeId":"office_024","dept":"청라하이테크시티"},{"empId":"2026060101","name":"문기환","rank":"경비원","officeId":"office_024","dept":"청라하이테크시티"}];
 
 const CATEGORIES = ['시설·설비','전기','누수·배관','청소·미화','보안·경비','주차','엘리베이터','냉난방','소음·악취','조경','기타'];
 const SOURCES = ['전화','방문','순찰 발견','직원 요청','입주사 메신저','기타'];
@@ -339,24 +369,27 @@ function pickPhotos(cb){
 }
 
 // ══════════════════════════════════════════════
-// 상태 & 저장소 (Supabase 실시간 + localStorage 캐시)
+// 상태 & 저장소 (Supabase 함수 호출 · 주기적 동기화 · 기기 캐시)
 // ══════════════════════════════════════════════
 const SUPABASE_URL = 'https://yqmlesdwcuaqlqzrptpp.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxbWxlc2R3Y3VhcWxxenJwdHBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4OTEzODMsImV4cCI6MjEwNjQ2NzM4M30.KINWLaylHPKsaxvIm4GcXt1Pbio1GOqr3cvHlCvUtCk';
 const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
 const PHOTO_BUCKET = 'mw-photos';
+const SYNC_MS = 6000;
 
 let me = null;            // {empId,name,rank,officeId,officeName,team,boss}
-let issues = {};          // id → issue (앱 내부 형식: ms 타임스탬프, camelCase)
+let auth = null;          // {code,pw} 현재 세션의 사업소(또는 본사) 인증 정보
+let issues = {};          // id → issue (앱 형식)
 let chat = {};            // id → message
 let tab = 'list';
 let listFilter = 'active';
 let statMonth = fmtDate(Date.now()).slice(0,7);
 let sb = null;            // supabase client
-let sbOn = false;         // 서버 연결 여부
-let sbChannel = null;
+let sbOn = false;         // 로그인 후 서버 동기화 사용 여부
+let syncTimer = null;
+let fetching = false;
 
-const K = { pending:()=>`mw_pending_${me.officeId}`, me:'mw_me', issues:()=>`mw_issues_${me.officeId}`, chat:()=>`mw_chat_${me.officeId}`, seenChat:()=>`mw_seen_chat_${me.officeId}`, seenIssue:()=>`mw_seen_issue_${me.officeId}` };
+const K = { auth:'mw_auth', me:'mw_me', pending:()=>`mw_pending_${me.officeId}`, issues:()=>`mw_issues_${me.officeId}`, chat:()=>`mw_chat_${me.officeId}`, seenChat:()=>`mw_seen_chat_${me.officeId}`, seenIssue:()=>`mw_seen_issue_${me.officeId}` };
 
 // ── 행 ↔ 앱 객체 변환 ──
 const tsMs = v=>v==null?null:(typeof v==='number'?v:new Date(v).getTime());
@@ -366,35 +399,41 @@ function issueToRow(it){ return { id:it.id, office_id:me.officeId, title:it.titl
 function rowToMsg(r){ return { id:r.id, kind:r.kind||'msg', text:r.text||'', photo:r.photo||null, issueId:r.issue_id||null, by:r.by||null, ts:tsMs(r.ts) }; }
 function msgToRow(m){ return { id:m.id, office_id:me.officeId, kind:m.kind||'msg', text:m.text||'', photo:m.photo||null, issue_id:m.issueId||null, by:m.by||null, ts:tsIso(m.ts) }; }
 
-// ── 쓰기 (서버 실패/오프라인 시 대기열에 넣고 재연결 때 전송) ──
+// ── 서버 함수 호출 (사업소 코드·비밀번호를 매번 함께 보냄) ──
+function rpc(name, args={}, c=auth){
+  return sb.rpc(name, {p_code:c.code, p_pw:c.pw, ...args}).then(r=>{ if(r.error) throw r.error; return r.data; });
+}
+
+// ── 쓰기 (서버 실패 시 대기열에 넣고 다음 동기화 때 재전송) ──
 const pending = ()=>lsGet(K.pending(),{issues:{},chat:{},del:{}});
 function queue(kind,id){ const p=pending(); p[kind][id]=true; lsSet(K.pending(),p); }
 function saveIssue(it){
   it.updatedAt = Date.now();
   issues[it.id] = it; lsSet(K.issues(), issues); render();
   if(!sbOn){ queue('issues',it.id); return; }
-  sb.from('mw_issues').upsert(issueToRow(it)).then(({error})=>{ if(error){ console.warn(error); queue('issues',it.id); toast('서버 저장 실패 · 재연결 시 자동 전송'); } });
+  rpc('mw_issue_save',{p_row:issueToRow(it)}).catch(e=>{ console.warn(e); queue('issues',it.id); toast('서버 저장 실패 · 연결되면 자동 전송'); });
 }
 function deleteIssue(id){
   delete issues[id]; lsSet(K.issues(), issues); render();
   if(!sbOn){ queue('del',id); return; }
-  sb.from('mw_issues').delete().eq('id',id).then(({error})=>{ if(error){ console.warn(error); queue('del',id); } });
+  rpc('mw_issue_delete',{p_id:id}).catch(e=>{ console.warn(e); queue('del',id); });
 }
 function sendChat(msg){
   msg.id = msg.id||uid(); msg.ts = msg.ts||Date.now();
   chat[msg.id]=msg; lsSet(K.chat(), pruneChat(chat)); lsSet(K.seenChat(), msg.ts); render();
   if(!sbOn){ queue('chat',msg.id); return; }
-  sb.from('mw_chat').upsert(msgToRow(msg)).then(({error})=>{ if(error){ console.warn(error); queue('chat',msg.id); toast('서버 전송 실패 · 재연결 시 자동 전송'); } });
-}
-async function flushPending(){
-  const p=pending(); const left={issues:{},chat:{},del:{}};
-  for(const id of Object.keys(p.issues)){ const it=issues[id]; if(!it) continue; const {error}=await sb.from('mw_issues').upsert(issueToRow(it)); if(error) left.issues[id]=true; }
-  for(const id of Object.keys(p.chat)){ const m=chat[id]; if(!m) continue; const {error}=await sb.from('mw_chat').upsert(msgToRow(m)); if(error) left.chat[id]=true; }
-  for(const id of Object.keys(p.del)){ const {error}=await sb.from('mw_issues').delete().eq('id',id); if(error) left.del[id]=true; }
-  lsSet(K.pending(),left);
+  rpc('mw_chat_save',{p_row:msgToRow(msg)}).catch(e=>{ console.warn(e); queue('chat',msg.id); toast('서버 전송 실패 · 연결되면 자동 전송'); });
 }
 function pruneChat(c){ const arr=Object.values(c).sort((a,b)=>a.ts-b.ts); const keep=arr.slice(-400); const o={}; keep.forEach(m=>o[m.id]=m); return o; }
 const sysMsg = (text, issueId)=>sendChat({ kind:'sys', text, issueId:issueId||null, by:{name:me.name,empId:me.empId,team:me.team} });
+
+async function flushPending(){
+  const p=pending(); const left={issues:{},chat:{},del:{}};
+  for(const id of Object.keys(p.issues)){ const it=issues[id]; if(!it) continue; try{ await rpc('mw_issue_save',{p_row:issueToRow(it)}); }catch(e){ left.issues[id]=true; } }
+  for(const id of Object.keys(p.chat)){ const m=chat[id]; if(!m) continue; try{ await rpc('mw_chat_save',{p_row:msgToRow(m)}); }catch(e){ left.chat[id]=true; } }
+  for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id}); }catch(e){ left.del[id]=true; } }
+  lsSet(K.pending(), left);
+}
 
 // ── 사진 업로드 (Storage) : 실패 시 data URL 그대로 저장 ──
 function dataUrlToBlob(d){ const [h,b]=d.split(','); const mime=(h.match(/data:(.*?);/)||[])[1]||'image/jpeg'; const bin=atob(b); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new Blob([u],{type:mime}); }
@@ -413,73 +452,41 @@ async function uploadPhotos(dataUrls){
 }
 
 // ── 연결 ──
-function loadScript(src){ return new Promise((res,rej)=>{ if(window.supabase) return res(); const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('script load fail')); document.head.appendChild(s); }); }
-async function connectSupabase(){
-  setSync('off','기기 저장 모드 (오프라인)');
-  try{
-    await loadScript(SUPABASE_JS);
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { realtime:{ params:{ eventsPerSecond:10 } } });
-    sbOn = true;
-    await fetchAll();
-    setSync('on','서버 연결됨');
-    subscribeRealtime();
-  }catch(e){
-    console.warn('Supabase 연결 실패 → 기기 저장 모드', e);
-    sbOn=false; setSync('off','기기 저장 모드 (서버 연결 안 됨)');
-  }
+function loadSupabase(){
+  return new Promise((res,rej)=>{
+    if(window.supabase) return res();
+    const s=document.createElement('script'); s.src=SUPABASE_JS; s.onload=res; s.onerror=()=>rej(new Error('supabase js load fail')); document.head.appendChild(s);
+  }).then(()=>{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON); return sb; });
 }
 function setSync(state,text){ const d=$('#sync-dot'); d.className='sync-dot '+state; $('#sync-text').textContent=text; }
 
-let fetching=false;
 async function fetchAll(){
-  if(fetching) return; fetching=true;
+  if(fetching || !sbOn || !auth || !me) return;
+  fetching = true;
   try{
-  if(sb) await flushPending().catch(console.warn);
-  const [ri, rc] = await Promise.all([
-    sb.from('mw_issues').select('*').eq('office_id', me.officeId).order('created_at',{ascending:false}).limit(2000),
-    sb.from('mw_chat').select('*').eq('office_id', me.officeId).order('ts',{ascending:false}).limit(400)
-  ]);
-  if(ri.error) throw ri.error; if(rc.error) throw rc.error;
-  const prev = issues; const prevChatN = Object.keys(chat).length;
-  const ni={}; ri.data.forEach(r=>ni[r.id]=rowToIssue(r));
-  const nc={}; rc.data.forEach(r=>nc[r.id]=rowToMsg(r));
-  // 아직 전송 못 한 대기열 항목은 로컬 버전 유지
-  const p=pending(); Object.keys(p.issues).forEach(id=>{ if(issues[id]) ni[id]=issues[id]; }); Object.keys(p.chat).forEach(id=>{ if(chat[id]) nc[id]=chat[id]; });
-  issues = ni; chat = nc;
-  lsSet(K.issues(), issues); lsSet(K.chat(), pruneChat(chat));
-  notifyNewAssignments(prev, issues);
-  if(Object.keys(chat).length>prevChatN){ const last=Object.values(chat).sort((a,b)=>b.ts-a.ts)[0]; if(last && last.ts>lsGet(K.seenChat(),0)) notifyNewChat(last); }
-  render();
-  } finally { fetching=false; }
+    await flushPending().catch(console.warn);
+    const [li, lc] = await Promise.all([ rpc('mw_issues_list'), rpc('mw_chat_list') ]);
+    const prev = issues, prevN = Object.keys(chat).length;
+    const ni={}; (li||[]).forEach(r=>ni[r.id]=rowToIssue(r));
+    const nc={}; (lc||[]).forEach(r=>nc[r.id]=rowToMsg(r));
+    // 아직 전송되지 않은 대기열 항목은 기기 버전을 유지
+    const p=pending();
+    Object.keys(p.issues).forEach(id=>{ if(issues[id]) ni[id]=issues[id]; });
+    Object.keys(p.chat).forEach(id=>{ if(chat[id]) nc[id]=chat[id]; });
+    issues = ni; chat = nc;
+    lsSet(K.issues(), issues); lsSet(K.chat(), pruneChat(chat));
+    notifyNewAssignments(prev, issues);
+    if(Object.keys(chat).length>prevN){ const last=Object.values(chat).sort((a,b)=>b.ts-a.ts)[0]; if(last && last.ts>lsGet(K.seenChat(),0)) notifyNewChat(last); }
+    setSync('on','자동 동기화 · 6초');
+    render();
+  }catch(e){
+    console.warn('sync fail', e);
+    setSync('off','연결 확인 중 · 기기 저장 모드');
+  }finally{ fetching = false; }
 }
-// 실시간(WebSocket)이 막힌 환경을 위한 폴링 대체 + 화면 복귀 시 새로고침
-let pollTimer=null, realtimeOk=false;
-function setPolling(on){
-  if(on && pollTimer) return;            // 이미 폴링 중이면 타이머 유지 (채널 재시도마다 리셋 방지)
-  clearInterval(pollTimer); pollTimer=null;
-  if(on) pollTimer=setInterval(()=>{ if(document.visibilityState==='visible') fetchAll().catch(e=>{ console.warn(e); setSync('off','서버 연결 안 됨 · 기기 저장 모드'); }); }, 8000);
-}
-setInterval(()=>{ if(sbOn && realtimeOk && document.visibilityState==='visible') fetchAll().catch(console.warn); }, 90000);
-function subscribeRealtime(){
-  if(sbChannel){ try{ sb.removeChannel(sbChannel); }catch{} }
-  sbChannel = sb.channel('mw-'+me.officeId)
-    .on('postgres_changes',{event:'*',schema:'public',table:'mw_issues',filter:`office_id=eq.${me.officeId}`}, p=>{
-      const prev={...issues};
-      if(p.eventType==='DELETE'){ delete issues[p.old.id]; }
-      else { const it=rowToIssue(p.new); if(!issues[it.id] || (it.updatedAt||0)>=(issues[it.id].updatedAt||0)) issues[it.id]=it; }
-      lsSet(K.issues(), issues); notifyNewAssignments(prev, issues); render();
-    })
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mw_chat',filter:`office_id=eq.${me.officeId}`}, p=>{
-      const m=rowToMsg(p.new); const isNew=!chat[m.id]; chat[m.id]=m; lsSet(K.chat(), pruneChat(chat));
-      if(isNew) notifyNewChat(m); render();
-    })
-    .on('postgres_changes',{event:'DELETE',schema:'public',table:'mw_chat'}, p=>{ if(p.old&&chat[p.old.id]){ delete chat[p.old.id]; render(); } })
-    .subscribe(status=>{
-      if(status==='SUBSCRIBED'){ realtimeOk=true; setPolling(false); setSync('on','실시간 연결됨'); fetchAll().catch(console.warn); }
-      else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){ realtimeOk=false; if(sbOn){ setSync('on','서버 연결됨 · 8초마다 자동 새로고침'); setPolling(true); } }
-    });
-  // 실시간 채널이 몇 초 안에 붙지 않으면 우선 폴링으로 시작
-  setTimeout(()=>{ if(!realtimeOk && sbOn){ setSync('on','서버 연결됨 · 8초마다 자동 새로고침'); setPolling(true); } }, 6000);
+function startSync(){
+  clearInterval(syncTimer);
+  syncTimer = setInterval(()=>{ if(document.visibilityState==='visible') fetchAll(); }, SYNC_MS);
 }
 
 // 새 담당 지정 알림 (내 이름 또는 내 팀)
@@ -502,35 +509,185 @@ function vibrate(){ try{ navigator.vibrate && navigator.vibrate([120,60,120]); }
 function isMine(it){ const a=it.assignee||{}; return (a.type==='person'&&a.empId===me.empId)||(a.type==='team'&&a.name===me.team); }
 
 // ══════════════════════════════════════════════
-// 로그인
+// 로그인 (사업소 코드 + 비밀번호 → 본인 이름 선택) · 본사 관리
 // ══════════════════════════════════════════════
-function initLogin(){
-  const os = [...OFFICES].sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-  $('#lg-office').innerHTML = '<option value="">-- 사업소 선택 --</option>'+os.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
-  $('#lg-office').onchange = ()=>{
-    const oid=$('#lg-office').value;
-    const emps = EMPLOYEES.filter(e=>e.officeId===oid).sort((a,b)=>(isBoss(b)-isBoss(a))||a.name.localeCompare(b.name,'ko'));
-    $('#lg-emp').innerHTML = '<option value="">-- 이름 선택 --</option>'+emps.map(e=>`<option value="${e.empId}">${esc(e.name)} (${esc(e.rank)})</option>`).join('');
-    $('#lg-btn').disabled=true;
-  };
-  $('#lg-emp').onchange = ()=>{ $('#lg-btn').disabled = !$('#lg-emp').value; };
-  const saved = lsGet(K.me,null);
-  if(saved && EMPLOYEES.find(e=>e.empId===saved.empId)) enter(saved.empId);
+let EMPLOYEES = [];       // 현재 사업소 직원 명단 (서버에서 로드)
+let lgOffice = null;      // {office_id, office_name}
+let adminOffices = [];
+let rosterDraft = [], rosterOffice = null;
+
+function showStep(n){
+  $('#login').classList.remove('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.add('hidden');
+  $('#lg-step1').classList.toggle('hidden', n!==1); $('#lg-step2').classList.toggle('hidden', n!==2);
+}
+function setLoginErr(msg){ const el=$('#lg-err'); el.textContent=msg||''; el.classList.toggle('hidden',!msg); }
+const sortEmp = (a,b)=>(isBoss(b)-isBoss(a))||a.name.localeCompare(b.name,'ko');
+async function loadEmployees(){
+  const list = await rpc('mw_employees_list');
+  return (list||[]).sort(sortEmp);
+}
+
+async function loginSubmit(){
+  const code=$('#lg-code').value.trim(), pw=$('#lg-pw').value;
+  if(!code || !pw){ setLoginErr('사업소 코드와 비밀번호를 입력하세요'); return; }
+  const btn=$('#lg-btn1'); btn.disabled=true; btn.textContent='확인 중…'; setLoginErr('');
+  try{
+    const cand={code, pw};
+    const info = await rpc('mw_login', {}, cand);
+    auth = cand;
+    if(info.is_hq){ lsSet(K.auth,{code,pw,hq:true}); adminEnter(); return; }
+    lgOffice = {office_id:info.office_id, office_name:info.office_name};
+    EMPLOYEES = await loadEmployees();
+    if(!EMPLOYEES.length){ setLoginErr('등록된 직원이 없습니다. 본사 관리자에게 명단 등록을 요청하세요'); auth=null; return; }
+    renderNameStep(); showStep(2);
+  }catch(e){
+    console.warn(e);
+    setLoginErr(String(e.message||'').includes('unauthorized') ? '사업소 코드 또는 비밀번호가 맞지 않습니다' : '서버에 연결하지 못했습니다. 인터넷을 확인하세요');
+  }finally{ btn.disabled=false; btn.textContent='확인'; }
+}
+function renderNameStep(){
+  $('#lg-office-name').textContent = lgOffice.office_name;
+  $('#lg-emp').innerHTML = '<option value="">-- 이름 선택 --</option>' + EMPLOYEES.map(e=>`<option value="${esc(e.empId)}">${esc(e.name)} (${esc(e.rank)})</option>`).join('');
+  $('#lg-emp').onchange = ()=>{ $('#lg-btn2').disabled = !$('#lg-emp').value; };
+  $('#lg-btn2').disabled = true;
 }
 function doLogin(){ enter($('#lg-emp').value); }
+
 function enter(empId){
-  const e = EMPLOYEES.find(x=>x.empId===empId); if(!e) return;
-  const o = OFFICES.find(x=>x.id===e.officeId);
-  me = { empId:e.empId, name:e.name, rank:e.rank, officeId:e.officeId, officeName:o?o.name:e.dept, team:teamOf(e.rank), boss:isBoss(e) };
-  lsSet(K.me, me);
+  const e = EMPLOYEES.find(x=>x.empId===empId); if(!e || !lgOffice || !auth) return;
+  me = { empId:e.empId, name:e.name, rank:e.rank, officeId:lgOffice.office_id, officeName:lgOffice.office_name, team:teamOf(e.rank), boss:isBoss(e) };
+  lsSet(K.me, me); lsSet(K.auth, {code:auth.code, pw:auth.pw, empId:e.empId});
   issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{});
-  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#login').classList.add('hidden'); $('#admin').classList.add('hidden'); $('#app').classList.remove('hidden');
   $('#tb-office').textContent = me.officeName; $('#tb-name').textContent = me.name; $('#tb-team').textContent = `${me.rank} · ${me.team}`;
   try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch{}
-  connectSupabase();
+  sbOn = true; setSync('on','자동 동기화 · 6초');
+  startSync(); fetchAll();
   go('list');
 }
-function logout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.me); location.reload(); }
+function logout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
+
+// 기기에 저장된 로그인 정보로 자동 입장
+async function boot(){
+  try{ await loadSupabase(); }catch(e){ console.warn(e); showStep(1); setLoginErr('서버 라이브러리를 불러오지 못했습니다. 인터넷을 확인하세요'); return; }
+  const saved = lsGet(K.auth,null);
+  if(saved && saved.code && saved.pw){
+    auth = {code:saved.code, pw:saved.pw};
+    try{
+      if(saved.hq){ await rpc('mw_offices_list'); adminEnter(); return; }
+      const info = await rpc('mw_login');
+      lgOffice = {office_id:info.office_id, office_name:info.office_name};
+      EMPLOYEES = await loadEmployees();
+      const pick = saved.empId;
+      if(pick && EMPLOYEES.find(e=>e.empId===pick)){ enter(pick); return; }
+    }catch(e){ console.warn('auto login failed', e); }
+    auth = null; lsSet(K.auth, null);
+  }
+  showStep(1);
+}
+
+// ── 본사 관리 ──
+function adminEnter(){
+  $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
+  adminHome();
+}
+function adminLogout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.auth); location.reload(); }
+async function adminHome(){
+  $('#adm-content').innerHTML = '<div class="empty"><b>불러오는 중…</b></div>';
+  try{ adminOffices = await rpc('mw_offices_list') || []; }catch(e){ console.warn(e); adminOffices = []; toast('사업소 목록을 불러오지 못했습니다'); }
+  renderAdminHome();
+}
+function renderAdminHome(){
+  $('#adm-content').innerHTML = `
+    <div class="sec-title">사업소 관리 <small>사업소 생성 · 명단 입력 · 비밀번호</small></div>
+    <div class="card"><h3>새 사업소 만들기</h3>
+      <div class="form-row"><label>사업소 이름</label><input id="ad-name" placeholder="예) 강남타워"></div>
+      <div class="form-grid">
+        <div class="form-row"><label>사업소 코드 (로그인용)</label><input id="ad-code" placeholder="예) GANGNAM" autocapitalize="characters"></div>
+        <div class="form-row"><label>비밀번호 (6자 이상)</label><input id="ad-pw" type="text"></div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="adminCreate()">사업소 만들기</button>
+    </div>
+    <div class="card"><h3>사업소 목록 <small style="font-weight:400;color:var(--mute)">${adminOffices.length}곳</small></h3>
+      ${adminOffices.length ? adminOffices.map(o=>`
+        <div class="adm-item">
+          <div><b>${esc(o.name)}</b><small>코드 ${esc(o.code)} · 직원 ${o.count}명</small></div>
+          <div class="adm-acts">
+            <button class="btn btn-gray btn-sm" onclick="adminRoster('${esc(o.id)}')">명단</button>
+            <button class="btn btn-gray btn-sm" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">비밀번호</button>
+            <button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">삭제</button>
+          </div>
+        </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>위에서 사업소를 만들어 주세요</div>'}
+    </div>
+    <button class="btn btn-gray btn-block no-print" onclick="adminLogout()">나가기</button>`;
+}
+async function adminCreate(){
+  const name=$('#ad-name').value.trim(), code=$('#ad-code').value.trim().toUpperCase(), pw=$('#ad-pw').value;
+  if(!name || !code || pw.length<6){ toast('사업소 이름, 코드, 6자 이상 비밀번호를 입력하세요'); return; }
+  try{
+    await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
+    toast('사업소를 만들었습니다'); adminHome();
+  }catch(e){
+    const dup = /duplicate|unique/i.test(e.message||'');
+    toast(dup ? '이미 있는 사업소 코드입니다' : '만들지 못했습니다');
+  }
+}
+async function adminPw(id,name){
+  const np = prompt(`${name} 새 비밀번호 (6자 이상)`); if(!np) return;
+  if(np.length<6){ toast('6자 이상이어야 합니다'); return; }
+  try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); toast('비밀번호를 바꿨습니다'); }
+  catch(e){ toast('바꾸지 못했습니다'); }
+}
+async function adminDelete(id,name){
+  if(!confirm(`"${name}" 사업소를 삭제할까요?\n민원·채팅·직원 명단이 모두 지워집니다.`)) return;
+  try{ await rpc('mw_office_delete',{p_office:id}); toast('삭제되었습니다'); adminHome(); }
+  catch(e){ toast('삭제하지 못했습니다'); }
+}
+async function adminRoster(id){
+  rosterOffice = adminOffices.find(o=>o.id===id);
+  try{
+    const list = await rpc('mw_employees_list',{p_office:id}) || [];
+    rosterDraft = list.map(e=>({emp_id:e.empId, name:e.name, rank:e.rank, dept:e.dept}));
+  }catch(e){ rosterDraft = []; toast('명단을 불러오지 못했습니다'); }
+  renderRoster();
+}
+function renderRoster(){
+  $('#adm-content').innerHTML = `
+    <button class="btn btn-gray btn-sm" onclick="adminHome()" style="margin-bottom:14px">← 사업소 목록</button>
+    <div class="sec-title">${esc(rosterOffice.name)} 명단 <small>${rosterDraft.length}명</small></div>
+    <div class="card"><h3>붙여넣기로 한꺼번에 추가</h3>
+      <p class="hint">한 줄에 한 명. 형식: 이름, 직급, 사번(선택)<br>예) 홍길동, 시설주임, 2024001</p>
+      <div class="form-row"><textarea id="ro-paste" placeholder="홍길동, 시설주임&#10;김영희, 경리대리, 2024002"></textarea></div>
+      <button class="btn btn-gray btn-block" onclick="rosterPaste()">목록에 추가</button>
+    </div>
+    <div class="card"><h3>직원</h3>
+      <div class="roster">${rosterDraft.map((r,i)=>`
+        <div class="ro-row">
+          <input value="${esc(r.name)}" placeholder="이름" oninput="rosterDraft[${i}].name=this.value">
+          <input value="${esc(r.rank)}" placeholder="직급" oninput="rosterDraft[${i}].rank=this.value">
+          <input value="${esc(r.emp_id||'')}" placeholder="사번" oninput="rosterDraft[${i}].emp_id=this.value">
+          <button class="ro-del" onclick="rosterDel(${i})" aria-label="삭제">×</button>
+        </div>`).join('') || '<div class="empty"><b>등록된 직원이 없습니다</b></div>'}
+      </div>
+      <button class="btn btn-gray btn-block" style="margin-top:10px" onclick="rosterAdd()">한 명 추가</button>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="rosterSave()">명단 저장</button>`;
+}
+function rosterAdd(){ rosterDraft.push({emp_id:'', name:'', rank:'', dept:''}); renderRoster(); }
+function rosterDel(i){ rosterDraft.splice(i,1); renderRoster(); }
+function rosterPaste(){
+  const lines = ($('#ro-paste').value||'').split(/\n/).map(s=>s.trim()).filter(Boolean);
+  lines.forEach(l=>{ const p=l.split(/[,\t]/).map(s=>s.trim()); rosterDraft.push({name:p[0]||'', rank:p[1]||'', emp_id:p[2]||'', dept:''}); });
+  renderRoster();
+}
+async function rosterSave(){
+  const rows = rosterDraft.filter(r=>r.name && r.name.trim());
+  try{
+    const n = await rpc('mw_employees_save',{p_office:rosterOffice.id, p_rows:rows});
+    toast(`${n}명 저장했습니다`); adminHome();
+  }catch(e){ toast('저장하지 못했습니다'); }
+}
+
 
 // ══════════════════════════════════════════════
 // 라우팅 / 렌더
@@ -879,10 +1036,10 @@ function renderSearch(){
 function renderOnly(t){ if(t==='search'){ const tmp=document.createElement('div'); tmp.innerHTML=renderSearch(); $('#s-res').innerHTML=tmp.querySelector('#s-res').innerHTML; const cnt=tmp.querySelector('.sec-title + .search-box + .form-grid + div'); } }
 
 // ── 시작 ─────────────────────────────────────
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll().catch(console.warn); if(tab==='chat') lsSet(K.seenChat(),Date.now()); updateBadges(); } });
-window.addEventListener('online',()=>{ if(sbOn) fetchAll().catch(console.warn); });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll(); if(tab==='chat') lsSet(K.seenChat(),Date.now()); updateBadges(); } });
+window.addEventListener('online',()=>{ if(sbOn) fetchAll(); });
 setInterval(()=>{ if(me && tab==='list') render(); },60000); // "n분 전" 갱신
-initLogin();
+boot();
 </script>
 </body>
 </html>
