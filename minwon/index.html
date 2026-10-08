@@ -390,6 +390,24 @@ mark{background:#fff1a8;box-shadow:none}
 .ig.main{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
 .ig-more summary{font-size:13.5px;font-weight:600;color:var(--mute);cursor:pointer;padding:6px 0}
 .ig-more .ig{padding:10px 2px 0;border-top:1px solid var(--line);margin-top:8px}
+
+/* 휴대폰 알림 */
+.push-card{position:relative;display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 14px 14px 14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(17,17,17,.04),0 10px 28px -20px rgba(17,17,17,.35)}
+.push-card .pc-ic{position:relative;flex:none;width:42px;height:42px;border-radius:13px;background:#111;color:#fff;display:grid;place-items:center}
+.push-card .pc-ic svg{width:20px;height:20px}
+.push-card .pc-ic i{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px #111}
+.push-card .pc-tx{flex:1;min-width:0;padding-right:18px}
+.push-card .pc-tx b{display:block;font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-.01em}
+.push-card .pc-tx small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.45;word-break:keep-all}
+.push-card .pc-go{flex:none;border:0;background:var(--accent);color:#fff;font:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px -6px rgba(36,80,216,.7)}
+.push-card .pc-go:active{transform:scale(.97)}
+.push-card .pc-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border:0;background:none;color:var(--mute2);border-radius:8px;display:grid;place-items:center;cursor:pointer;padding:0}
+.push-card .pc-x svg{width:14px;height:14px}
+.push-card .pc-x:hover{background:#f3f3f1;color:var(--ink)}
+.push-card:has(.pc-x) .pc-go{margin-right:16px}
+#tb-push .slash{display:inline}
+#tb-push.on .slash{display:none}
+#tb-push.on{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -438,6 +456,7 @@ mark{background:#fff1a8;box-shadow:none}
     <div class="tb-title"><span id="tb-office"></span><small><span class="sync-dot" id="sync-dot"></span><span id="sync-text">연결 중…</span></small></div>
     <div class="tb-user"><b id="tb-name"></b><span id="tb-team"></span></div>
     <button class="tb-btn tb-ic hidden" id="tb-install" onclick="installApp()" aria-label="앱으로 설치" title="앱으로 설치"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
+    <button class="tb-btn tb-ic hidden" id="tb-push" onclick="pushMenu()" aria-label="휴대폰 알림" title="휴대폰 알림"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path class="slash" d="M3 3l18 18"/></svg></button>
     <button class="tb-btn hidden" id="tb-staff" onclick="openStaff()">직원</button>
     <button class="tb-btn" onclick="logout()">나가기</button>
   </div>
@@ -520,6 +539,8 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
 const PHOTO_BUCKET = 'mw-photos';
 const SYNC_MS = 6000;
+const FULL_SYNC_MS = 30*60*1000;   // 30분마다 한 번은 전체를 다시 받아 어긋남을 바로잡음
+const VAPID_PUBLIC = 'BEfp_WdjUfWOZTjlPwIVgoULoFizs9BnJCV0QlELfjnA9J3iOCTgII3n_bxOQ3nwATyLfNuCh1drgQYLvwDpDcM';
 
 let me = null;            // {empId,name,rank,officeId,officeName,team,boss}
 let auth = null;          // {code,pw} 현재 세션의 사업소(또는 본사) 인증 정보
@@ -533,7 +554,7 @@ let sbOn = false;         // 로그인 후 서버 동기화 사용 여부
 let syncTimer = null;
 let fetching = false;
 
-const K = { auth:'mw_auth', me:'mw_me', pending:()=>`mw_pending_${me.officeId}`, issues:()=>`mw_issues_${me.officeId}`, chat:()=>`mw_chat_${me.officeId}`, seenChat:()=>`mw_seen_chat_${me.officeId}`, seenIssue:()=>`mw_seen_issue_${me.officeId}` };
+const K = { auth:'mw_auth', me:'mw_me', pending:()=>`mw_pending_${me.officeId}`, issues:()=>`mw_issues_${me.officeId}`, chat:()=>`mw_chat_${me.officeId}`, seenChat:()=>`mw_seen_chat_${me.officeId}`, seenIssue:()=>`mw_seen_issue_${me.officeId}`, cursor:()=>`mw_cursor_${me.officeId}`, push:'mw_push', pushLater:'mw_push_later' };
 
 // ── 행 ↔ 앱 객체 변환 ──
 const tsMs = v=>v==null?null:(typeof v==='number'?v:new Date(v).getTime());
@@ -604,25 +625,42 @@ function loadSupabase(){
 }
 function setSync(state,text){ const d=$('#sync-dot'); d.className='sync-dot '+state; $('#sync-text').textContent=text; }
 
-async function fetchAll(){
+async function fetchAll(forceFull){
   if(fetching || !sbOn || !auth || !me) return;
   fetching = true;
   try{
     await flushPending().catch(console.warn);
-    const [li, lc] = await Promise.all([ rpc('mw_issues_list'), rpc('mw_chat_list') ]);
-    const prev = issues, prevN = Object.keys(chat).length;
-    const ni={}; (li||[]).forEach(r=>ni[r.id]=rowToIssue(r));
-    const nc={}; (lc||[]).forEach(r=>nc[r.id]=rowToMsg(r));
-    // 아직 전송되지 않은 대기열 항목은 기기 버전을 유지
-    const p=pending();
-    Object.keys(p.issues).forEach(id=>{ if(issues[id]) ni[id]=issues[id]; });
-    Object.keys(p.chat).forEach(id=>{ if(chat[id]) nc[id]=chat[id]; });
-    issues = ni; chat = nc;
-    lsSet(K.issues(), issues); lsSet(K.chat(), pruneChat(chat));
-    notifyNewAssignments(prev, issues);
-    if(Object.keys(chat).length>prevN){ const last=Object.values(chat).sort((a,b)=>b.ts-a.ts)[0]; if(last && last.ts>lsGet(K.seenChat(),0)) notifyNewChat(last); }
-    setSync('on','자동 동기화 · 6초');
-    render();
+    // 마지막으로 받은 시각 이후 바뀐 것만 받음 (처음 · 30분마다는 전체)
+    const cur = lsGet(K.cursor(), null);
+    const full = forceFull || !cur || !cur.since || (Date.now()-(cur.fullAt||0)>FULL_SYNC_MS);
+    const r = await rpc('mw_sync', {p_since: full ? null : cur.since});
+    const prev = {...issues}, prevN = Object.keys(chat).length;
+    const p = pending(); let nChg = 0;
+    if(r.full){
+      const ni={}; (r.issues||[]).forEach(x=>ni[x.id]=rowToIssue(x));
+      const nc={}; (r.chat||[]).forEach(x=>nc[x.id]=rowToMsg(x));
+      // 아직 전송되지 않은 대기열 항목은 기기 버전을 유지
+      Object.keys(p.issues).forEach(id=>{ if(issues[id]) ni[id]=issues[id]; });
+      Object.keys(p.chat).forEach(id=>{ if(chat[id]) nc[id]=chat[id]; });
+      Object.keys(p.del).forEach(id=>{ delete ni[id]; });
+      issues = ni; chat = nc;
+    }else{
+      // 겹쳐 받은 구간에서 이미 가진 것과 똑같은 항목은 건너뜀
+      (r.issues||[]).forEach(x=>{ if(p.issues[x.id] || p.del[x.id]) return; const it=rowToIssue(x); if(JSON.stringify(issues[x.id])===JSON.stringify(it)) return; issues[x.id]=it; nChg++; });
+      (r.chat||[]).forEach(x=>{ if(p.chat[x.id] || chat[x.id]) return; chat[x.id]=rowToMsg(x); nChg++; });
+      (r.deleted||[]).forEach(id=>{ if(p.issues[id] || !issues[id]) return; delete issues[id]; nChg++; });
+    }
+    // 서버 시각 기준 30초 겹쳐서 받음 (저장이 끝나는 순간과 겹쳐 빠지는 일이 없도록)
+    lsSet(K.cursor(), { since:new Date(new Date(r.now).getTime()-30000).toISOString(), fullAt: r.full ? Date.now() : (cur&&cur.fullAt)||Date.now() });
+    const changed = r.full || nChg>0;
+    if(changed){
+      lsSet(K.issues(), issues); lsSet(K.chat(), pruneChat(chat));
+      notifyNewAssignments(prev, issues);
+      if(Object.keys(chat).length>prevN){ const last=Object.values(chat).sort((a,b)=>b.ts-a.ts)[0]; if(last && last.ts>lsGet(K.seenChat(),0)) notifyNewChat(last); }
+    }else if(!notifInit){ notifInit=true; }
+    setSync('on','자동 동기화 중');
+    if(changed) render();
+    handleDeepLink();
   }catch(e){
     console.warn('sync fail', e);
     setSync('off','연결 확인 중 · 기기 저장 모드');
@@ -648,7 +686,7 @@ function notifyNewChat(last){
   if(tab==='chat' && document.visibilityState==='visible'){ lsSet(K.seenChat(), Date.now()); return; }
   if(last && last.by && last.by.empId!==me.empId && last.kind!=='sys'){ notify(last.by.name, last.text||'(사진)'); }
 }
-function notify(title, body){ try{ if('Notification' in window && Notification.permission==='granted' && document.visibilityState!=='visible') new Notification(title,{body}); }catch{} }
+function notify(title, body){ try{ if(pushOn()) return; if('Notification' in window && Notification.permission==='granted' && document.visibilityState!=='visible') new Notification(title,{body}); }catch{} }
 function vibrate(){ try{ navigator.vibrate && navigator.vibrate([120,60,120]); }catch{} }
 function isMine(it){ const a=it.assignee||{}; return (a.type==='person'&&a.empId===me.empId)||(a.type==='team'&&a.name===me.team); }
 
@@ -705,12 +743,12 @@ function enter(empId){
   $('#login').classList.add('hidden'); $('#admin').classList.add('hidden'); $('#app').classList.remove('hidden');
   $('#tb-office').textContent = me.officeName; $('#tb-name').textContent = me.name; $('#tb-team').textContent = `${me.rank} · ${me.team}`;
   $('#tb-staff').classList.toggle('hidden', !me.boss); mgrPw = null;
-  try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch{}
-  sbOn = true; setSync('on','자동 동기화 · 6초');
+  sbOn = true; setSync('on','자동 동기화 중');
   startSync(); fetchAll();
   go('list');
+  refreshPushUI(); syncPushSub(false);
 }
-function logout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
+async function logout(){ if(!confirm('나가시겠습니까?')) return; await pushOff(true).catch(console.warn); localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
 
 // 기기에 저장된 로그인 정보로 자동 입장
 async function boot(){
@@ -899,7 +937,7 @@ function renderList(){
     return it.status===listFilter;
   });
   const n = s=>all.filter(i=>i.status===s).length;
-  return `
+  return `${pushBanner()}
     <div class="summary-row">
       <div class="stat-tile red"><div class="n">${n('open')}</div><div class="l">접수</div></div>
       <div class="stat-tile amber"><div class="n">${n('progress')}</div><div class="l">진행중</div></div>
@@ -1557,12 +1595,123 @@ thead{display:table-header-group}
 
 
 // ══════════════════════════════════════════════
+// 휴대폰 알림 (앱을 닫아도 오는 푸시 알림)
+//  - 새로 나 · 우리 팀에 배정된 민원, 긴급 민원 접수, 작업 안내 메시지
+// ══════════════════════════════════════════════
+const pushSupported = ()=>('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window) && /^https?:$/.test(location.protocol);
+const pushOn = ()=>{ const s=lsGet(K.push,null); return !!(s && me && s.empId===me.empId && s.officeId===me.officeId && pushSupported() && Notification.permission==='granted'); };
+// 상태: on · off(켤 수 있음) · denied(브라우저에서 막음) · ios-install(아이폰은 설치 후 가능) · none(지원 안 함)
+function pushState(){
+  if(platform()==='ios' && !isStandalone()) return 'ios-install';
+  if(!pushSupported()) return 'none';
+  if(Notification.permission==='denied') return 'denied';
+  return pushOn() ? 'on' : 'off';
+}
+function b64ToBytes(s){ const p='='.repeat((4-s.length%4)%4); const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
+async function swReady(){
+  if(!navigator.serviceWorker.controller && !(await navigator.serviceWorker.getRegistration())) await navigator.serviceWorker.register('sw.js');
+  return navigator.serviceWorker.ready;
+}
+// ask=true: 사용자가 버튼을 눌렀을 때 (권한 요청) · false: 이미 허용된 기기만 조용히 다시 등록
+async function syncPushSub(ask){
+  try{
+    if(!me || !pushSupported()) return false;
+    if(Notification.permission!=='granted'){
+      if(!ask) return false;
+      const r = await Notification.requestPermission();
+      if(r!=='granted'){ refreshPushUI(); toast(r==='denied'?'알림이 차단되었습니다. 브라우저 설정에서 허용해 주세요':'알림을 켜지 않았습니다', 3500); return false; }
+    }
+    if(!ask && !lsGet(K.push,null)) return false;   // 직접 끈 기기는 다시 켜지 않음
+    const reg = await swReady();
+    let sub = await reg.pushManager.getSubscription();
+    if(sub){ const k=sub.options&&sub.options.applicationServerKey; if(k && btoa(String.fromCharCode(...new Uint8Array(k))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')!==VAPID_PUBLIC){ await sub.unsubscribe(); sub=null; } }
+    if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:b64ToBytes(VAPID_PUBLIC) });
+    await rpc('mw_push_subscribe', { p_emp_id:me.empId, p_team:me.team, p_sub:sub.toJSON() });
+    lsSet(K.push, { empId:me.empId, officeId:me.officeId, endpoint:sub.endpoint, at:Date.now() });
+    refreshPushUI();
+    if(ask) toast('휴대폰 알림을 켰습니다. 앱을 닫아도 새 담당 · 긴급 민원을 알려드립니다', 3500);
+    return true;
+  }catch(e){
+    console.warn('push subscribe', e);
+    if(ask) toast('알림을 켜지 못했습니다. 잠시 후 다시 시도하세요', 3500);
+    refreshPushUI(); return false;
+  }
+}
+async function pushOff(quiet){
+  const s = lsGet(K.push,null);
+  try{
+    if(pushSupported()){
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg && await reg.pushManager.getSubscription();
+      const ep = (sub && sub.endpoint) || (s && s.endpoint);
+      if(ep && auth) await rpc('mw_push_unsubscribe', { p_endpoint:ep }).catch(console.warn);
+      if(sub) await sub.unsubscribe();
+    }
+  }finally{
+    localStorage.removeItem(K.push); refreshPushUI();
+    if(!quiet) toast('이 기기의 휴대폰 알림을 껐습니다');
+  }
+}
+function pushLater(){ lsSet(K.pushLater, Date.now()); render(); }
+function pushBanner(){
+  const st = pushState();
+  if(st==='on' || st==='none' || st==='denied') return '';
+  if(Date.now()-lsGet(K.pushLater,0) < 7*86400000) return '';   // '나중에' 누르면 7일간 숨김
+  const ios = st==='ios-install';
+  const bell='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+  return `<div class="push-card">
+    <div class="pc-ic">${bell}<i></i></div>
+    <div class="pc-tx"><b>${ios?'아이폰에서 알림 받기':'휴대폰 알림 켜기'}</b><small>${ios?'홈 화면에 앱을 설치하면 알림을 켤 수 있습니다':'앱을 닫아도 내 담당 · 긴급 민원을 바로 알려드립니다'}</small></div>
+    <button class="pc-go" onclick="${ios?'showInstallGuide()':'syncPushSub(true).then(render)'}">${ios?'설치 방법':'켜기'}</button>
+    <button class="pc-x" onclick="pushLater()" aria-label="나중에" title="나중에 (7일간 숨김)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>`;
+}
+function pushMenu(){
+  const st = pushState();
+  if(st==='on'){ if(confirm('이 기기의 휴대폰 알림을 끌까요?\n(다른 기기는 그대로입니다)')) pushOff(false).then(render); return; }
+  if(st==='off'){ syncPushSub(true).then(render); return; }
+  if(st==='ios-install'){ showInstallGuide(); return; }
+  if(st==='denied'){ alert('이 브라우저에서 알림이 차단되어 있습니다.\n\n주소창 왼쪽 자물쇠(또는 설정) → 알림 → 허용으로 바꾼 뒤 다시 눌러 주세요.'); return; }
+  alert('이 브라우저는 휴대폰 알림을 지원하지 않습니다.\n크롬 · 엣지 · 삼성 인터넷 또는 아이폰 홈 화면 앱에서 사용하세요.');
+}
+function refreshPushUI(){
+  const b=document.getElementById('tb-push'); if(!b) return;
+  const st = me ? pushState() : 'none';
+  b.classList.toggle('hidden', st==='none');
+  b.classList.toggle('on', st==='on');
+  b.title = b.ariaLabel = st==='on' ? '휴대폰 알림 켜짐 (누르면 끄기)' : '휴대폰 알림 꺼짐 (누르면 켜기)';
+}
+
+// 알림을 눌러 열었을 때 해당 민원 · 탭으로 이동 (?issue=ID, ?tab=chat)
+let deepLink = null;
+function takeDeepLink(u){
+  try{ const q=new URL(u, location.href).searchParams; const d={issue:q.get('issue'), tab:q.get('tab')}; if(d.issue||d.tab) deepLink=d; }catch{}
+}
+function handleDeepLink(){
+  if(!deepLink || !me) return;
+  const d=deepLink;
+  if(d.issue && !issues[d.issue]) return;   // 아직 받지 못했으면 다음 동기화 때
+  deepLink=null;
+  if(/[?&](issue|tab)=/.test(location.search)) history.replaceState(null,'',location.pathname);
+  if(d.tab && ['list','new','chat','stats'].includes(d.tab)) go(d.tab);
+  if(d.issue){ go('list'); openDetail(d.issue); }
+}
+takeDeepLink(location.href);
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', e=>{
+    const m=e.data||{};
+    if(m.type==='open' && m.url){ takeDeepLink(m.url); if(sbOn) fetchAll(); handleDeepLink(); }
+    if(m.type==='push' && sbOn) fetchAll();   // 앱이 열려 있을 때 푸시가 오면 즉시 동기화
+  });
+}
+
+// ══════════════════════════════════════════════
 // 앱으로 설치 (홈 화면 · 바탕화면 아이콘)
 // ══════════════════════════════════════════════
 let installPrompt = null;
 const isStandalone = ()=>{ try{ return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; }catch{ return false; } };
 const platform = ()=>{ const ua=navigator.userAgent||''; if(/iphone|ipad|ipod/i.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)) return 'ios'; if(/android/i.test(ua)) return 'android'; return 'pc'; };
-function refreshInstallUI(){ const show=!isStandalone(); ['lg-install','tb-install','adm-install'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('hidden', !show); }); }
+function refreshInstallUI(){ const show=!isStandalone(); ['lg-install','tb-install','adm-install'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('hidden', !show); }); refreshPushUI(); }
 window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installPrompt=e; refreshInstallUI(); });
 window.addEventListener('appinstalled', ()=>{ installPrompt=null; refreshInstallUI(); closeById('inst-modal'); toast('설치되었습니다. 홈 화면이나 바탕화면의 아이콘으로 여세요', 3500); });
 async function installApp(){
