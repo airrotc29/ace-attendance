@@ -458,6 +458,24 @@ mark{background:#fff1a8;box-shadow:none}
 .am-btn{grid-column:2;grid-row:1 / span 2;white-space:nowrap;background:#fff;border:1px solid var(--navy);color:var(--navy);font-weight:600}
 .am-btn:hover{background:var(--navy);color:#fff}
 @media (max-width:520px){.am-total b{font-size:17px}.am-btn{grid-column:1 / -1;grid-row:auto}}
+.dlg-bg{position:fixed;inset:0;z-index:400;background:rgba(17,17,17,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:dlgFade .14s ease-out}
+.dlg{background:#fff;border-radius:18px;width:min(340px,100%);padding:22px 20px 16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);animation:dlgPop .16s ease-out}
+.dlg h3{margin:0 0 8px;font-size:17px;font-weight:700;color:var(--navy);letter-spacing:-.01em;line-height:1.4;word-break:keep-all}
+.dlg p{margin:0 0 4px;font-size:14px;color:var(--ink2);line-height:1.6;word-break:keep-all}
+.dlg-in{width:100%;margin-top:12px;padding:12px 13px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:15px}
+.dlg-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(36,80,216,.12)}
+.dlg-err{min-height:16px;font-size:12px;color:var(--red);margin-top:4px}
+.dlg-bt{display:flex;gap:8px;margin-top:18px}
+.dlg-bt button{flex:1;height:46px;border-radius:12px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;border:0}
+.dlg-c{background:#f1f0ec;color:var(--ink)}
+.dlg-o{background:var(--navy);color:#fff}
+.dlg-o.danger{background:var(--red)}
+.dlg-bt button:active{transform:scale(.98)}
+@keyframes dlgFade{from{opacity:0}to{opacity:1}}
+@keyframes dlgPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.msg.sys .m-bubble .sm-t{color:#111;font-weight:800}
+.msg.sys .m-bubble .sm-w{color:var(--accent);font-weight:800}
+.msg .m-who .who-n{color:var(--accent);font-weight:800}
 </style>
 </head>
 <body>
@@ -804,8 +822,9 @@ function enter(empId){
   startSync(); fetchAll();
   go('list');
   refreshPushUI(); syncPushSub(false);
+  armBackTrap();
 }
-async function logout(){ if(!confirm('나가시겠습니까?')) return; await pushOff(true).catch(console.warn); localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
+async function logout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'다음에 들어올 때 사업소 코드와 비밀번호를 다시 입력합니다.', ok:'나가기'})) return; await pushOff(true).catch(console.warn); localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
 
 // 기기에 저장된 로그인 정보로 자동 입장
 async function boot(){
@@ -829,9 +848,9 @@ async function boot(){
 // ── 본사 관리 ──
 function adminEnter(){
   $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
-  adminHome();
+  adminHome(); armBackTrap();
 }
-function adminLogout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.auth); location.reload(); }
+async function adminLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'본사 관리 화면에서 나갑니다.', ok:'나가기'})) return; localStorage.removeItem(K.auth); location.reload(); }
 let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null;
 async function adminHome(){
   $('#adm-content').innerHTML = '<div class="empty"><b>불러오는 중…</b></div>';
@@ -934,19 +953,19 @@ async function adminCreate(){
   }
 }
 async function adminPw(id,name){
-  const np = prompt(`${name} 새 비밀번호 (6자 이상)`); if(!np) return;
+  const np = await askInput({title:'사업소 비밀번호 바꾸기', msg:`${name} 의 새 비밀번호를 입력하세요. 바꾸면 직원들은 새 비밀번호로 다시 로그인합니다.`, placeholder:'6자 이상', min:6}); if(!np) return;
   if(np.length<6){ toast('6자 이상이어야 합니다'); return; }
   try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); toast('비밀번호를 바꿨습니다'); }
   catch(e){ toast('바꾸지 못했습니다'); }
 }
 async function adminMgrPw(id,name){
-  const np = prompt(`${name} 소장 비밀번호 (4자 이상, 직원 관리용)`); if(!np) return;
+  const np = await askInput({title:'소장 비밀번호 정하기', msg:`${name} 소장이 직원을 추가 · 삭제할 때 쓰는 비밀번호입니다.`, placeholder:'4자 이상', min:4}); if(!np) return;
   if(np.length<4){ toast('4자 이상이어야 합니다'); return; }
   try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); toast('소장 비밀번호를 정했습니다'); adminHome(); }
   catch(e){ toast('정하지 못했습니다'); }
 }
 async function adminDelete(id,name){
-  if(!confirm(`"${name}" 사업소를 삭제할까요?\n민원·채팅·직원 명단이 모두 지워집니다.`)) return;
+  if(!await askConfirm({title:`"${name}" 사업소를 삭제할까요?`, msg:'민원 · 채팅 · 직원 명단이 모두 지워지고 되돌릴 수 없습니다.', ok:'삭제', danger:true})) return;
   try{ await rpc('mw_office_delete',{p_office:id}); toast('삭제되었습니다'); adminHome(); }
   catch(e){ toast('삭제하지 못했습니다'); }
 }
@@ -1293,8 +1312,8 @@ function addLog(id,type){
   logDraftText=composeLog(type, sel); draw();
 }
 let logDraftText='';
-function reopen(id){ const it=issues[id]; if(!confirm('이 민원을 다시 열까요? (재발/미해결)')) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`다시 열림 · ${it.title} · ${me.name} (재발)`, id); }
-function delIssue(id){ const it=issues[id]; if(!confirm(`삭제하시겠습니까?\n"${it.title}"`)) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
+async function reopen(id){ const it=issues[id]; if(!await askConfirm({title:'이 민원을 다시 열까요?', msg:'같은 문제가 다시 생겼거나 해결되지 않았을 때 엽니다. 재발 횟수가 통계에 반영됩니다.', ok:'다시 열기'})) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`다시 열림 · ${it.title} · ${me.name} (재발)`, id); }
+async function delIssue(id){ const it=issues[id]; if(!await askConfirm({title:'이 민원을 삭제할까요?', msg:`"${it.title}"\n삭제하면 처리 기록과 사진도 함께 지워집니다.`, ok:'삭제', danger:true})) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
 function editIssue(id){
   const it=issues[id];
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="edit-modal" onclick="if(event.target===this)this.remove()"><div class="modal">
@@ -1321,14 +1340,28 @@ const QUICK = [
   {label:'확인', text:'확인했습니다. 1시간 내 가겠습니다.'},
   {label:'출발', text:'지금 현장 갑니다.'}];
 let chatPhotos=[]; let chatDraft='';
+// 채팅 안내 메시지: 민원명은 굵은 검정, 쓴 사람은 굵은 파란색
+const SYS_HEAD=/^(?:새 민원 접수|담당 지정|담당 해제|댓글|진행|처리 완료|다시 열림) · (.+?)(?= · | → | \(|$)/;
+function sysHtml(m){
+  const text=String(m.text||''); const spans=[];
+  const mark=(s,type)=>{ if(!s) return; let i=0; while((i=text.indexOf(s,i))>=0){ const e=i+s.length; if(!spans.some(x=>i<x[1]&&e>x[0])) spans.push([i,e,type]); i=e; } };
+  const it=m.issueId&&issues[m.issueId];
+  let title=it&&text.includes(it.title)?it.title:null;
+  if(!title){ const h=text.match(SYS_HEAD); if(h) title=h[1]; }
+  mark(title,'t'); mark(m.by&&m.by.name,'w');
+  spans.sort((a,b)=>a[0]-b[0]);
+  let out='', pos=0;
+  spans.forEach(([s,e,ty])=>{ out+=esc(text.slice(pos,s))+`<b class="${ty==='t'?'sm-t':'sm-w'}">${esc(text.slice(s,e))}</b>`; pos=e; });
+  return out+esc(text.slice(pos));
+}
 function renderChat(){
   const msgs=Object.values(chat).sort((a,b)=>a.ts-b.ts);
   let html='', lastDate='';
   msgs.forEach(m=>{
     const d=fmtDate(m.ts); if(d!==lastDate){ html+=`<div class="chat-date">${d} (${['일','월','화','수','목','금','토'][new Date(m.ts).getDay()]})</div>`; lastDate=d; }
     const mine=m.by&&m.by.empId===me.empId;
-    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`onclick="openDetail('${m.issueId}')"`:''}><div class="m-bubble">${esc(m.text)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
-    html+=`<div class="msg ${mine?'mine':''} ${m.kind==='notice'?'notice':''}">${!mine?`<div class="m-who">${esc(m.by?.name)} <span style="font-weight:400">· ${esc(m.by?.team||'')}</span></div>`:''}<div class="m-bubble">${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="viewImg(this.src)">`:''}</div><div class="m-time">${fmtTime(m.ts)}</div></div>`;
+    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`onclick="openDetail('${m.issueId}')"`:''}><div class="m-bubble">${sysHtml(m)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
+    html+=`<div class="msg ${mine?'mine':''} ${m.kind==='notice'?'notice':''}">${!mine?`<div class="m-who"><b class="who-n">${esc(m.by?.name)}</b> <span style="font-weight:400">· ${esc(m.by?.team||'')}</span></div>`:''}<div class="m-bubble">${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="viewImg(this.src)">`:''}</div><div class="m-time">${fmtTime(m.ts)}</div></div>`;
   });
   if(!msgs.length) html=`<div class="empty"><b>아직 대화가 없습니다</b>작업 안내, 민원 공유, 현장 사진을 자유롭게 올려 주세요</div>`;
   return `<div class="chat-wrap" style="margin:-14px -14px calc(-1 * (var(--nav-h) + 20px))">
@@ -1505,7 +1538,7 @@ async function staffAdd(){
   catch(e){ handleMgrErr(e,'추가하지 못했습니다'); }
 }
 async function staffDel(id,name){
-  if(!confirm(`${name} 님을 명단에서 삭제할까요?\n이미 처리한 민원 기록은 그대로 남습니다.`)) return;
+  if(!await askConfirm({title:`${name} 님을 명단에서 삭제할까요?`, msg:'이미 처리한 민원 기록은 그대로 남습니다.', ok:'삭제', danger:true})) return;
   try{ await rpc('mw_staff_delete',{p_mgr_pw:mgrPw, p_emp_key:id}); EMPLOYEES = await loadEmployees(); toast('삭제했습니다'); renderStaff(); render(); }
   catch(e){ handleMgrErr(e,'삭제하지 못했습니다'); }
 }
@@ -1827,6 +1860,48 @@ thead{display:table-header-group}
 
 
 // ══════════════════════════════════════════════
+// 확인 창 (브라우저 기본 창 대신 앱 화면 안에서 확인 · 취소)
+// ══════════════════════════════════════════════
+let dlgClose=null;   // 열린 확인 창을 닫는 함수 (뒤로가기 · Esc 용)
+function openDialog({title, msg='', ok='확인', cancel='취소', danger=false, input=null}){
+  return new Promise(res=>{
+    if(dlgClose) dlgClose(null);
+    const root=document.createElement('div'); root.className='dlg-bg';
+    root.innerHTML=`<div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t">
+      <h3 id="dlg-t">${esc(title)}</h3>${msg?`<p>${esc(msg).replace(/\n/g,'<br>')}</p>`:''}
+      ${input?`<input class="dlg-in" type="text" autocomplete="off" placeholder="${esc(input.placeholder||'')}"><div class="dlg-err"></div>`:''}
+      <div class="dlg-bt">${cancel?`<button class="dlg-c">${esc(cancel)}</button>`:''}<button class="dlg-o ${danger?'danger':''}">${esc(ok)}</button></div></div>`;
+    document.body.appendChild(root);
+    const inp=root.querySelector('.dlg-in');
+    const done=v=>{ if(!root.isConnected) return; root.remove(); document.removeEventListener('keydown',key,true); dlgClose=null; res(v); };
+    const okFn=()=>{ if(!input) return done(true); const v=inp.value.trim(); if(input.min && v.length<input.min){ root.querySelector('.dlg-err').textContent=`${input.min}자 이상 입력하세요`; inp.focus(); return; } done(v); };
+    const key=e=>{ if(e.key==='Escape'){ e.preventDefault(); done(input?null:false); } else if(e.key==='Enter' && (input || document.activeElement===root.querySelector('.dlg-o'))){ e.preventDefault(); okFn(); } };
+    document.addEventListener('keydown',key,true);
+    root.addEventListener('click',e=>{ if(e.target===root) done(input?null:false); });
+    root.querySelector('.dlg-o').onclick=okFn;
+    const c=root.querySelector('.dlg-c'); if(c) c.onclick=()=>done(input?null:false);
+    dlgClose=v=>done(v===null?(input?null:false):v);
+    setTimeout(()=>{ (inp||root.querySelector('.dlg-o')).focus(); },30);
+  });
+}
+const askConfirm = o=>openDialog(o);
+const showAlert = o=>openDialog({...o, cancel:null});
+const askInput = o=>openDialog({...o, ok:o.ok||'저장', input:{placeholder:o.placeholder, min:o.min}});
+
+// 휴대폰 뒤로가기: 열린 창이 있으면 그 창만 닫고, 없으면 "앱을 종료할까요?" 확인
+let backTrap=false, exiting=false;
+function armBackTrap(){ if(backTrap) return; backTrap=true; try{ history.pushState({mwTrap:1},''); }catch{} }
+window.addEventListener('popstate',async()=>{
+  if(!backTrap || exiting) return;
+  try{ history.pushState({mwTrap:1},''); }catch{}   // 일단 다시 막아 두고 판단
+  if(dlgClose){ dlgClose(null); return; }
+  const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
+  const mr=$('#modal-root');
+  if(mr && mr.lastElementChild){ const top=mr.lastElementChild; if(top.id==='detail-modal') closeModal(); else top.remove(); return; }
+  if(await askConfirm({title:'앱을 종료할까요?', msg:'작성 중인 내용은 이 기기에 남아 있습니다.', ok:'종료'})){ exiting=true; history.go(-2); }
+});
+
+// ══════════════════════════════════════════════
 // 휴대폰 알림 (앱을 닫아도 오는 푸시 알림)
 //  - 새로 나 · 우리 팀에 배정된 민원, 긴급 민원 접수, 작업 안내 메시지
 // ══════════════════════════════════════════════
@@ -1900,11 +1975,11 @@ function pushBanner(){
 }
 function pushMenu(){
   const st = pushState();
-  if(st==='on'){ if(confirm('이 기기의 휴대폰 알림을 끌까요?\n(다른 기기는 그대로입니다)')) pushOff(false).then(render); return; }
+  if(st==='on'){ askConfirm({title:'휴대폰 알림을 끌까요?', msg:'이 기기만 꺼지고 다른 기기는 그대로입니다.', ok:'끄기'}).then(y=>{ if(y) pushOff(false).then(render); }); return; }
   if(st==='off'){ syncPushSub(true).then(render); return; }
   if(st==='ios-install'){ showInstallGuide(); return; }
-  if(st==='denied'){ alert('이 브라우저에서 알림이 차단되어 있습니다.\n\n주소창 왼쪽 자물쇠(또는 설정) → 알림 → 허용으로 바꾼 뒤 다시 눌러 주세요.'); return; }
-  alert('이 브라우저는 휴대폰 알림을 지원하지 않습니다.\n크롬 · 엣지 · 삼성 인터넷 또는 아이폰 홈 화면 앱에서 사용하세요.');
+  if(st==='denied'){ showAlert({title:'알림이 차단되어 있습니다', msg:'주소창 왼쪽 자물쇠(또는 설정) → 알림 → 허용으로 바꾼 뒤 종 버튼을 다시 눌러 주세요.'}); return; }
+  showAlert({title:'알림을 지원하지 않는 브라우저입니다', msg:'크롬 · 엣지 · 삼성 인터넷 또는 아이폰 홈 화면 앱에서 사용하세요.'});
 }
 function refreshPushUI(){
   const b=document.getElementById('tb-push'); if(!b) return;
