@@ -473,6 +473,9 @@ mark{background:#fff1a8;box-shadow:none}
 .dlg-bt button:active{transform:scale(.98)}
 @keyframes dlgFade{from{opacity:0}to{opacity:1}}
 @keyframes dlgPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.msg.sys .m-bubble .sm-t{color:#111;font-weight:800}
+.msg.sys .m-bubble .sm-w{color:var(--accent);font-weight:800}
+.msg .m-who .who-n{color:var(--accent);font-weight:800}
 </style>
 </head>
 <body>
@@ -1337,14 +1340,28 @@ const QUICK = [
   {label:'확인', text:'확인했습니다. 1시간 내 가겠습니다.'},
   {label:'출발', text:'지금 현장 갑니다.'}];
 let chatPhotos=[]; let chatDraft='';
+// 채팅 안내 메시지: 민원명은 굵은 검정, 쓴 사람은 굵은 파란색
+const SYS_HEAD=/^(?:새 민원 접수|담당 지정|담당 해제|댓글|진행|처리 완료|다시 열림) · (.+?)(?= · | → | \(|$)/;
+function sysHtml(m){
+  const text=String(m.text||''); const spans=[];
+  const mark=(s,type)=>{ if(!s) return; let i=0; while((i=text.indexOf(s,i))>=0){ const e=i+s.length; if(!spans.some(x=>i<x[1]&&e>x[0])) spans.push([i,e,type]); i=e; } };
+  const it=m.issueId&&issues[m.issueId];
+  let title=it&&text.includes(it.title)?it.title:null;
+  if(!title){ const h=text.match(SYS_HEAD); if(h) title=h[1]; }
+  mark(title,'t'); mark(m.by&&m.by.name,'w');
+  spans.sort((a,b)=>a[0]-b[0]);
+  let out='', pos=0;
+  spans.forEach(([s,e,ty])=>{ out+=esc(text.slice(pos,s))+`<b class="${ty==='t'?'sm-t':'sm-w'}">${esc(text.slice(s,e))}</b>`; pos=e; });
+  return out+esc(text.slice(pos));
+}
 function renderChat(){
   const msgs=Object.values(chat).sort((a,b)=>a.ts-b.ts);
   let html='', lastDate='';
   msgs.forEach(m=>{
     const d=fmtDate(m.ts); if(d!==lastDate){ html+=`<div class="chat-date">${d} (${['일','월','화','수','목','금','토'][new Date(m.ts).getDay()]})</div>`; lastDate=d; }
     const mine=m.by&&m.by.empId===me.empId;
-    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`onclick="openDetail('${m.issueId}')"`:''}><div class="m-bubble">${esc(m.text)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
-    html+=`<div class="msg ${mine?'mine':''} ${m.kind==='notice'?'notice':''}">${!mine?`<div class="m-who">${esc(m.by?.name)} <span style="font-weight:400">· ${esc(m.by?.team||'')}</span></div>`:''}<div class="m-bubble">${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="viewImg(this.src)">`:''}</div><div class="m-time">${fmtTime(m.ts)}</div></div>`;
+    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`onclick="openDetail('${m.issueId}')"`:''}><div class="m-bubble">${sysHtml(m)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
+    html+=`<div class="msg ${mine?'mine':''} ${m.kind==='notice'?'notice':''}">${!mine?`<div class="m-who"><b class="who-n">${esc(m.by?.name)}</b> <span style="font-weight:400">· ${esc(m.by?.team||'')}</span></div>`:''}<div class="m-bubble">${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="viewImg(this.src)">`:''}</div><div class="m-time">${fmtTime(m.ts)}</div></div>`;
   });
   if(!msgs.length) html=`<div class="empty"><b>아직 대화가 없습니다</b>작업 안내, 민원 공유, 현장 사진을 자유롭게 올려 주세요</div>`;
   return `<div class="chat-wrap" style="margin:-14px -14px calc(-1 * (var(--nav-h) + 20px))">
