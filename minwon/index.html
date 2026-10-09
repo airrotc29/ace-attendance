@@ -498,6 +498,7 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 /* 조치 내용: 굵은 파란 글씨 (진행 보고 · 완료 처리 입력칸과 처리 과정) */
 #log-text{color:var(--accent);font-weight:700}
 .tl-item.t-progress .txt,.tl-item.t-done .txt{color:var(--accent);font-weight:700}
+.tb-btn.tb-two{line-height:1.15;font-size:11.5px;padding:4px 9px;text-align:center;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -547,7 +548,7 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
     <div class="tb-user"><b id="tb-name"></b><span id="tb-team"></span></div>
     <button class="tb-btn tb-ic hidden" id="tb-install" onclick="installApp()" aria-label="앱으로 설치" title="앱으로 설치"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
     <button class="tb-btn tb-ic hidden" id="tb-push" onclick="pushMenu()" aria-label="휴대폰 알림" title="휴대폰 알림"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path class="slash" d="M3 3l18 18"/></svg></button>
-    <button class="tb-btn hidden" id="tb-staff" onclick="openStaff()">직원</button>
+    <button class="tb-btn tb-two hidden" id="tb-staff" onclick="openStaff()">직원<br>등록·해제</button>
     <button class="tb-btn" onclick="logout()">나가기</button>
   </div>
   <div class="content" id="content"></div>
@@ -1575,7 +1576,7 @@ function openStaff(){ if(!mgrPw) return askMgrPw(); renderStaff(); }
 function askMgrPw(){
   closeById('mgr-modal');
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="mgr-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:420px">
-    <div class="modal-head"><h2>직원 관리</h2><button class="modal-close" onclick="closeById('mgr-modal')">✕</button></div>
+    <div class="modal-head"><h2>직원 등록 · 해제</h2><button class="modal-close" onclick="closeById('mgr-modal')">✕</button></div>
     <p class="hint">소장 비밀번호를 입력하세요. 본사 관리자가 정해 준 비밀번호입니다.</p>
     <div class="form-row"><input id="mgr-pw" type="password" placeholder="소장 비밀번호" onkeydown="if(event.key==='Enter')checkMgr()"></div>
     <div id="mgr-err" class="lg-err hidden" style="margin:0 0 12px"></div>
@@ -1597,29 +1598,29 @@ function renderStaff(){
   closeById('staff-modal');
   const list=[...EMPLOYEES].sort(sortEmp);
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="staff-modal" onclick="if(event.target===this)this.remove()"><div class="modal">
-    <div class="modal-head"><h2>직원 관리 <small style="font-size:13px;color:var(--mute);font-weight:500">${list.length}명</small></h2><button class="modal-close" onclick="closeById('staff-modal')">✕</button></div>
-    <div class="card" style="margin-bottom:14px"><h3>직원 추가</h3>
+    <div class="modal-head"><h2>직원 등록 · 해제 <small style="font-size:13px;color:var(--mute);font-weight:500">${list.length}명</small></h2><button class="modal-close" onclick="closeById('staff-modal')">✕</button></div>
+    <div class="card" style="margin-bottom:14px"><h3>직원 등록</h3>
       <div class="form-grid">
         <div class="form-row"><label>이름</label><input id="st-name" placeholder="홍길동"></div>
         <div class="form-row"><label>직급</label><input id="st-rank" list="rank-list" placeholder="시설주임"></div>
       </div>
       <div class="form-row"><label>사번 (선택)</label><input id="st-emp" placeholder="비워도 됩니다"></div>
       <datalist id="rank-list">${RANKS.map(r=>`<option value="${r}">`).join('')}</datalist>
-      <button class="btn btn-primary btn-block" onclick="staffAdd()">추가</button>
+      <button class="btn btn-primary btn-block" onclick="staffAdd()">등록</button>
     </div>
-    <div class="staff-list">${list.map(e=>`<div class="st-row"><div><b>${esc(e.name)}</b><small>${esc(e.rank)} · ${esc(teamOf(e.rank))}</small></div>${e.empId===me.empId?'<span class="st-me">본인</span>':`<button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="staffDel('${esc(e.empId)}','${esc(e.name)}')">삭제</button>`}</div>`).join('')}</div>
+    <div class="staff-list">${list.map(e=>`<div class="st-row"><div><b>${esc(e.name)}</b><small>${esc(e.rank)} · ${esc(teamOf(e.rank))}</small></div>${e.empId===me.empId?'<span class="st-me">본인</span>':`<button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="staffDel('${esc(e.empId)}','${esc(e.name)}')">등록 해제</button>`}</div>`).join('')}</div>
   </div></div>`);
 }
 async function staffAdd(){
   const name=$('#st-name').value.trim(), rank=$('#st-rank').value.trim(), emp=$('#st-emp').value.trim();
   if(!name || !rank){ toast('이름과 직급을 입력하세요'); return; }
-  try{ await rpc('mw_staff_add',{p_mgr_pw:mgrPw, p_name:name, p_rank:rank, p_emp_id:emp||null}); EMPLOYEES = await loadEmployees(); toast(`${name} 님을 추가했습니다`); renderStaff(); render(); }
-  catch(e){ handleMgrErr(e,'추가하지 못했습니다'); }
+  try{ await rpc('mw_staff_add',{p_mgr_pw:mgrPw, p_name:name, p_rank:rank, p_emp_id:emp||null}); EMPLOYEES = await loadEmployees(); toast(`${name} 님을 등록했습니다`); renderStaff(); render(); }
+  catch(e){ handleMgrErr(e,'등록하지 못했습니다'); }
 }
 async function staffDel(id,name){
-  if(!await askConfirm({title:`${name} 님을 명단에서 삭제할까요?`, msg:'이미 처리한 민원 기록은 그대로 남습니다.', ok:'삭제', danger:true})) return;
-  try{ await rpc('mw_staff_delete',{p_mgr_pw:mgrPw, p_emp_key:id}); EMPLOYEES = await loadEmployees(); toast('삭제했습니다'); renderStaff(); render(); }
-  catch(e){ handleMgrErr(e,'삭제하지 못했습니다'); }
+  if(!await askConfirm({title:`${name} 님의 직원 등록을 해제할까요?`, msg:'해제하면 이 사람은 앱에 입장할 수 없습니다. 이미 처리한 민원 기록은 그대로 남습니다.', ok:'등록 해제', danger:true})) return;
+  try{ await rpc('mw_staff_delete',{p_mgr_pw:mgrPw, p_emp_key:id}); EMPLOYEES = await loadEmployees(); toast('등록을 해제했습니다'); renderStaff(); render(); }
+  catch(e){ handleMgrErr(e,'등록을 해제하지 못했습니다'); }
 }
 function handleMgrErr(e,msg){
   if(String(e.message||'').includes('manager_')){ mgrPw=null; closeById('staff-modal'); toast('소장 비밀번호를 다시 입력하세요'); askMgrPw(); }
@@ -1969,17 +1970,27 @@ const askInput = o=>openDialog({...o, ok:o.ok||'저장', input:{placeholder:o.pl
 
 // 휴대폰 뒤로가기: 열린 창이 있으면 그 창만 닫고, 없으면 "앱을 종료할까요?" 확인
 let backTrap=false, exiting=false;
-function armBackTrap(){ if(backTrap) return; backTrap=true; try{ history.pushState({mwTrap:1},''); }catch{} }
+// 크롬은 사용자가 화면을 누르지 않은 상태에서 만든 기록을 뒤로가기 때 건너뛰므로(앱이 그냥 닫힘),
+// '뒤로가기 막기'는 화면을 누르는 순간(사용자 동작 중)에 걸어 둠
+function pushTrap(){ if(!backTrap || exiting) return; if(history.state && history.state.mwTrap) return; try{ history.pushState({mwTrap:1},''); }catch{} }
+function armBackTrap(){ backTrap=true; exiting=false; if(navigator.userActivation && navigator.userActivation.isActive) pushTrap(); }
+['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev, pushTrap, {capture:true, passive:true}));
+function exitApp(){
+  exiting=true;
+  try{ window.close(); }catch{}
+  setTimeout(()=>{ if(document.visibilityState==='hidden') return; history.back(); }, 150);   // 막기 기록을 빼서, 한 번 더 누르면 바로 닫히게
+  setTimeout(()=>{ if(document.visibilityState==='hidden') return; toast('뒤로 버튼을 한 번 더 누르면 앱이 닫힙니다', 3000); setTimeout(()=>{ if(document.visibilityState==='visible'){ exiting=false; } }, 3000); }, 400);
+}
 window.addEventListener('popstate',async()=>{
   if(!backTrap || exiting) return;
-  try{ history.pushState({mwTrap:1},''); }catch{}   // 일단 다시 막아 두고 판단
+  try{ history.pushState({mwTrap:1},''); }catch{}   // 다시 막아 둠 (화면을 누를 때도 한 번 더 걸어 둠)
   if(dlgClose){ dlgClose(null); return; }
   const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
   const mr=$('#modal-root');
   if(mr && mr.lastElementChild){ const top=mr.lastElementChild; if(top.id==='detail-modal') closeModal(); else top.remove(); return; }
   // 접수 · 채팅 · 통계 · 검색 탭에서는 앱을 나가지 않고 민원 탭으로
   if(me && !$('#app').classList.contains('hidden') && tab!=='list'){ go('list'); return; }
-  if(await askConfirm({title:'앱을 종료할까요?', msg:'작성 중인 내용은 이 기기에 남아 있습니다.', ok:'종료'})){ exiting=true; history.go(-2); }
+  if(await askConfirm({title:'앱을 종료할까요?', msg:'작성 중인 내용은 이 기기에 남아 있습니다.', ok:'종료'})) exitApp();
 });
 
 // ══════════════════════════════════════════════
