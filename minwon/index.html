@@ -643,6 +643,13 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 /* 민원 탭 숫자 칸: 숫자 15% 크게 · 더 굵게 */
 .summary-row button.stat-tile .n{font-size:29px;font-weight:900}
 @media (max-width:420px){.summary-row button.stat-tile .n{font-size:25px}}
+/* 접수: 분류 · 접수 경로 — 같은 크기 칸으로 가지런히 */
+.chips.pick{display:grid;gap:7px}
+.chips.pick4{grid-template-columns:repeat(4,1fr)}
+.chips.pick3{grid-template-columns:repeat(3,1fr)}
+.chips.pick .chip{height:42px;padding:0 4px;border-radius:12px!important;background:#f3f5f9!important;border:1px solid transparent!important;box-shadow:none!important;color:#374151!important;font-size:14px;font-weight:600;letter-spacing:-.03em;overflow:hidden;text-overflow:ellipsis}
+.chips.pick .chip.active{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important;box-shadow:0 6px 12px -8px rgba(29,71,204,.8)!important}
+@media (max-width:370px){.chips.pick .chip{font-size:13px;letter-spacing:-.05em}}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -1636,8 +1643,8 @@ function renderNew(){
   <div class="card">
     <div class="form-row"><label>내용 (한 줄 요약) <span class="req">*</span></label><input id="n-title" value="${esc(d.title)}" placeholder="예) 2층 화장실 문 삐걱거림" oninput="newDraft.title=this.value"></div>
     <div class="form-row"><label>장소</label><input id="n-loc" value="${esc(d.location)}" placeholder="예) 2층 남자화장실 / 지하1층 주차장" oninput="newDraft.location=this.value"></div>
-    <div class="form-row"><label>분류</label><div class="chips">${CATEGORIES.map(c=>`<button class="chip ${d.category===c?'active':''}" onclick="newDraft.category='${c}';render()">${c}</button>`).join('')}</div></div>
-    <div class="form-row"><label>접수 경로</label><div class="chips">${SOURCES.map(s=>`<button class="chip ${d.source===s?'active':''}" onclick="newDraft.source='${s}';render()">${s}</button>`).join('')}</div></div>
+    <div class="form-row"><label>분류</label><div class="chips pick pick4">${CATEGORIES.map(c=>`<button class="chip ${d.category===c?'active':''}" onclick="newDraft.category='${c}';render()">${c}</button>`).join('')}</div></div>
+    <div class="form-row"><label>접수 경로</label><div class="chips pick pick3">${SOURCES.map(s=>`<button class="chip ${d.source===s?'active':''}" onclick="newDraft.source='${s}';render()">${s}</button>`).join('')}</div></div>
     <div class="contact-in">
       <div class="ci-h"><b>민원인 연락처</b><span>처리 결과를 직접 알려 드릴 때 씁니다 (선택)</span></div>
       <div class="form-grid">
