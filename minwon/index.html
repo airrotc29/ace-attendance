@@ -513,6 +513,20 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .work-band .wb-t em{font-style:normal;color:var(--red);font-weight:700}
 .work-band .wb-end{flex:none;border:0;background:#1f8a4c;color:#fff;font:inherit;font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .msg.work-end .m-bubble{background:#e9f6ee!important;border-color:#b9e0c8!important}
+/* 통계 막대: 회색 칸 = 100%, 파란 막대 = 전체 중 비율 */
+.bar-row{grid-template-columns:92px 1fr 74px!important;gap:12px!important}
+.bar-row .bar{height:12px!important;background:#ecebe6!important;border-radius:6px!important}
+.bar-row .bar > div{border-radius:6px!important;background:var(--accent)!important}
+.bar-row .bn{display:flex;align-items:baseline;justify-content:flex-end;gap:5px;white-space:nowrap}
+.bar-row .bn small{font-size:11px;font-weight:500;color:var(--mute);margin-left:-3px}
+.bar-row .bn em{font-style:normal;font-size:12px;font-weight:600;color:var(--mute);min-width:30px;text-align:right}
+.bar-sub{font-size:12.5px;font-weight:500;color:var(--mute);margin-left:6px}
+.bar-empty{color:var(--mute);font-size:13px;padding:6px 0}
+[data-issue]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.work-band .wb-row.issue-work .wb-t{cursor:pointer}
+.work-band .wb-tag{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;background:#a5650c;border-radius:5px;padding:1px 6px;margin-right:6px;vertical-align:2px}
+.work-band .wb-t p i{font-style:normal;font-weight:500;color:#9a7a45;font-size:12.5px}
+.badge.b-work{background:#a5650c;color:#fff}
 </style>
 </head>
 <body>
@@ -1091,8 +1105,8 @@ function assigneeLabel(it){
 }
 function issueCard(it){
   const logs=(it.logs||[]); const cmts=logs.filter(l=>l.type!=='create').length;
-  return `<div class="issue s-${it.status}" onclick="openDetail('${it.id}')">
-    <div class="i-head"><span class="badge b-${it.status}">${STATUS[it.status]}</span>${it.urgent?'<span class="badge b-urgent">긴급</span>':''}<span class="cat">${esc(it.category||'기타')}</span><span class="ago">${ago(it.createdAt)}</span></div>
+  return `<div class="issue s-${it.status}" data-issue="${it.id}" onclick="if(!lpFired)openDetail('${it.id}')">
+    <div class="i-head"><span class="badge b-${it.status}">${STATUS[it.status]}</span>${it.urgent?'<span class="badge b-urgent">긴급</span>':''}${issueWork(it.id)?'<span class="badge b-work">작업 중</span>':''}<span class="cat">${esc(it.category||'기타')}</span><span class="ago">${ago(it.createdAt)}</span></div>
     <div class="i-body"><div>
       <div class="i-title">${esc(it.title)}</div>
       <div class="i-meta">${it.location?`<span>${esc(it.location)}</span>`:''}<span>${esc(it.reporter?.name||'')} 접수</span>${it.source?`<span>${esc(it.source)}</span>`:''}</div>
@@ -1404,6 +1418,7 @@ function addLog(id,type){
       if(type==='done'){ it.status='done'; it.doneAt=now; }
       else if(type==='progress' && it.status==='open'){ it.status='progress'; }
       saveIssue(it);
+      if(type==='done') endIssueWorks(id);
       const sysText = type==='done'?`처리 완료 · ${it.title} · ${me.name}${text?' · '+text:''}`:type==='progress'?`진행 · ${it.title} · ${me.name}: ${text||'진행 중'}`:`댓글 · ${it.title} · ${me.name}: ${text}`;
       sendChat({kind:'sys',text:sysText,issueId:id,photo:photos[0]||null,by:{name:me.name,empId:me.empId,team:me.team}});
       logDraftText=''; const lm=$('#log-modal'); if(lm) lm.remove(); toast(type==='done'?'완료 처리되었습니다':'등록되었습니다');
@@ -1442,20 +1457,56 @@ const QUICK = [
   {label:'확인', text:'확인했습니다. 1시간 내 가겠습니다.'},
   {label:'출발', text:'지금 현장 갑니다.'}];
 let chatPhotos=[]; let chatDraft='';
+// ── 민원을 길게 눌러 '작업 중' 표시 ──
+let lpTimer=null, lpFired=false, lpStart=null;
+function lpCancel(){ clearTimeout(lpTimer); lpTimer=null; }
+document.addEventListener('pointerdown',e=>{
+  const el=e.target.closest('[data-issue]'); if(!el || !me) return;
+  lpFired=false; lpStart={x:e.clientX,y:e.clientY};
+  lpCancel(); lpTimer=setTimeout(()=>{ lpFired=true; try{ navigator.vibrate&&navigator.vibrate(30); }catch{} issueWorkMenu(el.dataset.issue); setTimeout(()=>{ lpFired=false; },700); }, 550);
+},{passive:true});
+document.addEventListener('pointermove',e=>{ if(lpTimer && lpStart && Math.hypot(e.clientX-lpStart.x,e.clientY-lpStart.y)>10) lpCancel(); },{passive:true});
+['pointerup','pointercancel','scroll'].forEach(ev=>document.addEventListener(ev,lpCancel,{passive:true,capture:true}));
+document.addEventListener('contextmenu',e=>{ if(e.target.closest('[data-issue]')) e.preventDefault(); });
+const issueWork = id=>activeWorks().find(m=>m.issueId===id);
+async function issueWorkMenu(id){
+  const it=issues[id]; if(!it) return;
+  if(it.status==='done'){ toast('이미 완료된 민원입니다'); return; }
+  if(issueWork(id)){ if(await askConfirm({title:'이 민원 작업을 완료할까요?', msg:`"${it.title}"\n완료 처리 창이 열립니다.`, ok:'완료하기'})) finishIssueWork(id); return; }
+  const ok=await askConfirm({title:'작업 중으로 표시할까요?', msg:`"${it.title}"${it.location?' · '+it.location:''}\n맨 위 '진행 중인 작업'에 고정되고 사업소 전원에게 알립니다. 끝나면 '완료'를 누르세요.`, ok:'작업 중 표시'});
+  if(!ok) return;
+  // 아무도 안 맡았거나 팀 지정이면 내가 맡음
+  if(!it.assignee || it.assignee.type==='none' || it.assignee.type==='team') await assign(id,'p:'+me.empId,true);
+  const cur=issues[id];
+  if(cur.status==='open'){ cur.status='progress'; }
+  cur.logs.push({ts:Date.now(),type:'progress',by:{empId:me.empId,name:me.name},text:'현장 작업 중입니다'}); saveIssue(cur);
+  sendChat({kind:'notice', text:`작업 중 · ${cur.title}${cur.location?' ('+cur.location+')':''}`, issueId:id, meta:{work:true}, by:{name:me.name,empId:me.empId,team:me.team}});
+  toast('작업 중으로 표시했습니다');
+}
+function finishIssueWork(id){ if(!issues[id]) return; if(openDetailId!==id) openDetail(id); addLog(id,'done'); }
+function endIssueWorks(id){
+  const it=issues[id];
+  Object.values(chat).filter(m=>m.kind==='notice' && m.issueId===id && !(m.meta&&m.meta.endOf)).forEach(m=>{
+    if(Object.values(chat).some(x=>x.meta&&x.meta.endOf===m.id)) return;
+    sendChat({kind:'notice', text:`작업 완료 · ${it?it.title:''} · 정상 운영합니다.`, issueId:id, meta:{endOf:m.id}, by:{name:me.name,empId:me.empId,team:me.team}});
+  });
+}
+
 // ── 진행 중인 작업 (작업 안내 → 작업 끝) ───────────
 // 작업 안내(공지) 중 아직 '작업 끝'이 오지 않은 것. 24시간이 지나면 자동으로 내려감
 const WORK_TTL = 24*3600e3;
 function activeWorks(){
   const all=Object.values(chat);
   const ended=new Set(all.filter(m=>m.meta&&m.meta.endOf).map(m=>m.meta.endOf));
-  return all.filter(m=>m.kind==='notice' && m.text && !(m.meta&&m.meta.endOf) && !ended.has(m.id) && Date.now()-m.ts<WORK_TTL).sort((a,b)=>a.ts-b.ts);
+  return all.filter(m=>m.kind==='notice' && m.text && !(m.meta&&m.meta.endOf) && !ended.has(m.id) && Date.now()-m.ts<WORK_TTL && !(m.issueId && issues[m.issueId] && issues[m.issueId].status==='done')).sort((a,b)=>a.ts-b.ts);
 }
 const workShort = s=>{ const x=String(s||'').replace(/^\s*작업 안내\s*[:：]\s*/,'').split(/(?<=[.。!?])\s/)[0].trim(); return x.length>48?x.slice(0,47)+'…':x; };
 function workBand(where){
   const ws=activeWorks(); if(!ws.length) return '';
   const tool='<svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>';
-  return `<div class="work-band ${where}"><div class="wb-h">${tool}<b>진행 중인 작업 ${ws.length}건</b><span>끝나면 '작업 끝'을 눌러 주세요</span></div>
-    ${ws.map(m=>`<div class="wb-row"><div class="wb-t"><p>${esc(workShort(m.text))}</p><small>${fmtTime(m.ts)} 시작 · ${esc(m.by?.name||'')}${Date.now()-m.ts>3*3600e3?' · <em>3시간 넘음</em>':''}</small></div><button class="wb-end" onclick="endWork('${m.id}')">작업 끝</button></div>`).join('')}</div>`;
+  return `<div class="work-band ${where}"><div class="wb-h">${tool}<b>진행 중인 작업 ${ws.length}건</b><span>끝나면 오른쪽 버튼을 눌러 주세요 · 민원을 길게 누르면 추가</span></div>
+    ${ws.map(m=>{ const it=m.issueId&&issues[m.issueId];
+      return `<div class="wb-row ${it?'issue-work':''}"><div class="wb-t" ${it?`onclick="openDetail('${it.id}')"`:''}><p>${it?`<span class="wb-tag">민원</span>${esc(it.title)}${it.location?` <i>${esc(it.location)}</i>`:''}`:esc(workShort(m.text))}</p><small>${fmtTime(m.ts)} 작업 시작 · ${esc(m.by?.name||'')}${Date.now()-m.ts>3*3600e3?' · <em>3시간 넘음</em>':''}</small></div>${it?`<button class="wb-end" onclick="finishIssueWork('${it.id}')">완료</button>`:`<button class="wb-end" onclick="endWork('${m.id}')">작업 끝</button>`}</div>`; }).join('')}</div>`;
 }
 async function endWork(id){
   const m=chat[id]; if(!m) return;
@@ -1485,7 +1536,7 @@ function renderChat(){
   msgs.forEach(m=>{
     const d=fmtDate(m.ts); if(d!==lastDate){ html+=`<div class="chat-date">${d} (${['일','월','화','수','목','금','토'][new Date(m.ts).getDay()]})</div>`; lastDate=d; }
     const mine=m.by&&m.by.empId===me.empId;
-    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`onclick="openDetail('${m.issueId}')"`:''}><div class="m-bubble">${sysHtml(m)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
+    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`data-issue="${m.issueId}" onclick="if(!lpFired)openDetail('${m.issueId}')"`:''}><div class="m-bubble">${sysHtml(m)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
     html+=`<div class="msg ${mine?'mine':''} ${m.kind==='notice'?'notice':''} ${m.meta&&m.meta.endOf?'work-end':''}">${!mine?`<div class="m-who"><b class="who-n">${esc(m.by?.name)}</b> <span style="font-weight:400">· ${esc(m.by?.team||'')}</span></div>`:''}<div class="m-bubble">${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="viewImg(this.src)">`:''}</div><div class="m-time">${fmtTime(m.ts)}</div></div>`;
   });
   if(!msgs.length) html=`<div class="empty"><b>아직 대화가 없습니다</b>작업 안내, 민원 공유, 현장 사진을 자유롭게 올려 주세요</div>`;
@@ -1540,7 +1591,8 @@ function repeatIssues(days=180){
   const out=Object.values(groups).filter(g=>g.length>=2 || g.some(i=>i.reopened)).map(g=>({items:g.sort((a,b)=>b.createdAt-a.createdAt),count:g.length+g.reduce((a,i)=>a+(i.reopened||0),0)}));
   const seen=new Set(); return out.filter(g=>{ const k=g.items.map(i=>i.id).join(); if(seen.has(k))return false; seen.add(k); return true; }).sort((a,b)=>b.count-a.count);
 }
-function bars(entries,cls=''){ const mx=Math.max(1,...entries.map(e=>e[1])); return entries.length?`<div class="bar-list">${entries.map(([k,v])=>`<div class="bar-row"><div class="bl" title="${esc(k)}">${esc(k)}</div><div class="bar"><div class="${cls}" style="width:${v/mx*100}%"></div></div><div class="bn">${v}</div></div>`).join('')}</div>`:'<div style="color:var(--gray4);font-size:13px">자료 없음</div>'; }
+// 막대 길이 = 전체 중 비율 (가장 큰 값 기준이 아니라서, 1건씩이면 짧게 · 한 항목이 대부분이면 길게 보임)
+function bars(entries,cls=''){ const tot=entries.reduce((a,e)=>a+e[1],0)||1; return entries.length?`<div class="bar-list">${entries.map(([k,v])=>{ const pct=Math.round(v/tot*100); return `<div class="bar-row" title="${esc(k)} ${v}건 · 전체의 ${pct}%"><div class="bl">${esc(k)}</div><div class="bar"><div class="${cls}" style="width:${Math.max(2,v/tot*100)}%"></div></div><div class="bn">${v}<small>건</small><em>${pct}%</em></div></div>`; }).join('')}</div>`:'<div class="bar-empty">이 달 자료가 없습니다</div>'; }
 function renderStats(){
   const st=monthStats(statMonth); const [y,m]=statMonth.split('-');
   const rate=st.recv.length?Math.round(st.recv.filter(i=>i.status==='done').length/st.recv.length*100):0;
@@ -1561,10 +1613,10 @@ function renderStats(){
     <div class="stat-tile"><div class="n">${st.urgent}</div><div class="l">긴급 민원</div></div>
   </div>
   <div class="card"><h3>일별 접수</h3><div class="daily">${Array.from({length:dim},(_,i)=>`<div title="${i+1}일: ${daily[i+1]||0}건" style="background:${daily[i+1]?'var(--accent)':'var(--line)'};height:${Math.max(3,(daily[i+1]||0)/dmax*60)}px"></div>`).join('')}</div><div class="daily-x"><span>1일</span><span>15일</span><span>${dim}일</span></div></div>
-  <div class="card"><h3>분류별 접수</h3>${bars(st.byCat)}</div>
-  <div class="card"><h3>담당 팀별 배정</h3>${bars(st.byTeam,'g')}</div>
-  <div class="card"><h3>처리자별 완료</h3>${bars(st.byPerson,'g')}</div>
-  <div class="card"><h3>접수 경로</h3>${bars(st.bySrc)}</div>
+  <div class="card"><h3>분류별 접수 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.byCat)}</div>
+  <div class="card"><h3>담당 팀별 배정 <small class="bar-sub">담당이 정해진 ${st.byTeam.reduce((a,e)=>a+e[1],0)}건 중</small></h3>${bars(st.byTeam)}</div>
+  <div class="card"><h3>처리자별 완료 <small class="bar-sub">${+m}월 완료 ${st.done.length}건 중</small></h3>${bars(st.byPerson)}</div>
+  <div class="card"><h3>접수 경로 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.bySrc)}</div>
   <div class="card"><h3>반복 민원 <small style="font-weight:400;color:var(--mute)">최근 6개월 · 같은 장소·분류 2회 이상</small></h3>
     ${rep.length?rep.slice(0,12).map(g=>`<div class="repeat-item"><b>${g.count}회</b> ${esc(g.items[0].location||g.items[0].title)} <span class="badge b-cat">${esc(g.items[0].category)}</span><small>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}${i.reopened?' (재발 '+i.reopened+'회)':''}`).join(' · ')}</small><small style="color:var(--amber)">근본 원인 점검 권장</small></div>`).join(''):'<div style="color:var(--gray4);font-size:13px">반복 민원 없음</div>'}
   </div>
