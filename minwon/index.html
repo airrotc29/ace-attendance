@@ -758,6 +758,11 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .rd-list li i{width:34px;height:34px;border-radius:12px;color:#fff;font-style:normal;font-weight:800;display:grid;place-items:center}
 .rd-list li span{color:#6b7280;font-size:13px}
 .rd-list li.none{color:#9ca3af;font-size:14px;padding-left:2px}
+
+/* 빠른 문구: 옆으로 밀지 않고 두 줄에 모두 보이게 (윗줄 공지 · 아랫줄 답변 · 소리) */
+.chat-input .chat-quick{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible!important;padding-bottom:8px}
+.chat-input .chat-quick button{min-width:0;padding:7px 2px!important;font-size:13px!important;text-align:center;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}
+.chat-input .chat-quick .snd-chip svg{width:14px;height:14px}
 </style>
 </head>
 <body>
@@ -1850,7 +1855,7 @@ function renderChat(){
     ${workBand('chat')}
     <div class="chat-list" id="chat-list">${html}</div>
     <div class="chat-input">
-      <div class="chat-quick"><button id="tb-sound" class="snd-chip${soundOn()?'':' off'}" onclick="toggleSound()" aria-label="새 채팅 소리" title="새 채팅 소리"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="slash" d="M16 9l6 6M22 9l-6 6"/></svg><span>${soundOn()?'소리 켬':'소리 끔'}</span></button>${QUICK.map((q,i)=>`<button onclick="quickMsg(${i})">${q.label}</button>`).join('')}</div>
+      <div class="chat-quick">${QUICK.map((q,i)=>`<button onclick="quickMsg(${i})">${q.label}</button>`).join('')}<button id="tb-sound" class="snd-chip${soundOn()?'':' off'}" onclick="toggleSound()" aria-label="새 채팅 소리" title="새 채팅 소리"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="slash" d="M16 9l6 6M22 9l-6 6"/></svg><span>${soundOn()?'소리 켬':'소리 끔'}</span></button></div>
       ${replyBar()}
       ${chatPhotos.length?`<div class="chat-pending">${chatPhotos.map((p,i)=>`<img src="${p}" onclick="chatPhotos.splice(${i},1);render()">`).join('')}</div>`:''}
       <div class="chat-row"><button class="ic-btn" onclick="chatDraft=document.getElementById('chat-text').value;pickPhotos(ps=>{chatPhotos.push(...ps);render()})"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
