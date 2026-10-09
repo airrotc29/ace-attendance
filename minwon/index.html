@@ -513,6 +513,15 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .work-band .wb-t em{font-style:normal;color:var(--red);font-weight:700}
 .work-band .wb-end{flex:none;border:0;background:#1f8a4c;color:#fff;font:inherit;font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .msg.work-end .m-bubble{background:#e9f6ee!important;border-color:#b9e0c8!important}
+/* 통계 막대: 회색 칸 = 100%, 파란 막대 = 전체 중 비율 */
+.bar-row{grid-template-columns:92px 1fr 74px!important;gap:12px!important}
+.bar-row .bar{height:12px!important;background:#ecebe6!important;border-radius:6px!important}
+.bar-row .bar > div{border-radius:6px!important;background:var(--accent)!important}
+.bar-row .bn{display:flex;align-items:baseline;justify-content:flex-end;gap:5px;white-space:nowrap}
+.bar-row .bn small{font-size:11px;font-weight:500;color:var(--mute);margin-left:-3px}
+.bar-row .bn em{font-style:normal;font-size:12px;font-weight:600;color:var(--mute);min-width:30px;text-align:right}
+.bar-sub{font-size:12.5px;font-weight:500;color:var(--mute);margin-left:6px}
+.bar-empty{color:var(--mute);font-size:13px;padding:6px 0}
 </style>
 </head>
 <body>
@@ -1540,7 +1549,8 @@ function repeatIssues(days=180){
   const out=Object.values(groups).filter(g=>g.length>=2 || g.some(i=>i.reopened)).map(g=>({items:g.sort((a,b)=>b.createdAt-a.createdAt),count:g.length+g.reduce((a,i)=>a+(i.reopened||0),0)}));
   const seen=new Set(); return out.filter(g=>{ const k=g.items.map(i=>i.id).join(); if(seen.has(k))return false; seen.add(k); return true; }).sort((a,b)=>b.count-a.count);
 }
-function bars(entries,cls=''){ const mx=Math.max(1,...entries.map(e=>e[1])); return entries.length?`<div class="bar-list">${entries.map(([k,v])=>`<div class="bar-row"><div class="bl" title="${esc(k)}">${esc(k)}</div><div class="bar"><div class="${cls}" style="width:${v/mx*100}%"></div></div><div class="bn">${v}</div></div>`).join('')}</div>`:'<div style="color:var(--gray4);font-size:13px">자료 없음</div>'; }
+// 막대 길이 = 전체 중 비율 (가장 큰 값 기준이 아니라서, 1건씩이면 짧게 · 한 항목이 대부분이면 길게 보임)
+function bars(entries,cls=''){ const tot=entries.reduce((a,e)=>a+e[1],0)||1; return entries.length?`<div class="bar-list">${entries.map(([k,v])=>{ const pct=Math.round(v/tot*100); return `<div class="bar-row" title="${esc(k)} ${v}건 · 전체의 ${pct}%"><div class="bl">${esc(k)}</div><div class="bar"><div class="${cls}" style="width:${Math.max(2,v/tot*100)}%"></div></div><div class="bn">${v}<small>건</small><em>${pct}%</em></div></div>`; }).join('')}</div>`:'<div class="bar-empty">이 달 자료가 없습니다</div>'; }
 function renderStats(){
   const st=monthStats(statMonth); const [y,m]=statMonth.split('-');
   const rate=st.recv.length?Math.round(st.recv.filter(i=>i.status==='done').length/st.recv.length*100):0;
@@ -1561,10 +1571,10 @@ function renderStats(){
     <div class="stat-tile"><div class="n">${st.urgent}</div><div class="l">긴급 민원</div></div>
   </div>
   <div class="card"><h3>일별 접수</h3><div class="daily">${Array.from({length:dim},(_,i)=>`<div title="${i+1}일: ${daily[i+1]||0}건" style="background:${daily[i+1]?'var(--accent)':'var(--line)'};height:${Math.max(3,(daily[i+1]||0)/dmax*60)}px"></div>`).join('')}</div><div class="daily-x"><span>1일</span><span>15일</span><span>${dim}일</span></div></div>
-  <div class="card"><h3>분류별 접수</h3>${bars(st.byCat)}</div>
-  <div class="card"><h3>담당 팀별 배정</h3>${bars(st.byTeam,'g')}</div>
-  <div class="card"><h3>처리자별 완료</h3>${bars(st.byPerson,'g')}</div>
-  <div class="card"><h3>접수 경로</h3>${bars(st.bySrc)}</div>
+  <div class="card"><h3>분류별 접수 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.byCat)}</div>
+  <div class="card"><h3>담당 팀별 배정 <small class="bar-sub">담당이 정해진 ${st.byTeam.reduce((a,e)=>a+e[1],0)}건 중</small></h3>${bars(st.byTeam)}</div>
+  <div class="card"><h3>처리자별 완료 <small class="bar-sub">${+m}월 완료 ${st.done.length}건 중</small></h3>${bars(st.byPerson)}</div>
+  <div class="card"><h3>접수 경로 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.bySrc)}</div>
   <div class="card"><h3>반복 민원 <small style="font-weight:400;color:var(--mute)">최근 6개월 · 같은 장소·분류 2회 이상</small></h3>
     ${rep.length?rep.slice(0,12).map(g=>`<div class="repeat-item"><b>${g.count}회</b> ${esc(g.items[0].location||g.items[0].title)} <span class="badge b-cat">${esc(g.items[0].category)}</span><small>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}${i.reopened?' (재발 '+i.reopened+'회)':''}`).join(' · ')}</small><small style="color:var(--amber)">근본 원인 점검 권장</small></div>`).join(''):'<div style="color:var(--gray4);font-size:13px">반복 민원 없음</div>'}
   </div>
