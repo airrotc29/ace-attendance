@@ -782,7 +782,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 /* 화면 하단 관리단 표시 */
 .brand-foot{text-align:center;padding:26px 8px 8px;margin-top:6px}
 .brand-foot .bf-row{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}
-.brand-foot .bf-mark{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 5px;border-radius:9px;background:linear-gradient(160deg,#2a4bb5,#132f86);color:#fff;font-size:12.5px;font-weight:900;letter-spacing:-.02em;box-shadow:inset 0 -3px 0 -1.5px rgba(255,255,255,.35)}
+.brand-foot .bf-icon{width:32px;height:32px;border-radius:9px;display:block;box-shadow:0 4px 10px -5px rgba(10,26,82,.55)}
 .brand-foot b{font-size:14.5px;font-weight:800;color:#111827}
 .brand-foot .bf-en{font-size:12.5px;color:#9aa1ad;letter-spacing:.02em}
 .brand-foot .bf-slogan{margin-top:7px;font-size:12.5px;color:#8b93a1}
@@ -1398,7 +1398,6 @@ function adminBrand(id){
     <div class="modal-head"><h2>관리단 표시</h2><button class="modal-close" onclick="closeById('brand-modal')">✕</button></div>
     <p class="hint"><b>${esc(o.name)}</b> 직원 앱의 민원 · 통계 · 검색 화면 맨 아래에 보입니다.</p>
     <div class="form-row"><label>관리단 이름</label><input id="br-name" maxlength="60" value="${esc(b.name||'')}" placeholder="${esc(o.name)} 관리단" oninput="brandPreview()"></div>
-    <div class="form-grid"><div class="form-row"><label>배지 글자 (3자까지)</label><input id="br-mark" maxlength="3" value="${esc(b.mark||'')}" placeholder="${esc(String(o.name).slice(0,1))}" oninput="brandPreview()"></div><div></div></div>
     <div class="form-row"><label>문구</label><input id="br-slogan" maxlength="80" value="${esc(b.slogan||'')}" placeholder="예) 사람을 먼저 생각하는 관리" oninput="brandPreview()"></div>
     <div class="br-prev" id="br-prev"></div>
     <button class="btn btn-primary btn-block" onclick="saveBrand('${esc(id)}')">저장</button>
@@ -1407,9 +1406,9 @@ function adminBrand(id){
 }
 let brandEditId=null;
 function brandPreview(){ const o=adminOffices.find(x=>x.id===brandEditId);
-  $('#br-prev').innerHTML = brandHtml({name:$('#br-name').value.trim(), mark:$('#br-mark').value.trim(), slogan:$('#br-slogan').value.trim()}, o&&o.name); }
+  $('#br-prev').innerHTML = brandHtml({name:$('#br-name').value.trim(), slogan:$('#br-slogan').value.trim()}, o&&o.name); }
 async function saveBrand(id){
-  const b={name:$('#br-name').value.trim(), mark:$('#br-mark').value.trim(), slogan:$('#br-slogan').value.trim()};
+  const o=adminOffices.find(x=>x.id===id)||{}; const b={name:$('#br-name').value.trim(), mark:(o.brand&&o.brand.mark)||'', slogan:$('#br-slogan').value.trim()};
   try{ await rpc('mw_office_set_brand',{p_office:id, p_brand:b}); closeById('brand-modal'); toast('관리단 표시를 저장했습니다. 직원 앱은 다음에 열 때 바뀝니다', 3500); adminHome(); }
   catch(e){ toast('저장하지 못했습니다'); }
 }
@@ -1472,8 +1471,7 @@ let newDraft = null;
 // 화면 하단 관리단 표시 (본사가 사업소별로 정함 · 없으면 '사업소 이름 관리단')
 function brandHtml(b, officeName){
   const name=(b&&b.name)||`${officeName||''} 관리단`;
-  const mark=(b&&b.mark)||String(officeName||'').trim().slice(0,1);
-  return `<div class="brand-foot"><div class="bf-row"><span class="bf-mark">${esc(mark)}</span><b>${esc(name)}</b><span class="bf-en">· FACILITY MANAGEMENT</span></div>${b&&b.slogan?`<div class="bf-slogan">${esc(b.slogan)}</div>`:''}</div>`;
+  return `<div class="brand-foot"><div class="bf-row"><img class="bf-icon" src="icons/icon.svg?v=3" alt=""><b>${esc(name)}</b><span class="bf-en">· FACILITY MANAGEMENT</span></div>${b&&b.slogan?`<div class="bf-slogan">${esc(b.slogan)}</div>`:''}</div>`;
 }
 function brandFooter(){ return me ? brandHtml(me.brand, me.officeName) : ''; }
 // 내용이 짧아도 관리단 표시는 화면 맨 아래(하단 메뉴 바로 위)에 붙도록 감쌈
