@@ -1,7 +1,7 @@
 // 민원 처리 공유 시스템 · 서비스 워커
 // 앱 화면은 항상 최신 버전을 먼저 받고(네트워크 우선), 끊겼을 때만 저장본을 씁니다.
 // 서버 데이터(Supabase)는 저장하지 않습니다.
-const CACHE = 'minwon-v3';
+const CACHE = 'minwon-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/badge-72.png'];
 const CDN = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -41,15 +41,17 @@ self.addEventListener('push', e => {
   const title = d.title || '민원 처리';
   const urgent = /긴급/.test(title);
   e.waitUntil((async () => {
+    const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    // 앱을 보고 있는 중이면 휴대폰 알림음 대신 앱이 직접 소리를 냄 (두 번 울리지 않게)
+    const seen = cs.some(c => c.visibilityState === 'visible' && c.focused);
+    cs.forEach(c => c.postMessage({ type: 'push' }));
+    if (seen && !urgent) return;
     await self.registration.showNotification(title, {
       body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag,
       icon: './icons/icon-192.png', badge: './icons/badge-72.png',
       requireInteraction: urgent, vibrate: urgent ? [200, 80, 200, 80, 200] : [120, 60, 120],
       data: { url: new URL(d.url || './', self.registration.scope).href }
     });
-    // 앱이 열려 있으면 바로 새로 받도록 알림
-    const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    cs.forEach(c => c.postMessage({ type: 'push' }));
   })());
 });
 self.addEventListener('notificationclick', e => {
