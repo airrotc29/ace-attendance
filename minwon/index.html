@@ -771,6 +771,13 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 /* 소장 비밀번호 칸 */
 #lg-mgr-row label{margin-top:12px}
 #lg-mgr-row .lg-mgr-hint{font-size:12.5px;color:#6b7280;margin:6px 2px 0;line-height:1.5}
+
+/* 소장 비밀번호 전달 창 */
+.handoff{background:#f6f7fb;border-radius:14px;padding:6px 14px}
+.handoff div{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e8ebf0;font-size:15px}
+.handoff div:last-child{border-bottom:0}
+.handoff span{color:#6b7280}.handoff b{color:#111;font-weight:800}
+.handoff .hp{font-size:20px;letter-spacing:.08em;color:var(--e-blue)}
 </style>
 </head>
 <body>
@@ -1298,17 +1305,18 @@ function renderAdminHome(){
         <div class="form-row"><label>사업소 코드 (로그인용)</label><input id="ad-code" placeholder="예) GANGNAM" autocapitalize="characters"></div>
         <div class="form-row"><label>비밀번호 (6자 이상)</label><input id="ad-pw" type="text"></div>
       </div>
-      <div class="form-row"><label>소장 비밀번호 (직원 관리용 · 4자 이상 · 나중에 정해도 됨)</label><input id="ad-mgr" type="text"></div>
+      <div class="form-row"><label>소장 로그인 비밀번호 (사업소 비밀번호와 다르게 · 4자 이상)</label>
+        <div style="display:flex;gap:8px"><input id="ad-mgr" type="text" style="flex:1" placeholder="소장에게만 따로 알려 줄 비밀번호"><button class="btn btn-gray" type="button" onclick="$('#ad-mgr').value=genMgrPw($('#ad-pw').value)">자동 만들기</button></div></div>
       <button class="btn btn-primary btn-block" onclick="adminCreate()">사업소 만들기</button>
     </div>
     <div class="card"><h3>사업소 목록 <small style="font-weight:400;color:var(--mute)">${adminOffices.length}곳</small></h3>
       ${adminOffices.length ? adminOffices.map(o=>`
         <div class="adm-item">
-          <div><b>${esc(o.name)}</b><small>코드 ${esc(o.code)} · 직원 ${o.count}명 · 소장 비밀번호 ${o.has_mgr?'설정됨':'<span style="color:var(--red)">미설정</span>'}</small></div>
+          <div><b>${esc(o.name)}</b><small>코드 ${esc(o.code)} · 직원 ${o.count}명 · 소장 로그인 ${o.has_mgr?'설정됨':'<b style="color:var(--red)">미설정 · 소장 입장 불가</b>'}</small></div>
           <div class="adm-acts">
             <button class="btn btn-gray btn-sm" onclick="adminRoster('${esc(o.id)}')">명단</button>
-            <button class="btn btn-gray btn-sm" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">비밀번호</button>
-            <button class="btn btn-gray btn-sm" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}')">소장 비번</button>
+            <button class="btn btn-gray btn-sm" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">직원 비밀번호</button>
+            <button class="btn btn-sm ${o.has_mgr?'btn-gray':'btn-primary'}" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}','${esc(o.code)}')">소장 비밀번호</button>
             <button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">삭제</button>
           </div>
         </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>위에서 사업소를 만들어 주세요</div>'}
@@ -1319,12 +1327,12 @@ async function adminCreate(){
   const name=$('#ad-name').value.trim(), code=$('#ad-code').value.trim().toUpperCase(), pw=$('#ad-pw').value;
   const mg=$('#ad-mgr').value;
   if(!name || !code || pw.length<6){ toast('사업소 이름, 코드, 6자 이상 비밀번호를 입력하세요'); return; }
-  if(mg && mg.length<4){ toast('소장 비밀번호는 4자 이상이어야 합니다'); return; }
+  if(!mg || mg.length<4){ toast('소장 로그인 비밀번호(4자 이상)를 정하세요. 자동 만들기를 눌러도 됩니다', 3500); return; }
+  if(mg===pw){ toast('소장 비밀번호는 사업소 비밀번호와 달라야 합니다', 3500); return; }
   try{
     const nid = await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
-    if(mg && mg===pw){ toast('소장 비밀번호는 사업소 비밀번호와 달라야 합니다. 목록에서 다시 정하세요', 4000); }
-    else if(mg) await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
-    toast('사업소를 만들었습니다'); adminHome();
+    await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
+    await adminHome(); showMgrHandoff(name, code, mg);
   }catch(e){
     const dup = /duplicate|unique/i.test(e.message||'');
     toast(dup ? '이미 있는 사업소 코드입니다' : '만들지 못했습니다');
@@ -1336,11 +1344,36 @@ async function adminPw(id,name){
   try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); toast('비밀번호를 바꿨습니다'); }
   catch(e){ toast(/same_as_manager/.test(e.message||'') ? '소장 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '바꾸지 못했습니다', 3500); }
 }
-async function adminMgrPw(id,name){
-  const np = await askInput({title:'소장 비밀번호 정하기', msg:`${name} 소장이 입장할 때와 민원 삭제 · 직원 등록에 쓰는 비밀번호입니다. 사업소 비밀번호와 달라야 합니다.`, placeholder:'4자 이상', min:4}); if(!np) return;
-  if(np.length<4){ toast('4자 이상이어야 합니다'); return; }
-  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); toast('소장 비밀번호를 정했습니다. 소장은 새 비밀번호로 다시 입장합니다', 3500); adminHome(); }
-  catch(e){ toast(/same_as_office/.test(e.message||'') ? '사업소 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '정하지 못했습니다', 3500); }
+// 소장 로그인 비밀번호: 본사가 정해서 소장에게만 따로 알려 줌
+function genMgrPw(officePw){ let v; do{ v=String(Math.floor(100000+Math.random()*900000)); }while(v===officePw); return v; }
+function adminMgrPw(id,name,code){
+  closeById('mgrset-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="mgrset-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:440px">
+    <div class="modal-head"><h2>소장 로그인 비밀번호</h2><button class="modal-close" onclick="closeById('mgrset-modal')">✕</button></div>
+    <p class="hint"><b>${esc(name)}</b> 소장이 입장 · 민원 삭제 · 직원 등록에 쓰는 비밀번호입니다. 사업소(직원) 비밀번호와 달라야 하고, 정하면 소장은 새 비밀번호로 다시 입장합니다.</p>
+    <div class="form-row" style="display:flex;gap:8px"><input id="mgrset-pw" type="text" style="flex:1" placeholder="4자 이상" autocomplete="off"><button class="btn btn-gray" onclick="$('#mgrset-pw').value=genMgrPw('')">자동 만들기</button></div>
+    <div id="mgrset-err" class="lg-err hidden" style="margin:0 0 12px"></div>
+    <button class="btn btn-primary btn-block" onclick="saveMgrPw('${esc(id)}','${esc(name)}','${esc(code||'')}')">정하기</button>
+  </div></div>`);
+  setTimeout(()=>{ const i=document.getElementById('mgrset-pw'); if(i) i.focus(); },50);
+}
+async function saveMgrPw(id,name,code){
+  const np=$('#mgrset-pw').value.trim(), err=$('#mgrset-err');
+  const fail=t=>{ err.textContent=t; err.classList.remove('hidden'); };
+  if(np.length<4) return fail('4자 이상 입력하세요');
+  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); closeById('mgrset-modal'); await adminHome(); showMgrHandoff(name, code, np); }
+  catch(e){ fail(/same_as_office/.test(e.message||'') ? '사업소(직원) 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '정하지 못했습니다. 인터넷을 확인하세요'); }
+}
+// 정한 직후 한 번만 보여 줌 (서버에는 암호화되어 저장되어 다시 볼 수 없음)
+function showMgrHandoff(name, code, pw){
+  const msg=`[민원처리 앱] ${name} 소장 입장 안내\n주소: ${location.origin+location.pathname}\n사업소 코드: ${code}\n소장 비밀번호: ${pw}\n※ 소장 비밀번호는 다른 직원에게 알려 주지 마세요.`;
+  closeById('handoff-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="handoff-modal"><div class="modal" style="max-width:440px">
+    <div class="modal-head"><h2>소장에게 전달하세요</h2><button class="modal-close" onclick="closeById('handoff-modal')">✕</button></div>
+    <p class="hint">소장 비밀번호는 <b>지금만</b> 보입니다. 서버에는 암호화되어 저장되어 본사도 다시 볼 수 없습니다. 잊으면 새로 정하면 됩니다.</p>
+    <div class="handoff"><div><span>사업소</span><b>${esc(name)}</b></div><div><span>사업소 코드</span><b>${esc(code)}</b></div><div><span>소장 비밀번호</span><b class="hp">${esc(pw)}</b></div></div>
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-gray" onclick="copyText(${esc(JSON.stringify(msg))})">안내문 복사</button><button class="btn btn-primary" onclick="openExternal('sms:?body='+encodeURIComponent(${esc(JSON.stringify(msg))}))">문자로 보내기</button></div>
+  </div></div>`);
 }
 async function adminDelete(id,name){
   if(!await askConfirm({title:`"${name}" 사업소를 삭제할까요?`, msg:'민원 · 채팅 · 직원 명단이 모두 지워지고 되돌릴 수 없습니다.', ok:'삭제', danger:true})) return;
