@@ -787,6 +787,11 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .brand-foot .bf-en{font-size:12.5px;color:#9aa1ad;letter-spacing:.02em}
 .brand-foot .bf-slogan{margin-top:7px;font-size:12.5px;color:#8b93a1}
 .br-prev{background:#f6f7fb;border-radius:14px;margin:4px 0 14px;padding:4px 0 14px}
+
+/* 관리단 표시를 항상 화면 맨 아래에 */
+#app .content{display:flex;flex-direction:column}
+#app .content > .pg-wrap{flex:1;display:flex;flex-direction:column}
+#app .content > .pg-wrap > .brand-foot{margin-top:auto}
 </style>
 </head>
 <body>
@@ -1471,6 +1476,8 @@ function brandHtml(b, officeName){
   return `<div class="brand-foot"><div class="bf-row"><span class="bf-mark">${esc(mark)}</span><b>${esc(name)}</b><span class="bf-en">· FACILITY MANAGEMENT</span></div>${b&&b.slogan?`<div class="bf-slogan">${esc(b.slogan)}</div>`:''}</div>`;
 }
 function brandFooter(){ return me ? brandHtml(me.brand, me.officeName) : ''; }
+// 내용이 짧아도 관리단 표시는 화면 맨 아래(하단 메뉴 바로 위)에 붙도록 감쌈
+const withFoot = html=>`<div class="pg-wrap"><div class="pg-body">${html}</div>${brandFooter()}</div>`;
 function render(fromSync){
   if(!me) return;
   const c = $('#content');
@@ -1478,11 +1485,11 @@ function render(fromSync){
   const ae=document.activeElement;
   const typing = fromSync===true && (tab==='new'||tab==='search') && ae && c.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
   if(typing){}
-  else if(tab==='list') c.innerHTML = renderList() + brandFooter();
+  else if(tab==='list') c.innerHTML = withFoot(renderList());
   else if(tab==='new'){ if(!newDraft) newDraft={title:'',content:'',location:'',category:'',source:'전화',urgent:false,photos:[],assignee:{type:'none'},cName:'',cPhone:''}; c.innerHTML = renderNew(); }
   else if(tab==='chat'){ c.innerHTML = renderChat(); scrollChat(); markChatRead(); }
-  else if(tab==='stats') c.innerHTML = renderStats() + brandFooter();
-  else if(tab==='search') c.innerHTML = renderSearch() + brandFooter();
+  else if(tab==='stats') c.innerHTML = withFoot(renderStats());
+  else if(tab==='search') c.innerHTML = withFoot(renderSearch());
   updateBadges();
   if(openDetailId && issues[openDetailId]) refreshDetail();
 }
