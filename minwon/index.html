@@ -531,6 +531,9 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .topbar,.bottomnav,.summary-row,.work-band,.issue,.msg.sys,.chat-quick,.dlg,.btn,button,.chip,.qpick,.contact-box .cb-act,.done-acts,.modal-head{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .dlg-in{-webkit-user-select:text;user-select:text}
 .issue.lp-on,.msg.sys.lp-on .m-bubble{transform:scale(.98);box-shadow:0 0 0 2px var(--accent);transition:transform .12s,box-shadow .12s}
+/* 화면을 아래로 당겨도 새로고침되지 않도록 (크롬 '당겨서 새로고침' 끄기) */
+html,body{overscroll-behavior-y:none}
+.chat-list,.modal,#modal-root .modal-bg{overscroll-behavior:contain}
 </style>
 </head>
 <body>
@@ -875,7 +878,9 @@ function enter(empId){
   $('#tb-staff').classList.toggle('hidden', !me.boss); mgrPw = null;
   sbOn = true; setSync('on','자동 동기화 중');
   startSync(); fetchAll();
-  go('list');
+  // 새로고침되어도 보던 탭으로 (같은 창 안에서만)
+  let lastTab='list'; try{ lastTab=sessionStorage.getItem('mw_tab')||'list'; }catch{}
+  go(['list','new','chat','stats','search'].includes(lastTab)?lastTab:'list');
   refreshPushUI(); syncPushSub(false);
   armBackTrap();
   setTimeout(askContactDone, 1500);   // 전화 · 문자 중 앱이 닫혔다 다시 열린 경우
@@ -1074,7 +1079,7 @@ async function rosterSave(){
 // ══════════════════════════════════════════════
 // 라우팅 / 렌더
 // ══════════════════════════════════════════════
-function go(t){ tab=t; document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); if(t==='chat') lsSet(K.seenChat(), Date.now()); if(t==='list') lsSet(K.seenIssue(), Date.now()); render(); window.scrollTo(0,0); }
+function go(t){ tab=t; try{ sessionStorage.setItem('mw_tab',t); }catch{} document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); if(t==='chat') lsSet(K.seenChat(), Date.now()); if(t==='list') lsSet(K.seenIssue(), Date.now()); render(); window.scrollTo(0,0); }
 let newDraft = null;
 function render(fromSync){
   if(!me) return;
