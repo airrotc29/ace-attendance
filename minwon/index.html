@@ -652,6 +652,46 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .chips.pick .chip{height:42px;padding:0 4px;border-radius:12px!important;background:#f3f5f9!important;border:1px solid transparent!important;box-shadow:none!important;color:#374151!important;font-size:14px;font-weight:600;letter-spacing:-.03em;overflow:hidden;text-overflow:ellipsis}
 .chips.pick .chip.active{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important;box-shadow:0 6px 12px -8px rgba(29,71,204,.8)!important}
 @media (max-width:370px){.chips.pick .chip{font-size:13px;letter-spacing:-.05em}}
+/* 통계 그래픽: 처리율 고리 · 지표 아이콘 · 일별 막대 · 항목 아이콘 */
+.rate-card{display:flex;align-items:center;gap:18px;padding:18px!important}
+.rate-card .ring{width:132px;height:132px;flex:none}
+.ring-bg{fill:none;stroke:#eef1f6;stroke-width:13}
+.ring-fg{fill:none;stroke:var(--green);stroke-width:13;stroke-linecap:round}
+.ring-n{font-size:30px;font-weight:900;fill:#111827;text-anchor:middle;dominant-baseline:central;letter-spacing:-.03em}
+.ring-u{font-size:16px;font-weight:800}
+.ring-l{font-size:12.5px;font-weight:600;fill:#6b7280;text-anchor:middle}
+.rate-list{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
+.rate-list .rl{display:flex;align-items:center;gap:8px;font-size:14px;color:#374151;font-weight:600}
+.rate-list .rl i{width:10px;height:10px;border-radius:3px;flex:none}
+.rate-list .rl span{flex:1;white-space:nowrap}
+.rate-list .rl b{font-size:22px;font-weight:900;color:#111827;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.rate-list .rl b small{font-size:12px;font-weight:600;color:#6b7280;margin-left:2px}
+.rate-list .rl-note{font-size:11.5px;color:#9ca3af;margin-top:1px}
+.mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.mini{background:#fff;border-radius:18px;box-shadow:var(--e-float-s);padding:13px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.mini .mi{width:34px;height:34px;border-radius:11px;background:var(--e-blue-soft);color:var(--e-blue);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.mini .mi.g{background:#e7f6ee;color:var(--green)}.mini .mi.r{background:#fdeceb;color:var(--red)}
+.mini .mi svg{width:19px;height:19px}
+.mini b{font-size:20px;font-weight:900;color:#111827;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.mini b small{font-size:12px;font-weight:600;color:#6b7280;margin-left:1px}
+.mini > small{font-size:12px;color:#6b7280;font-weight:600}
+.mini .mbar{width:70%;height:5px;border-radius:3px;background:#eef1f6;margin-top:4px;overflow:hidden}
+.mini .mbar div{height:100%;background:var(--green);border-radius:3px}
+.daily{height:96px!important;gap:3px!important;align-items:flex-end;border-bottom:1px solid #e5e7eb!important;padding-top:6px}
+.daily > div{height:var(--h);background:#e9ecf2!important;border-radius:4px 4px 0 0!important;box-shadow:none!important;cursor:pointer;min-height:3px;position:relative}
+.daily > div.on{background:var(--e-blue)!important}
+.daily > div.sel{background:#0f2f99!important}
+.daily > div:not(.on).sel{background:#c9cfdb!important}
+.daily > div.today::after{content:'';position:absolute;left:50%;bottom:-7px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--red)}
+.daily-x{margin-top:8px!important}
+.bar-row.has-i{grid-template-columns:118px 1fr 74px!important}
+.bar-row .bl{display:flex;align-items:center;gap:8px;min-width:0}
+.bar-row .bl > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-row .bi{width:28px;height:28px;border-radius:9px;background:var(--e-blue-soft);color:var(--e-blue);display:flex;align-items:center;justify-content:center;flex:none}
+.bar-row .bi svg{width:16px;height:16px}
+.bar-row .bi.av{border-radius:50%;font-size:12.5px;font-weight:800}
+@media (max-width:370px){.rate-card{gap:12px}.rate-card .ring{width:112px;height:112px}.bar-row.has-i{grid-template-columns:104px 1fr 66px!important}}
+@media print{.rate-card .ring{width:110px;height:110px}.daily > div.on{background:#1d47cc!important}}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -2241,31 +2281,68 @@ function repeatIssues(days=180){
   const seen=new Set(); return out.filter(g=>{ const k=g.items.map(i=>i.id).join(); if(seen.has(k))return false; seen.add(k); return true; }).sort((a,b)=>b.count-a.count);
 }
 // 막대 길이 = 전체 중 비율 (가장 큰 값 기준이 아니라서, 1건씩이면 짧게 · 한 항목이 대부분이면 길게 보임)
-function bars(entries,cls=''){ const tot=entries.reduce((a,e)=>a+e[1],0)||1; return entries.length?`<div class="bar-list">${entries.map(([k,v])=>{ const pct=Math.round(v/tot*100); return `<div class="bar-row" title="${esc(k)} ${v}건 · 전체의 ${pct}%"><div class="bl">${esc(k)}</div><div class="bar"><div class="${cls}" style="width:${Math.max(2,v/tot*100)}%"></div></div><div class="bn">${v}<small>건</small><em>${pct}%</em></div></div>`; }).join('')}</div>`:'<div class="bar-empty">이 달 자료가 없습니다</div>'; }
+// 통계 아이콘 (분류 · 접수 경로 · 지표) — 같은 항목은 항상 같은 그림
+const SI=(d)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const STAT_ICON={
+  '시설·설비':'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/>',
+  '전기':'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  '누수·배관':'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  '청소·미화':'<path d="M14 3 9 13"/><path d="M6 13h8l1 8H5z"/><path d="M8 17v4M11 17v4"/>',
+  '보안·경비':'<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/>',
+  '주차':'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M10 16V8h3a2.5 2.5 0 0 1 0 5h-3"/>',
+  '엘리베이터':'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="m9 9 3-3 3 3M9 15l3 3 3-3"/>',
+  '냉난방':'<path d="M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9"/>',
+  '소음·악취':'<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',
+  '조경':'<path d="M12 21v-8"/><path d="M12 13c-4 0-6-3-6-7 4 0 6 2.5 6 7zM12 13c4 0 6-3 6-7-4 0-6 2.5-6 7z"/>',
+  '관리비':'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',
+  '정보공개':'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+  '전화':'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/>',
+  '방문':'<circle cx="12" cy="5" r="2"/><path d="m9 21 2-6-2-3 1-4h4l2 4h3M11 15l3 2v4"/>',
+  '순찰 발견':'<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>',
+  '직원 요청':'<circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/>',
+  '입주사 메신저':'<path d="M4 5h16v11H9l-5 4z"/>',
+  _etc:'<circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/>',
+  _clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  _today:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16M8 3v4M16 3v4"/><path d="m9 14.5 2 2 4-4"/>',
+  _urgent:'<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>'
+};
+const statIcon=k=>SI(STAT_ICON[k]||STAT_ICON._etc);
+function bars(entries,cls='',opt={}){ const tot=entries.reduce((a,e)=>a+e[1],0)||1; return entries.length?`<div class="bar-list">${entries.map(([k,v])=>{ const pct=Math.round(v/tot*100); const lead=opt.icon?`<span class="bi">${statIcon(k)}</span>`:opt.avatar?`<span class="bi av">${esc(String(k).slice(0,1))}</span>`:''; return `<div class="bar-row${lead?' has-i':''}" title="${esc(k)} ${v}건 · 전체의 ${pct}%"><div class="bl">${lead}<span>${esc(k)}</span></div><div class="bar"><div class="${cls}" style="width:${Math.max(2,v/tot*100)}%"></div></div><div class="bn">${v}<small>건</small><em>${pct}%</em></div></div>`; }).join('')}</div>`:'<div class="bar-empty">이 달 자료가 없습니다</div>'; }
+// 처리율 고리 그래프 (완료 비율만큼 초록 고리)
+function rateRing(rate){ const r=46, c=2*Math.PI*r, len=c*Math.min(100,Math.max(0,rate))/100;
+  return `<svg class="ring" viewBox="0 0 120 120" role="img" aria-label="당월 처리율 ${rate}%"><circle cx="60" cy="60" r="${r}" class="ring-bg"/>${rate>0?`<circle cx="60" cy="60" r="${r}" class="ring-fg" stroke-dasharray="${len.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 60 60)"/>`:''}<text x="60" y="55" class="ring-n">${rate}<tspan class="ring-u">%</tspan></text><text x="60" y="85" class="ring-l">처리율</text></svg>`; }
+// 일별 접수: 막대를 누르면 그날 건수
+function dayTip(el){ const t=document.getElementById('day-tip'); if(!t) return; document.querySelectorAll('.daily > div.sel').forEach(x=>x.classList.remove('sel')); el.classList.add('sel'); t.textContent=`${el.dataset.m}월 ${el.dataset.d}일 · ${el.dataset.n}건`; }
 function renderStats(){
   const st=monthStats(statMonth); const [y,m]=statMonth.split('-');
   const rate=st.recv.length?Math.round(st.recv.filter(i=>i.status==='done').length/st.recv.length*100):0;
   const rep=repeatIssues();
   const daily={}; st.recv.forEach(i=>{ const d=new Date(i.createdAt).getDate(); daily[d]=(daily[d]||0)+1; });
   const dmax=Math.max(1,...Object.values(daily)); const dim=new Date(+y,+m,0).getDate();
+  const dpeak=+(Object.entries(daily).sort((p,q)=>q[1]-p[1]||p[0]-q[0])[0]||[0])[0];
+  const now=new Date(); const today=(now.getFullYear()===+y&&now.getMonth()+1===+m)?now.getDate():0;
+  const sameRate=st.done.length?Math.round(st.sameDay/st.done.length*100):0;
   return `<div class="month-nav no-print"><button onclick="shiftMonth(-1)">‹</button><b>${y}년 ${+m}월</b><button onclick="shiftMonth(1)">›</button></div>
   <div class="print-only" style="text-align:center;margin-bottom:14px"><h2 style="font-size:20px">${esc(me.officeName)} 민원 처리 월간 보고</h2><div style="font-size:13px;color:#555">${y}년 ${+m}월 · 출력 ${fmtDT(Date.now())} · 작성 ${esc(me.name)}</div></div>
-  <div class="summary-row">
-    <div class="stat-tile blue"><div class="n">${st.recv.length}</div><div class="l">접수</div></div>
-    <div class="stat-tile green"><div class="n">${st.done.length}</div><div class="l">완료</div></div>
-    <div class="stat-tile amber"><div class="n">${rate}%</div><div class="l">당월 처리율</div></div>
-    <div class="stat-tile red"><div class="n">${st.open.length}</div><div class="l">미완료 누적</div></div>
+  <div class="card rate-card">
+    ${rateRing(rate)}
+    <div class="rate-list">
+      <div class="rl"><i style="background:var(--e-blue)"></i><span>접수</span><b>${st.recv.length}<small>건</small></b></div>
+      <div class="rl"><i style="background:var(--green)"></i><span>완료</span><b>${st.done.length}<small>건</small></b></div>
+      <div class="rl"><i style="background:var(--red)"></i><span>미완료 누적</span><b>${st.open.length}<small>건</small></b></div>
+      <div class="rl-note">처리율 = ${+m}월 접수 중 완료된 비율</div>
+    </div>
   </div>
-  <div class="summary-row" style="grid-template-columns:repeat(3,1fr)">
-    <div class="stat-tile"><div class="n" style="font-size:18px">${dur(st.avg)}</div><div class="l">평균 처리시간</div></div>
-    <div class="stat-tile"><div class="n">${st.done.length?Math.round(st.sameDay/st.done.length*100):0}%</div><div class="l">당일 처리</div></div>
-    <div class="stat-tile"><div class="n">${st.urgent}</div><div class="l">긴급 민원</div></div>
+  <div class="mini-row">
+    <div class="mini"><span class="mi">${statIcon('_clock')}</span><b>${dur(st.avg)}</b><small>평균 처리시간</small></div>
+    <div class="mini"><span class="mi g">${statIcon('_today')}</span><b>${sameRate}%</b><small>당일 처리</small><div class="mbar"><div style="width:${sameRate}%"></div></div></div>
+    <div class="mini"><span class="mi r">${statIcon('_urgent')}</span><b>${st.urgent}<small>건</small></b><small>긴급 민원</small></div>
   </div>
-  <div class="card"><h3>일별 접수</h3><div class="daily">${Array.from({length:dim},(_,i)=>`<div title="${i+1}일: ${daily[i+1]||0}건" style="background:${daily[i+1]?'var(--accent)':'var(--line)'};height:${Math.max(3,(daily[i+1]||0)/dmax*60)}px"></div>`).join('')}</div><div class="daily-x"><span>1일</span><span>15일</span><span>${dim}일</span></div></div>
-  <div class="card"><h3>분류별 접수 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.byCat)}</div>
+  <div class="card"><h3>일별 접수 <small class="bar-sub" id="day-tip">${dpeak?`가장 많은 날 ${+m}월 ${dpeak}일 · ${daily[dpeak]}건`:'이 달 자료가 없습니다'}</small></h3><div class="daily">${Array.from({length:dim},(_,i)=>{ const n=daily[i+1]||0; return `<div class="${n?'on':''}${today===i+1?' today':''}${dpeak===i+1?' sel':''}" data-m="${+m}" data-d="${i+1}" data-n="${n}" onclick="dayTip(this)" title="${i+1}일: ${n}건" style="--h:${n?Math.max(10,n/dmax*100):4}%"></div>`; }).join('')}</div><div class="daily-x"><span>1일</span><span>15일</span><span>${dim}일</span></div></div>
+  <div class="card"><h3>분류별 접수 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.byCat,'',{icon:1})}</div>
   <div class="card"><h3>담당 팀별 배정 <small class="bar-sub">담당이 정해진 ${st.byTeam.reduce((a,e)=>a+e[1],0)}건 중</small></h3>${bars(st.byTeam)}</div>
-  <div class="card"><h3>처리자별 완료 <small class="bar-sub">${+m}월 완료 ${st.done.length}건 중</small></h3>${bars(st.byPerson)}</div>
-  <div class="card"><h3>접수 경로 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.bySrc)}</div>
+  <div class="card"><h3>처리자별 완료 <small class="bar-sub">${+m}월 완료 ${st.done.length}건 중</small></h3>${bars(st.byPerson,'',{avatar:1})}</div>
+  <div class="card"><h3>접수 경로 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.bySrc,'',{icon:1})}</div>
   <div class="card"><h3>반복 민원 <small style="font-weight:400;color:var(--mute)">최근 6개월 · 같은 장소·분류 2회 이상</small></h3>
     ${rep.length?rep.slice(0,12).map(g=>`<div class="repeat-item"><b>${g.count}회</b> ${esc(g.items[0].location||g.items[0].title)} <span class="badge b-cat">${esc(g.items[0].category)}</span><small>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}${i.reopened?' (재발 '+i.reopened+'회)':''}`).join(' · ')}</small><small style="color:var(--amber)">근본 원인 점검 권장</small></div>`).join(''):'<div style="color:var(--gray4);font-size:13px">반복 민원 없음</div>'}
   </div>
