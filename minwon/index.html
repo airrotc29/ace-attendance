@@ -1526,8 +1526,8 @@ function renderCover(){
   const can=me && me.boss && mgrPw;
   const show = me && tab==='list' && (me.cover || can);
   el.classList.toggle('hidden', !show); el.classList.toggle('cv-empty', !!(show && !me.cover));
-  if(!show){ el.innerHTML=''; return; }
-  const key=(me.cover||'')+'|'+!!can; if(el.dataset.key===key) return; el.dataset.key=key;
+  if(!show){ el.innerHTML=''; el.dataset.key=''; return; }
+  const key=(me.cover||'')+'|'+!!can; if(el.dataset.key===key && el.firstElementChild) return; el.dataset.key=key;
   el.innerHTML = me.cover
     ? `<img src="${esc(me.cover)}" alt="" onclick="viewImg('${esc(me.cover)}')">${can?`<button class="cv-edit" onclick="coverMenu()">${CAM_SVG}<span>사진 바꾸기</span></button>`:''}`
     : `<button class="cv-add" onclick="coverMenu()">${CAM_SVG}<span><b>건물 사진 넣기</b><small>민원 화면 맨 위에 보입니다 · 소장만 보이는 버튼</small></span></button>`;
