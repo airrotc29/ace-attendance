@@ -495,6 +495,9 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .done-acts .da.del:hover{background:#fdf1f1;border-color:#f0c4c4}
 .stat-tile.purple .n{color:var(--purple)}
 @media (max-width:420px){.summary-row .stat-tile{padding-left:2px;padding-right:2px}.summary-row .stat-tile .n{font-size:22px}.summary-row .stat-tile .l{font-size:12px;white-space:nowrap}}
+/* 조치 내용: 굵은 파란 글씨 (진행 보고 · 완료 처리 입력칸과 처리 과정) */
+#log-text{color:var(--accent);font-weight:700}
+.tl-item.t-progress .txt,.tl-item.t-done .txt{color:var(--accent);font-weight:700}
 </style>
 </head>
 <body>
@@ -1278,7 +1281,7 @@ function refreshDetail(){
     ${contactBox(it)}
     ${it.content?`<div class="detail-content">${esc(it.content)}</div>`:''}
     ${it.photos&&it.photos.length?`<div class="photos">${it.photos.map(p=>`<img src="${p}" onclick="viewImg(this.src)">`).join('')}</div>`:''}
-    <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item"><div class="tl-ic ${l.type}">${ic[l.type]||'기록'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(l.text)}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this.src)">`:''}</div></div>`).join('')}</div>
+    <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item t-${l.type}"><div class="tl-ic ${l.type}">${ic[l.type]||'기록'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(l.text)}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this.src)">`:''}</div></div>`).join('')}</div>
     <div class="action-bar">
       ${it.status!=='done'?`
       <div class="form-row"><label>담당 변경</label><select onchange="assign('${it.id}',this.value)">${assigneeOptions(it.assignee)}</select></div>
