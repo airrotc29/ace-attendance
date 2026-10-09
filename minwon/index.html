@@ -414,6 +414,50 @@ mark{background:#fff1a8;box-shadow:none}
 .qpick .chips{gap:7px}
 .qpick .chip{font-size:14px;padding:9px 14px;font-weight:600;cursor:pointer}
 .qpick .chip.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.contact-in{border:1px solid var(--line);border-radius:12px;padding:12px 14px 4px;margin-bottom:14px;background:#fafaf8}
+.contact-in .ci-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.contact-in .form-grid{grid-template-columns:1fr 1fr}
+@media (max-width:520px){.contact-in .form-grid{grid-template-columns:1fr;gap:0}}
+.contact-in .ci-h b{font-size:14px;color:var(--navy)}.contact-in .ci-h span{font-size:12px;color:var(--mute)}
+.ci-n{font-size:12px;color:var(--mute);line-height:1.55;margin:0 0 10px;word-break:keep-all}
+.ci-n b{color:var(--ink2)}
+.contact-box{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 14px;margin:0 0 14px;background:#fff}
+.contact-box .cb-who{flex:1;min-width:0}
+.contact-box .cb-who small{display:block;font-size:11.5px;color:var(--mute);font-weight:600;letter-spacing:.02em}
+.contact-box .cb-who b{font-size:15px;color:var(--navy);margin-right:8px}
+.contact-box .cb-who span{font-size:14px;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.contact-box .cb-who em{display:block;font-style:normal;font-size:11.5px;color:var(--mute);margin-top:3px}
+.contact-box .cb-act{display:flex;gap:6px;flex:none}
+.cb-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);background:#fff;color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;padding:9px 13px;border-radius:999px;cursor:pointer}
+.cb-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cb-btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.sms-to{display:flex;gap:8px;align-items:baseline;margin:-2px 0 12px;font-size:14px}
+.sms-to b{color:var(--navy)}.sms-to span{color:var(--ink2);font-variant-numeric:tabular-nums}
+.tl-ic.contact{background:var(--accent-soft);color:var(--accent)}
+.adm-month .am-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.adm-month .am-head h3{margin:0}
+.am-nav{display:flex;align-items:center;gap:4px}
+.am-nav b{font-size:14.5px;min-width:92px;text-align:center;font-variant-numeric:tabular-nums}
+.am-nav button{width:32px;height:32px;border-radius:10px;border:1px solid var(--line2);background:#fff;font-size:18px;line-height:1;color:var(--ink);cursor:pointer}
+.am-nav button:disabled{opacity:.35;cursor:default}
+.am-total{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.am-total div{padding:10px 4px;text-align:center;border-left:1px solid var(--line)}
+.am-total div:first-child{border-left:0}
+.am-total b{display:block;font-size:19px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.am-total span{font-size:11.5px;color:var(--mute)}
+.am-total .warn b,.am-stats .warn{color:var(--red)}
+.am-row{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.am-row:last-child{border-bottom:0}
+.am-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.am-name b{font-size:15.5px;color:var(--navy)}
+.am-tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;background:#f1f0ec;color:var(--mute)}
+.am-tag.ok{background:var(--accent-soft);color:var(--accent)}
+.am-stats{grid-column:1;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.am-stats em{font-style:normal;font-weight:400;color:var(--mute);font-size:12px;margin-right:4px}
+.am-stats i{font-style:normal;font-size:11.5px;color:var(--red);font-weight:600}
+.am-btn{grid-column:2;grid-row:1 / span 2;white-space:nowrap;background:#fff;border:1px solid var(--navy);color:var(--navy);font-weight:600}
+.am-btn:hover{background:var(--navy);color:#fff}
+@media (max-width:520px){.am-total b{font-size:17px}.am-btn{grid-column:1 / -1;grid-row:auto}}
 </style>
 </head>
 <body>
@@ -450,7 +494,7 @@ mark{background:#fff1a8;box-shadow:none}
 <!-- ══ 본사 관리 ══ -->
 <div id="admin" class="hidden">
   <div class="topbar">
-    <div class="tb-title">본사 관리<small>사업소 생성 · 명단 · 비밀번호</small></div>
+    <div class="tb-title">본사 관리<small>월간 현황 · 사업소 · 명단</small></div>
     <button class="tb-btn tb-ic hidden" id="adm-install" onclick="installApp()" aria-label="앱으로 설치" title="앱으로 설치"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
   </div>
   <div class="content" id="adm-content"></div>
@@ -485,7 +529,7 @@ mark{background:#fff1a8;box-shadow:none}
 // 직원 명단은 사업소 로그인 후 서버에서 불러옵니다
 // ══════════════════════════════════════════════
 
-const CATEGORIES = ['시설·설비','전기','누수·배관','청소·미화','보안·경비','주차','엘리베이터','냉난방','소음·악취','조경','기타'];
+const CATEGORIES = ['시설·설비','전기','누수·배관','청소·미화','보안·경비','주차','엘리베이터','냉난방','소음·악취','조경','관리비','정보공개','기타'];
 const SOURCES = ['전화','방문','순찰 발견','직원 요청','입주사 메신저','기타'];
 const TEAMS = ['사무실','시설팀','미화팀','보안팀','주차','기타'];
 
@@ -565,8 +609,8 @@ const K = { auth:'mw_auth', me:'mw_me', pending:()=>`mw_pending_${me.officeId}`,
 // ── 행 ↔ 앱 객체 변환 ──
 const tsMs = v=>v==null?null:(typeof v==='number'?v:new Date(v).getTime());
 const tsIso = v=>v==null?null:new Date(v).toISOString();
-function rowToIssue(r){ return { id:r.id, title:r.title, content:r.content||'', location:r.location||'', category:r.category||'기타', source:r.source||'', urgent:!!r.urgent, photos:r.photos||[], reporter:r.reporter||null, assignee:r.assignee||{type:'none'}, assignedBy:r.assigned_by||null, status:r.status||'open', logs:r.logs||[], reopened:r.reopened||0, createdAt:tsMs(r.created_at), updatedAt:tsMs(r.updated_at), doneAt:tsMs(r.done_at) }; }
-function issueToRow(it){ return { id:it.id, office_id:me.officeId, title:it.title, content:it.content||'', location:it.location||'', category:it.category||'기타', source:it.source||'', urgent:!!it.urgent, photos:it.photos||[], reporter:it.reporter||null, assignee:it.assignee||{type:'none'}, assigned_by:it.assignedBy||null, status:it.status, logs:it.logs||[], reopened:it.reopened||0, created_at:tsIso(it.createdAt), updated_at:tsIso(it.updatedAt), done_at:tsIso(it.doneAt) }; }
+function rowToIssue(r){ return { id:r.id, title:r.title, content:r.content||'', location:r.location||'', category:r.category||'기타', source:r.source||'', urgent:!!r.urgent, photos:r.photos||[], reporter:r.reporter||null, assignee:r.assignee||{type:'none'}, assignedBy:r.assigned_by||null, status:r.status||'open', logs:r.logs||[], reopened:r.reopened||0, contact:r.contact||null, createdAt:tsMs(r.created_at), updatedAt:tsMs(r.updated_at), doneAt:tsMs(r.done_at) }; }
+function issueToRow(it){ return { id:it.id, office_id:me.officeId, title:it.title, content:it.content||'', location:it.location||'', category:it.category||'기타', source:it.source||'', urgent:!!it.urgent, photos:it.photos||[], reporter:it.reporter||null, assignee:it.assignee||{type:'none'}, assigned_by:it.assignedBy||null, status:it.status, logs:it.logs||[], reopened:it.reopened||0, contact:it.contact||null, created_at:tsIso(it.createdAt), updated_at:tsIso(it.updatedAt), done_at:tsIso(it.doneAt) }; }
 function rowToMsg(r){ return { id:r.id, kind:r.kind||'msg', text:r.text||'', photo:r.photo||null, issueId:r.issue_id||null, by:r.by||null, ts:tsMs(r.ts) }; }
 function msgToRow(m){ return { id:m.id, office_id:me.officeId, kind:m.kind||'msg', text:m.text||'', photo:m.photo||null, issue_id:m.issueId||null, by:m.by||null, ts:tsIso(m.ts) }; }
 
@@ -672,7 +716,7 @@ async function fetchAll(forceFull){
       if(Object.keys(chat).length>prevN){ const last=Object.values(chat).sort((a,b)=>b.ts-a.ts)[0]; if(last && last.ts>lsGet(K.seenChat(),0)) notifyNewChat(last); }
     }else if(!notifInit){ notifInit=true; }
     setSync('on','자동 동기화 중');
-    if(changed) render();
+    if(changed) render(true);
     handleDeepLink();
   }catch(e){
     console.warn('sync fail', e);
@@ -788,13 +832,69 @@ function adminEnter(){
   adminHome();
 }
 function adminLogout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.auth); location.reload(); }
+let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null;
 async function adminHome(){
   $('#adm-content').innerHTML = '<div class="empty"><b>불러오는 중…</b></div>';
-  try{ adminOffices = await rpc('mw_offices_list') || []; }catch(e){ console.warn(e); adminOffices = []; toast('사업소 목록을 불러오지 못했습니다'); }
+  const [o, s] = await Promise.all([
+    rpc('mw_offices_list').catch(e=>{ console.warn(e); toast('사업소 목록을 불러오지 못했습니다'); return []; }),
+    rpc('mw_hq_summary',{p_ym:admYm}).catch(e=>{ console.warn(e); return null; })
+  ]);
+  adminOffices = o || []; admSummary = s;
   renderAdminHome();
+}
+async function admMonth(d){
+  const [y,m]=admYm.split('-').map(Number); const n=new Date(y,m-1+d,1);
+  const next=`${n.getFullYear()}-${pad(n.getMonth()+1)}`; if(next>fmtDate(Date.now()).slice(0,7)) return;
+  admYm=next; admSummary=null; renderAdminHome();
+  try{ admSummary = await rpc('mw_hq_summary',{p_ym:admYm}); }catch(e){ console.warn(e); toast('현황을 불러오지 못했습니다'); }
+  renderAdminHome();
+}
+function renderAdminMonthly(){
+  const [y,m]=admYm.split('-').map(Number); const isNow = admYm===fmtDate(Date.now()).slice(0,7);
+  const rows = admSummary || [];
+  const sum = k=>rows.reduce((a,r)=>a+(+r[k]||0),0);
+  const pct = r=>r.recv?Math.round(r.recv_done/r.recv*100):null;
+  const hrs = h=>h==null?'-':(h<24?`${h}시간`:`${Math.round(h/24*10)/10}일`);
+  const tot = {recv:sum('recv'), recv_done:sum('recv_done'), done:sum('done'), open:sum('open')};
+  return `<div class="card adm-month">
+    <div class="am-head"><h3>사업소별 월간 현황</h3>
+      <div class="am-nav"><button onclick="admMonth(-1)" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button onclick="admMonth(1)" aria-label="다음 달" ${isNow?'disabled':''}>›</button></div></div>
+    ${admSummary===null?'<div class="empty" style="padding:24px 0"><b>불러오는 중…</b></div>':`
+    <div class="am-total"><div><b>${rows.length}</b><span>사업소</span></div><div><b>${tot.recv}</b><span>접수</span></div><div><b>${tot.done}</b><span>완료</span></div><div><b>${tot.recv?Math.round(tot.recv_done/tot.recv*100):0}%</b><span>처리율</span></div><div class="${tot.open?'warn':''}"><b>${tot.open}</b><span>미완료</span></div></div>
+    ${rows.length?rows.map(r=>`<div class="am-row">
+      <div class="am-name"><b>${esc(r.name)}</b>${r.report?`<span class="am-tag ok">소장 작성 · ${fmtKo(new Date(r.report.updated_at).getTime())}</span>`:'<span class="am-tag">소장 미작성</span>'}</div>
+      <div class="am-stats"><span><em>접수</em>${r.recv}</span><span><em>완료</em>${r.done}</span><span><em>처리율</em>${pct(r)==null?'-':pct(r)+'%'}</span><span class="${r.open?'warn':''}"><em>미완료</em>${r.open}${r.urgent?` <i>긴급 ${r.urgent}</i>`:''}</span><span><em>평균 처리</em>${hrs(r.avg_h)}</span></div>
+      <button class="btn btn-sm am-btn" onclick="adminReport('${esc(r.id)}')">보고서 보기</button>
+    </div>`).join(''):'<div class="empty"><b>아직 사업소가 없습니다</b></div>'}`}
+  </div>`;
+}
+// 본사: 사업소 월간보고서를 사업소에서 만든 것과 같은 모양으로 엶 (민원인 연락처는 받지 않음)
+async function adminReport(id){
+  const off = (admSummary||[]).find(r=>r.id===id) || adminOffices.find(o=>o.id===id); if(!off) return;
+  const ym = admYm;
+  const w = window.open('', '_blank');   // 팝업 차단을 피하려고 누른 즉시 창을 엶
+  if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
+  w.document.write('<!doctype html><meta charset="utf-8"><title>보고서 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">보고서를 만드는 중입니다…</body>');
+  try{
+    const [rows, emps, rp] = await Promise.all([ rpc('mw_hq_issues',{p_office:id}), rpc('mw_employees_list',{p_office:id}), rpc('mw_report_get',{p_ym:ym, p_office:id}).catch(()=>null) ]);
+    const map={}; (rows||[]).forEach(r=>map[r.id]=rowToIssue(r));
+    const list=(emps||[]).sort(sortEmp); const boss=list.find(e=>isBoss(e));
+    const d=(rp&&rp.data)||{};
+    const o={ to:d.to||`${off.name} 관리단`, date:d.date||fmtDate(Date.now()), writer:d.writer||(boss?`${boss.rank} ${boss.name}`:''), improve:d.improve||'', note:d.note||'', photos:d.photos!==false };
+    // 보고서 만들기는 현재 사업소 데이터를 쓰므로 잠시 바꿔 끼웠다가 되돌림
+    const keep={issues, me, EMPLOYEES};
+    let html;
+    try{ issues=map; me={officeId:id, officeName:off.name}; EMPLOYEES=list; html=buildReportHTML(ym, o); }
+    finally{ issues=keep.issues; me=keep.me; EMPLOYEES=keep.EMPLOYEES; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }catch(e){
+    console.warn(e); w.document.body.textContent='보고서를 불러오지 못했습니다. 잠시 후 다시 시도하세요.';
+  }
 }
 function renderAdminHome(){
   $('#adm-content').innerHTML = `
+    <div class="sec-title">월간 현황 <small>사업소별 민원 처리 · 월간보고서</small></div>
+    ${renderAdminMonthly()}
     <div class="sec-title">사업소 관리 <small>사업소 생성 · 명단 입력 · 비밀번호</small></div>
     <div class="card"><h3>새 사업소 만들기</h3>
       <div class="form-row"><label>사업소 이름</label><input id="ad-name" placeholder="예) 강남타워"></div>
@@ -901,11 +1001,15 @@ async function rosterSave(){
 // ══════════════════════════════════════════════
 function go(t){ tab=t; document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); if(t==='chat') lsSet(K.seenChat(), Date.now()); if(t==='list') lsSet(K.seenIssue(), Date.now()); render(); window.scrollTo(0,0); }
 let newDraft = null;
-function render(){
+function render(fromSync){
   if(!me) return;
   const c = $('#content');
-  if(tab==='list') c.innerHTML = renderList();
-  else if(tab==='new'){ if(!newDraft) newDraft={title:'',content:'',location:'',category:'',source:'전화',urgent:false,photos:[],assignee:{type:'none'}}; c.innerHTML = renderNew(); }
+  // 동기화로 다시 그릴 때, 접수 · 검색 칸에 입력 중이면 화면을 그대로 둠 (키보드가 내려가지 않도록)
+  const ae=document.activeElement;
+  const typing = fromSync===true && (tab==='new'||tab==='search') && ae && c.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+  if(typing){}
+  else if(tab==='list') c.innerHTML = renderList();
+  else if(tab==='new'){ if(!newDraft) newDraft={title:'',content:'',location:'',category:'',source:'전화',urgent:false,photos:[],assignee:{type:'none'},cName:'',cPhone:''}; c.innerHTML = renderNew(); }
   else if(tab==='chat'){ c.innerHTML = renderChat(); scrollChat(); }
   else if(tab==='stats') c.innerHTML = renderStats();
   else if(tab==='search') c.innerHTML = renderSearch();
@@ -983,7 +1087,15 @@ function renderNew(){
     <div class="form-row"><label>장소</label><input id="n-loc" value="${esc(d.location)}" placeholder="예) 2층 남자화장실 / 지하1층 주차장" oninput="newDraft.location=this.value"></div>
     <div class="form-row"><label>분류</label><div class="chips">${CATEGORIES.map(c=>`<button class="chip ${d.category===c?'active':''}" onclick="newDraft.category='${c}';render()">${c}</button>`).join('')}</div></div>
     <div class="form-row"><label>접수 경로</label><div class="chips">${SOURCES.map(s=>`<button class="chip ${d.source===s?'active':''}" onclick="newDraft.source='${s}';render()">${s}</button>`).join('')}</div></div>
-    <div class="form-row"><label>상세 내용 / 민원인 정보 (선택)</label><textarea id="n-content" placeholder="호실·연락처·상세 상황 등" oninput="newDraft.content=this.value">${esc(d.content)}</textarea></div>
+    <div class="contact-in">
+      <div class="ci-h"><b>민원인 연락처</b><span>처리 결과를 직접 알려 드릴 때 씁니다 (선택)</span></div>
+      <div class="form-grid">
+        <div class="form-row"><label>민원인 (호실 · 호칭)</label><input id="n-cname" value="${esc(d.cName||'')}" placeholder="예) 1105호 김OO님" oninput="newDraft.cName=this.value"></div>
+        <div class="form-row"><label>전화번호</label><input id="n-cphone" type="tel" inputmode="tel" autocomplete="off" value="${esc(d.cPhone||'')}" placeholder="010-0000-0000" oninput="newDraft.cPhone=this.value" onblur="this.value=newDraft.cPhone=fmtPhone(this.value)"></div>
+      </div>
+      <p class="ci-n">민원 처리와 재발 시 연락에만 쓰이며 관리사무소에 보관됩니다. 전화로 받을 때 <b>"처리 결과 안내를 위해 연락처를 받아 보관하겠습니다"</b>라고 알려 주세요. 민원인이 삭제를 원하면 민원 수정에서 지웁니다.</p>
+    </div>
+    <div class="form-row"><label>상세 내용 (선택)</label><textarea id="n-content" placeholder="상세 상황 등" oninput="newDraft.content=this.value">${esc(d.content)}</textarea></div>
     <div class="form-row"><label>사진</label><div class="photo-add">${d.photos.map((p,i)=>`<div class="thumb-wrap"><img class="thumb" src="${p}"><button class="thumb-del" onclick="newDraft.photos.splice(${i},1);render()">✕</button></div>`).join('')}<div class="photo-btn" onclick="pickPhotos(ps=>{newDraft.photos.push(...ps);render()})"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</div></div></div>
     <div class="form-row"><label>담당</label><select onchange="newDraft.assignee=parseAssignee(this.value)">${assigneeOptions(d.assignee)}</select></div>
     <div class="form-row"><button class="chip red ${d.urgent?'active':''}" onclick="newDraft.urgent=!newDraft.urgent;render()">긴급 민원</button></div>
@@ -994,12 +1106,13 @@ let submitting=false;
 async function submitNew(){
   const d=newDraft; d.title=d.title.trim();
   if(!d.title){ toast('내용을 입력해 주세요'); $('#n-title').focus(); return; }
+  const contact = makeContact(d.cName, d.cPhone); if(contact===false){ toast('전화번호를 확인해 주세요'); $('#n-cphone').focus(); return; }
   if(submitting) return; submitting=true;
   if(d.photos.length) toast('사진 업로드 중…',8000);
   const photos = await uploadPhotos(d.photos);
   submitting=false;
   const now=Date.now(); const id=uid();
-  const it = { id, title:d.title, content:d.content.trim(), location:d.location.trim(), category:d.category||'기타', source:d.source, urgent:!!d.urgent, photos,
+  const it = { id, title:d.title, content:d.content.trim(), location:d.location.trim(), category:d.category||'기타', source:d.source, urgent:!!d.urgent, photos, contact,
     reporter:{empId:me.empId,name:me.name,team:me.team}, assignee:d.assignee||{type:'none'}, assignedBy:me.empId,
     status: (d.assignee&&d.assignee.type!=='none')?'progress':'open', createdAt:now, updatedAt:now, doneAt:null,
     logs:[{ts:now,type:'create',by:{empId:me.empId,name:me.name},text:'민원 접수'}] };
@@ -1009,6 +1122,72 @@ async function submitNew(){
   newDraft=null; toast('접수되었습니다'); go('list');
 }
 
+// ── 민원인 연락 (전화 · 문자) ───────────────────
+function fmtPhone(v){
+  const d=String(v||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.startsWith('02')) return d.length<=9 ? d.replace(/^(02)(\d{3})(\d{0,4})$/,'$1-$2-$3') : d.replace(/^(02)(\d{4})(\d{0,4})$/,'$1-$2-$3');
+  if(d.length===11) return d.replace(/^(\d{3})(\d{4})(\d{4})$/,'$1-$2-$3');
+  if(d.length===10) return d.replace(/^(\d{3})(\d{3})(\d{4})$/,'$1-$2-$3');
+  if(d.length===8) return d.replace(/^(\d{4})(\d{4})$/,'$1-$2');   // 1588-0000 등
+  return v.trim();
+}
+const maskPhone = p=>p ? fmtPhone(p).replace(/^(\d{2,4})-(\d{3,4})-(\d{4})$/,(m,a,b,c)=>`${a}-${'*'.repeat(b.length)}-${c}`) : '';
+// 이름·번호가 모두 비면 null, 번호 형식이 틀리면 false
+function makeContact(name, phone){
+  name=String(name||'').trim(); const d=String(phone||'').replace(/\D/g,'');
+  if(d && (d.length<8 || d.length>11)) return false;
+  if(!name && !d) return null;
+  return { name, phone: d ? fmtPhone(d) : '' };
+}
+function contactBox(it){
+  const c=it.contact; if(!c || (!c.name && !c.phone)) return '';
+  const tel='<svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
+  const sms='<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  const last=(it.logs||[]).filter(l=>l.type==='contact').pop();
+  return `<div class="contact-box">
+    <div class="cb-who"><small>민원인</small><b>${esc(c.name||'이름 없음')}</b>${c.phone?`<span>${esc(c.phone)}</span>`:''}${last?`<em>최근 연락 · ${fmtKo(last.ts)} ${esc(last.by?.name||'')}</em>`:''}</div>
+    ${c.phone?`<div class="cb-act"><button class="cb-btn" onclick="callContact('${it.id}')">${tel}전화</button><button class="cb-btn pri" onclick="openSms('${it.id}')">${sms}문자</button></div>`:''}
+  </div>`;
+}
+function openExternal(u){ location.href=u; }   // 전화 · 문자 앱 열기
+function logContact(it, text){ it.logs.push({ts:Date.now(),type:'contact',by:{empId:me.empId,name:me.name},text}); saveIssue(it); }
+function callContact(id){
+  const it=issues[id]; const p=it&&it.contact&&it.contact.phone; if(!p) return;
+  logContact(it, '민원인에게 전화');
+  openExternal('tel:'+p.replace(/[^\d+]/g,''));
+}
+const SMS_TPL = {
+  recv:{label:'접수 안내', text:(it,o)=>`[${o} 관리사무소] "${it.title}" 민원이 접수되었습니다. 확인 후 다시 연락드리겠습니다.`},
+  visit:{label:'방문 예정', text:(it,o)=>`[${o} 관리사무소] "${it.title}" 건으로 담당 직원이 곧 방문할 예정입니다. (담당 ${me.name})`},
+  absent:{label:'부재 안내', text:(it,o)=>`[${o} 관리사무소] "${it.title}" 건으로 연락드렸으나 통화가 어려웠습니다. 편하신 시간을 회신 부탁드립니다.`},
+  delay:{label:'지연 안내', text:(it,o)=>`[${o} 관리사무소] "${it.title}" 건은 부품 · 업체 일정으로 처리가 조금 늦어지고 있습니다. 양해 부탁드리며 처리되면 바로 알려 드리겠습니다.`},
+  done:{label:'처리 완료', text:(it,o)=>`[${o} 관리사무소] "${it.title}" 건 처리를 완료했습니다. 불편을 드려 죄송합니다. 추가로 불편하신 점은 관리사무소로 말씀해 주세요.`}
+};
+function openSms(id, pick, afterDone){
+  const it=issues[id]; const c=it&&it.contact; if(!c||!c.phone) return;
+  closeById('sms-modal');
+  let cur = pick || (it.status==='done'?'done':it.status==='progress'?'visit':'recv');
+  const office = me.officeName.replace(/\s*\(.*\)\s*$/,'');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="sms-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-height:86vh">
+    <div class="modal-head"><h2>${afterDone?'민원인에게 완료 알리기':'민원인에게 문자'}</h2><button class="modal-close" onclick="closeById('sms-modal')">✕</button></div>
+    <div class="sms-to"><b>${esc(c.name||'민원인')}</b><span>${esc(c.phone)}</span></div>
+    <div class="qpick"><div class="qp-l">안내 문구</div><div class="chips">${Object.entries(SMS_TPL).map(([k,v])=>`<button type="button" class="chip ${k===cur?'active':''}" data-k="${k}">${v.label}</button>`).join('')}</div></div>
+    <div class="form-row"><label>보낼 내용 <span style="font-weight:400;color:var(--mute)">· 직접 고쳐 쓸 수 있습니다</span></label><textarea id="sms-text" style="min-height:128px">${esc(SMS_TPL[cur].text(it,office))}</textarea></div>
+    <p class="ci-n" style="margin:-4px 0 12px">누르면 휴대폰 문자 앱이 열립니다. 보낸 기록은 처리 과정에 남습니다.</p>
+    <div class="btn-row"><button class="btn btn-gray" onclick="closeById('sms-modal')">${afterDone?'나중에':'닫기'}</button><button class="btn btn-primary" id="sms-send" style="flex:2">문자 앱 열기</button></div>
+  </div></div>`);
+  $('#sms-modal').querySelectorAll('.qpick .chip').forEach(b=>b.onclick=()=>{ cur=b.dataset.k; $('#sms-modal').querySelectorAll('.qpick .chip').forEach(x=>x.classList.toggle('active',x===b)); $('#sms-text').value=SMS_TPL[cur].text(it,office); });
+  $('#sms-send').onclick=()=>{
+    const body=$('#sms-text').value.trim(); if(!body){ toast('보낼 내용을 입력해 주세요'); return; }
+    const num=c.phone.replace(/[^\d+]/g,'');
+    logContact(it, `민원인에게 문자 · ${SMS_TPL[cur].label}`);
+    closeById('sms-modal');
+    // 아이폰은 &body=, 안드로이드는 ?body=
+    openExternal(`sms:${num}${platform()==='ios'?'&':'?'}body=${encodeURIComponent(body)}`);
+  };
+}
+
 // ── 상세 ─────────────────────────────────────
 let openDetailId=null;
 function openDetail(id){ openDetailId=id; refreshDetail(); }
@@ -1016,9 +1195,9 @@ function closeModal(){ openDetailId=null; $('#modal-root').innerHTML=''; }
 function refreshDetail(){
   const it=issues[openDetailId]; if(!it){ closeModal(); return; }
   const logs=[...(it.logs||[])].sort((a,b)=>a.ts-b.ts);
-  const ic={create:'접수',assign:'담당',progress:'진행',comment:'댓글',done:'완료',reopen:'재개',edit:'수정'};
+  const ic={create:'접수',assign:'담당',progress:'진행',comment:'댓글',done:'완료',reopen:'재개',edit:'수정',contact:'연락'};
   const canDel = me.boss || (it.reporter&&it.reporter.empId===me.empId);
-  const html = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+  const html = `<div class="modal-bg" id="detail-modal" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-head"><h2><span class="badge b-${it.status}">${STATUS[it.status]}</span> ${it.urgent?'<span class="badge b-urgent">긴급</span> ':''}${esc(it.title)}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
     <dl class="detail-meta">
       <dt>장소</dt><dd>${esc(it.location||'-')}</dd>
@@ -1027,6 +1206,7 @@ function refreshDetail(){
       <dt>담당</dt><dd>${assigneeLabel(it)}</dd>
       ${it.status==='done'?`<dt>완료</dt><dd class="done">${fmtDT(it.doneAt)} · ${dur(it.doneAt-it.createdAt)} 소요</dd>`:''}
     </dl>
+    ${contactBox(it)}
     ${it.content?`<div class="detail-content">${esc(it.content)}</div>`:''}
     ${it.photos&&it.photos.length?`<div class="photos">${it.photos.map(p=>`<img src="${p}" onclick="viewImg(this.src)">`).join('')}</div>`:''}
     <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item"><div class="tl-ic ${l.type}">${ic[l.type]||'기록'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(l.text)}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this.src)">`:''}</div></div>`).join('')}</div>
@@ -1042,7 +1222,10 @@ function refreshDetail(){
       :`<div class="btn-row"><button class="btn btn-gray" onclick="addLog('${it.id}','comment')">댓글</button><button class="btn btn-gray" onclick="reopen('${it.id}')">다시 열기 (재발)</button>${canDel?`<button class="btn btn-gray btn-sm" style="color:var(--red);flex:0" onclick="delIssue('${it.id}')">삭제</button>`:''}</div>`}
     </div>
   </div></div>`;
-  $('#modal-root').innerHTML=html;
+  // 상세 창만 바꿔 그림: 위에 열린 진행 보고 · 문자 · 수정 창은 그대로 두고, 스크롤 위치도 유지
+  const old=document.getElementById('detail-modal');
+  if(old){ const st=old.querySelector('.modal').scrollTop; old.insertAdjacentHTML('afterend',html); old.remove(); document.querySelector('#detail-modal .modal').scrollTop=st; }
+  else $('#modal-root').insertAdjacentHTML('afterbegin',html);
 }
 function viewImg(src){ const v=document.createElement('div'); v.className='viewer'; v.innerHTML=`<img src="${src}">`; v.onclick=()=>v.remove(); document.body.appendChild(v); }
 function assign(id,v){
@@ -1103,6 +1286,7 @@ function addLog(id,type){
       const sysText = type==='done'?`처리 완료 · ${it.title} · ${me.name}${text?' · '+text:''}`:type==='progress'?`진행 · ${it.title} · ${me.name}: ${text||'진행 중'}`:`댓글 · ${it.title} · ${me.name}: ${text}`;
       sendChat({kind:'sys',text:sysText,issueId:id,photo:photos[0]||null,by:{name:me.name,empId:me.empId,team:me.team}});
       logDraftText=''; const lm=$('#log-modal'); if(lm) lm.remove(); toast(type==='done'?'완료 처리되었습니다':'등록되었습니다');
+      if(type==='done' && it.contact && it.contact.phone) openSms(id,'done',true);
     };
   };
   // 기본 답변을 골라 둔 상태로 시작 (그대로 등록하거나 다른 답변을 고르기)
@@ -1119,11 +1303,13 @@ function editIssue(id){
     <div class="form-row"><label>장소</label><input id="e-loc" value="${esc(it.location)}"></div>
     <div class="form-grid"><div class="form-row"><label>분류</label><select id="e-cat">${CATEGORIES.map(c=>`<option ${it.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
     <div class="form-row"><label>접수 경로</label><select id="e-src">${SOURCES.map(c=>`<option ${it.source===c?'selected':''}>${c}</option>`).join('')}</select></div></div>
+    <div class="form-grid"><div class="form-row"><label>민원인 (호실 · 호칭)</label><input id="e-cname" value="${esc(it.contact?.name||'')}"></div>
+    <div class="form-row"><label>전화번호</label><input id="e-cphone" type="tel" inputmode="tel" value="${esc(it.contact?.phone||'')}" onblur="this.value=fmtPhone(this.value)"></div></div>
     <div class="form-row"><label>상세</label><textarea id="e-content">${esc(it.content)}</textarea></div>
     <div class="form-row"><label><input type="checkbox" id="e-urgent" ${it.urgent?'checked':''}> 긴급</label></div>
     <button class="btn btn-primary btn-block" onclick="saveEdit('${id}')">저장</button></div></div>`);
 }
-function saveEdit(id){ const it=issues[id]; const t=$('#e-title').value.trim(); if(!t){toast('내용을 입력해 주세요');return;} it.title=t; it.location=$('#e-loc').value.trim(); it.category=$('#e-cat').value; it.source=$('#e-src').value; it.content=$('#e-content').value.trim(); it.urgent=$('#e-urgent').checked; it.logs.push({ts:Date.now(),type:'edit',by:{empId:me.empId,name:me.name},text:'내용 수정'}); saveIssue(it); const em=$('#edit-modal'); if(em) em.remove(); toast('수정되었습니다'); }
+function saveEdit(id){ const it=issues[id]; const t=$('#e-title').value.trim(); if(!t){toast('내용을 입력해 주세요');return;} const ct=makeContact($('#e-cname').value,$('#e-cphone').value); if(ct===false){ toast('전화번호를 확인해 주세요'); return; } it.contact=ct; it.title=t; it.location=$('#e-loc').value.trim(); it.category=$('#e-cat').value; it.source=$('#e-src').value; it.content=$('#e-content').value.trim(); it.urgent=$('#e-urgent').checked; it.logs.push({ts:Date.now(),type:'edit',by:{empId:me.empId,name:me.name},text:'내용 수정'}); saveIssue(it); const em=$('#edit-modal'); if(em) em.remove(); toast('수정되었습니다'); }
 
 // ── 채팅 ─────────────────────────────────────
 const QUICK = [
@@ -1232,7 +1418,7 @@ function renderStats(){
 function exportExcel(){
   if(typeof XLSX==='undefined'){ toast('엑셀 모듈을 불러오지 못했습니다 (인터넷 확인)'); return; }
   const st=monthStats(statMonth);
-  const rows=st.recv.sort((a,b)=>a.createdAt-b.createdAt).map((i,n)=>({'번호':n+1,'접수일시':fmtDT(i.createdAt),'내용':i.title,'상세':i.content,'장소':i.location,'분류':i.category,'접수경로':i.source,'긴급':i.urgent?'Y':'','접수자':i.reporter?.name||'','담당':i.assignee?.name||'미지정','상태':STATUS[i.status],'완료일시':i.doneAt?fmtDT(i.doneAt):'','소요시간':i.doneAt?dur(i.doneAt-i.createdAt):'','처리과정':(i.logs||[]).filter(l=>l.type!=='create').map(l=>`[${fmtKo(l.ts)} ${l.by?.name}] ${l.text||'(사진)'}`).join('\n')}));
+  const rows=st.recv.sort((a,b)=>a.createdAt-b.createdAt).map((i,n)=>({'번호':n+1,'접수일시':fmtDT(i.createdAt),'내용':i.title,'상세':i.content,'장소':i.location,'분류':i.category,'접수경로':i.source,'민원인':[i.contact?.name,maskPhone(i.contact?.phone)].filter(Boolean).join(' '),'긴급':i.urgent?'Y':'','접수자':i.reporter?.name||'','담당':i.assignee?.name||'미지정','상태':STATUS[i.status],'완료일시':i.doneAt?fmtDT(i.doneAt):'','소요시간':i.doneAt?dur(i.doneAt-i.createdAt):'','처리과정':(i.logs||[]).filter(l=>l.type!=='create').map(l=>`[${fmtKo(l.ts)} ${l.by?.name}] ${l.text||'(사진)'}`).join('\n')}));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), `${statMonth} 민원내역`);
   const sum=[['항목','값'],['접수',st.recv.length],['완료',st.done.length],['미완료 누적',st.open.length],['평균 처리시간',dur(st.avg)],['긴급',st.urgent],[],['분류','건수'],...st.byCat,[],['담당 팀','건수'],...st.byTeam,[],['처리자','완료 건수'],...st.byPerson];
@@ -1249,7 +1435,7 @@ function renderSearch(){
     res=Object.values(issues).filter(i=>{
       if(searchFrom && fmtDate(i.createdAt)<searchFrom) return false;
       if(searchTo && fmtDate(i.createdAt)>searchTo) return false;
-      const hay=[i.title,i.content,i.location,i.category,i.reporter?.name,i.assignee?.name,...(i.logs||[]).map(l=>l.text+' '+(l.by?.name||''))].join(' ').toLowerCase();
+      const hay=[i.title,i.content,i.location,i.category,i.reporter?.name,i.assignee?.name,i.contact?.name,i.contact?.phone,(i.contact?.phone||'').replace(/\D/g,''),...(i.logs||[]).map(l=>l.text+' '+(l.by?.name||''))].join(' ').toLowerCase();
       return terms.every(t=>hay.includes(t));
     }).sort((a,b)=>b.createdAt-a.createdAt);
   }
@@ -1348,12 +1534,21 @@ function openReportDialog(){
     <div class="form-row"><label>특이사항</label><textarea id="rp-note" placeholder="예) 10월 15일 승강기 정기점검 실시, 이상 없음">${esc(n.note||'')}</textarea></div>
     <label class="rp-check"><input type="checkbox" id="rp-photos" ${n.photos===false?'':'checked'}> 처리 사진 대장 포함</label>
     <button class="btn btn-primary btn-block" onclick="makeReport()">보고서 만들기</button>
-    <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.</p>
+    <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.<br>작성한 내용은 본사에서도 함께 봅니다.</p>
   </div></div>`);
+  // 이 기기에 저장된 내용이 없으면 서버(다른 기기에서 작성한 내용)에서 불러옴
+  if(!n.improve && !n.note){
+    const ym=statMonth;
+    rpc('mw_report_get',{p_ym:ym}).then(r=>{ const d=r&&r.data; if(!d || ym!==statMonth || !document.getElementById('rep-modal')) return;
+      [['rp-improve','improve'],['rp-note','note'],['rp-writer','writer'],['rp-to','to'],['rp-date','date']].forEach(([el,k])=>{ const x=document.getElementById(el); if(x && d[k] && (!x.value || el==='rp-improve' || el==='rp-note')) x.value=d[k]; });
+      if(d.photos===false) $('#rp-photos').checked=false;
+    }).catch(()=>{});
+  }
 }
 function makeReport(){
   const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked};
   lsSet(repKey(),{to:o.to}); lsSet(repKey()+'_'+statMonth, o);
+  rpc('mw_report_save',{p_ym:statMonth, p_data:o, p_by:me.name}).catch(e=>console.warn('report save', e));   // 본사에서도 같은 내용으로 볼 수 있게
   const html = buildReportHTML(statMonth, o);
   const w = window.open('', '_blank');
   if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
