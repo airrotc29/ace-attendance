@@ -492,6 +492,9 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .done-acts .da.re small{color:var(--amber);opacity:.8}
 .done-acts .da.del{color:var(--red)}
 .done-acts .da.del:hover{background:#fdf1f1;border-color:#f0c4c4}
+.summary-row{grid-template-columns:repeat(5,1fr)}
+.stat-tile.purple .n{color:var(--purple)}
+@media (max-width:420px){.summary-row .stat-tile{padding-left:2px;padding-right:2px}.summary-row .stat-tile .n{font-size:22px}.summary-row .stat-tile .l{font-size:12px;white-space:nowrap}}
 </style>
 </head>
 <body>
@@ -1095,7 +1098,7 @@ function renderList(){
   const n = s=>all.filter(i=>i.status===s).length;
   return `${pushBanner()}
     <div class="summary-row">
-      ${[['open','red',n('open'),'접수'],['progress','amber',n('progress'),'진행중'],['today','green',all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length,'오늘 완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
+      ${[['open','red',n('open'),'접수'],['progress','amber',n('progress'),'진행중'],['none','purple',all.filter(i=>(!i.assignee||i.assignee.type==='none')&&i.status!=='done').length,'미지정'],['today','green',all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length,'오늘 완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
         .map(([k,c,v,l])=>`<button type="button" class="stat-tile ${c} ${listFilter===k?'on':''}" aria-pressed="${listFilter===k}" onclick="tileFilter('${k}')"><div class="n">${v}</div><div class="l">${l}</div></button>`).join('')}
     </div>
     ${listFilter==='today'?`<div class="list-note">오늘 완료한 민원 ${list.length}건 <button onclick="tileFilter('today')">전체 보기</button></div>`:''}
