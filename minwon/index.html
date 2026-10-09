@@ -434,6 +434,30 @@ mark{background:#fff1a8;box-shadow:none}
 .sms-to{display:flex;gap:8px;align-items:baseline;margin:-2px 0 12px;font-size:14px}
 .sms-to b{color:var(--navy)}.sms-to span{color:var(--ink2);font-variant-numeric:tabular-nums}
 .tl-ic.contact{background:var(--accent-soft);color:var(--accent)}
+.adm-month .am-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.adm-month .am-head h3{margin:0}
+.am-nav{display:flex;align-items:center;gap:4px}
+.am-nav b{font-size:14.5px;min-width:92px;text-align:center;font-variant-numeric:tabular-nums}
+.am-nav button{width:32px;height:32px;border-radius:10px;border:1px solid var(--line2);background:#fff;font-size:18px;line-height:1;color:var(--ink);cursor:pointer}
+.am-nav button:disabled{opacity:.35;cursor:default}
+.am-total{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.am-total div{padding:10px 4px;text-align:center;border-left:1px solid var(--line)}
+.am-total div:first-child{border-left:0}
+.am-total b{display:block;font-size:19px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.am-total span{font-size:11.5px;color:var(--mute)}
+.am-total .warn b,.am-stats .warn{color:var(--red)}
+.am-row{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.am-row:last-child{border-bottom:0}
+.am-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.am-name b{font-size:15.5px;color:var(--navy)}
+.am-tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;background:#f1f0ec;color:var(--mute)}
+.am-tag.ok{background:var(--accent-soft);color:var(--accent)}
+.am-stats{grid-column:1;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.am-stats em{font-style:normal;font-weight:400;color:var(--mute);font-size:12px;margin-right:4px}
+.am-stats i{font-style:normal;font-size:11.5px;color:var(--red);font-weight:600}
+.am-btn{grid-column:2;grid-row:1 / span 2;white-space:nowrap;background:#fff;border:1px solid var(--navy);color:var(--navy);font-weight:600}
+.am-btn:hover{background:var(--navy);color:#fff}
+@media (max-width:520px){.am-total b{font-size:17px}.am-btn{grid-column:1 / -1;grid-row:auto}}
 </style>
 </head>
 <body>
@@ -470,7 +494,7 @@ mark{background:#fff1a8;box-shadow:none}
 <!-- ══ 본사 관리 ══ -->
 <div id="admin" class="hidden">
   <div class="topbar">
-    <div class="tb-title">본사 관리<small>사업소 생성 · 명단 · 비밀번호</small></div>
+    <div class="tb-title">본사 관리<small>월간 현황 · 사업소 · 명단</small></div>
     <button class="tb-btn tb-ic hidden" id="adm-install" onclick="installApp()" aria-label="앱으로 설치" title="앱으로 설치"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
   </div>
   <div class="content" id="adm-content"></div>
@@ -808,13 +832,69 @@ function adminEnter(){
   adminHome();
 }
 function adminLogout(){ if(!confirm('나가시겠습니까?')) return; localStorage.removeItem(K.auth); location.reload(); }
+let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null;
 async function adminHome(){
   $('#adm-content').innerHTML = '<div class="empty"><b>불러오는 중…</b></div>';
-  try{ adminOffices = await rpc('mw_offices_list') || []; }catch(e){ console.warn(e); adminOffices = []; toast('사업소 목록을 불러오지 못했습니다'); }
+  const [o, s] = await Promise.all([
+    rpc('mw_offices_list').catch(e=>{ console.warn(e); toast('사업소 목록을 불러오지 못했습니다'); return []; }),
+    rpc('mw_hq_summary',{p_ym:admYm}).catch(e=>{ console.warn(e); return null; })
+  ]);
+  adminOffices = o || []; admSummary = s;
   renderAdminHome();
+}
+async function admMonth(d){
+  const [y,m]=admYm.split('-').map(Number); const n=new Date(y,m-1+d,1);
+  const next=`${n.getFullYear()}-${pad(n.getMonth()+1)}`; if(next>fmtDate(Date.now()).slice(0,7)) return;
+  admYm=next; admSummary=null; renderAdminHome();
+  try{ admSummary = await rpc('mw_hq_summary',{p_ym:admYm}); }catch(e){ console.warn(e); toast('현황을 불러오지 못했습니다'); }
+  renderAdminHome();
+}
+function renderAdminMonthly(){
+  const [y,m]=admYm.split('-').map(Number); const isNow = admYm===fmtDate(Date.now()).slice(0,7);
+  const rows = admSummary || [];
+  const sum = k=>rows.reduce((a,r)=>a+(+r[k]||0),0);
+  const pct = r=>r.recv?Math.round(r.recv_done/r.recv*100):null;
+  const hrs = h=>h==null?'-':(h<24?`${h}시간`:`${Math.round(h/24*10)/10}일`);
+  const tot = {recv:sum('recv'), recv_done:sum('recv_done'), done:sum('done'), open:sum('open')};
+  return `<div class="card adm-month">
+    <div class="am-head"><h3>사업소별 월간 현황</h3>
+      <div class="am-nav"><button onclick="admMonth(-1)" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button onclick="admMonth(1)" aria-label="다음 달" ${isNow?'disabled':''}>›</button></div></div>
+    ${admSummary===null?'<div class="empty" style="padding:24px 0"><b>불러오는 중…</b></div>':`
+    <div class="am-total"><div><b>${rows.length}</b><span>사업소</span></div><div><b>${tot.recv}</b><span>접수</span></div><div><b>${tot.done}</b><span>완료</span></div><div><b>${tot.recv?Math.round(tot.recv_done/tot.recv*100):0}%</b><span>처리율</span></div><div class="${tot.open?'warn':''}"><b>${tot.open}</b><span>미완료</span></div></div>
+    ${rows.length?rows.map(r=>`<div class="am-row">
+      <div class="am-name"><b>${esc(r.name)}</b>${r.report?`<span class="am-tag ok">소장 작성 · ${fmtKo(new Date(r.report.updated_at).getTime())}</span>`:'<span class="am-tag">소장 미작성</span>'}</div>
+      <div class="am-stats"><span><em>접수</em>${r.recv}</span><span><em>완료</em>${r.done}</span><span><em>처리율</em>${pct(r)==null?'-':pct(r)+'%'}</span><span class="${r.open?'warn':''}"><em>미완료</em>${r.open}${r.urgent?` <i>긴급 ${r.urgent}</i>`:''}</span><span><em>평균 처리</em>${hrs(r.avg_h)}</span></div>
+      <button class="btn btn-sm am-btn" onclick="adminReport('${esc(r.id)}')">보고서 보기</button>
+    </div>`).join(''):'<div class="empty"><b>아직 사업소가 없습니다</b></div>'}`}
+  </div>`;
+}
+// 본사: 사업소 월간보고서를 사업소에서 만든 것과 같은 모양으로 엶 (민원인 연락처는 받지 않음)
+async function adminReport(id){
+  const off = (admSummary||[]).find(r=>r.id===id) || adminOffices.find(o=>o.id===id); if(!off) return;
+  const ym = admYm;
+  const w = window.open('', '_blank');   // 팝업 차단을 피하려고 누른 즉시 창을 엶
+  if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
+  w.document.write('<!doctype html><meta charset="utf-8"><title>보고서 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">보고서를 만드는 중입니다…</body>');
+  try{
+    const [rows, emps, rp] = await Promise.all([ rpc('mw_hq_issues',{p_office:id}), rpc('mw_employees_list',{p_office:id}), rpc('mw_report_get',{p_ym:ym, p_office:id}).catch(()=>null) ]);
+    const map={}; (rows||[]).forEach(r=>map[r.id]=rowToIssue(r));
+    const list=(emps||[]).sort(sortEmp); const boss=list.find(e=>isBoss(e));
+    const d=(rp&&rp.data)||{};
+    const o={ to:d.to||`${off.name} 관리단`, date:d.date||fmtDate(Date.now()), writer:d.writer||(boss?`${boss.rank} ${boss.name}`:''), improve:d.improve||'', note:d.note||'', photos:d.photos!==false };
+    // 보고서 만들기는 현재 사업소 데이터를 쓰므로 잠시 바꿔 끼웠다가 되돌림
+    const keep={issues, me, EMPLOYEES};
+    let html;
+    try{ issues=map; me={officeId:id, officeName:off.name}; EMPLOYEES=list; html=buildReportHTML(ym, o); }
+    finally{ issues=keep.issues; me=keep.me; EMPLOYEES=keep.EMPLOYEES; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }catch(e){
+    console.warn(e); w.document.body.textContent='보고서를 불러오지 못했습니다. 잠시 후 다시 시도하세요.';
+  }
 }
 function renderAdminHome(){
   $('#adm-content').innerHTML = `
+    <div class="sec-title">월간 현황 <small>사업소별 민원 처리 · 월간보고서</small></div>
+    ${renderAdminMonthly()}
     <div class="sec-title">사업소 관리 <small>사업소 생성 · 명단 입력 · 비밀번호</small></div>
     <div class="card"><h3>새 사업소 만들기</h3>
       <div class="form-row"><label>사업소 이름</label><input id="ad-name" placeholder="예) 강남타워"></div>
@@ -1013,7 +1093,7 @@ function renderNew(){
         <div class="form-row"><label>민원인 (호실 · 호칭)</label><input id="n-cname" value="${esc(d.cName||'')}" placeholder="예) 1105호 김OO님" oninput="newDraft.cName=this.value"></div>
         <div class="form-row"><label>전화번호</label><input id="n-cphone" type="tel" inputmode="tel" autocomplete="off" value="${esc(d.cPhone||'')}" placeholder="010-0000-0000" oninput="newDraft.cPhone=this.value" onblur="this.value=newDraft.cPhone=fmtPhone(this.value)"></div>
       </div>
-      <p class="ci-n">민원 처리 연락에만 쓰이며 <b>완료 90일 뒤 자동 삭제</b>됩니다. 전화로 받을 때 "처리 결과 안내를 위해 연락처를 받겠습니다"라고 알려 주세요.</p>
+      <p class="ci-n">민원 처리와 재발 시 연락에만 쓰이며 관리사무소에 보관됩니다. 전화로 받을 때 <b>"처리 결과 안내를 위해 연락처를 받아 보관하겠습니다"</b>라고 알려 주세요. 민원인이 삭제를 원하면 민원 수정에서 지웁니다.</p>
     </div>
     <div class="form-row"><label>상세 내용 (선택)</label><textarea id="n-content" placeholder="상세 상황 등" oninput="newDraft.content=this.value">${esc(d.content)}</textarea></div>
     <div class="form-row"><label>사진</label><div class="photo-add">${d.photos.map((p,i)=>`<div class="thumb-wrap"><img class="thumb" src="${p}"><button class="thumb-del" onclick="newDraft.photos.splice(${i},1);render()">✕</button></div>`).join('')}<div class="photo-btn" onclick="pickPhotos(ps=>{newDraft.photos.push(...ps);render()})"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</div></div></div>
@@ -1454,12 +1534,21 @@ function openReportDialog(){
     <div class="form-row"><label>특이사항</label><textarea id="rp-note" placeholder="예) 10월 15일 승강기 정기점검 실시, 이상 없음">${esc(n.note||'')}</textarea></div>
     <label class="rp-check"><input type="checkbox" id="rp-photos" ${n.photos===false?'':'checked'}> 처리 사진 대장 포함</label>
     <button class="btn btn-primary btn-block" onclick="makeReport()">보고서 만들기</button>
-    <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.</p>
+    <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.<br>작성한 내용은 본사에서도 함께 봅니다.</p>
   </div></div>`);
+  // 이 기기에 저장된 내용이 없으면 서버(다른 기기에서 작성한 내용)에서 불러옴
+  if(!n.improve && !n.note){
+    const ym=statMonth;
+    rpc('mw_report_get',{p_ym:ym}).then(r=>{ const d=r&&r.data; if(!d || ym!==statMonth || !document.getElementById('rep-modal')) return;
+      [['rp-improve','improve'],['rp-note','note'],['rp-writer','writer'],['rp-to','to'],['rp-date','date']].forEach(([el,k])=>{ const x=document.getElementById(el); if(x && d[k] && (!x.value || el==='rp-improve' || el==='rp-note')) x.value=d[k]; });
+      if(d.photos===false) $('#rp-photos').checked=false;
+    }).catch(()=>{});
+  }
 }
 function makeReport(){
   const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked};
   lsSet(repKey(),{to:o.to}); lsSet(repKey()+'_'+statMonth, o);
+  rpc('mw_report_save',{p_ym:statMonth, p_data:o, p_by:me.name}).catch(e=>console.warn('report save', e));   // 본사에서도 같은 내용으로 볼 수 있게
   const html = buildReportHTML(statMonth, o);
   const w = window.open('', '_blank');
   if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
