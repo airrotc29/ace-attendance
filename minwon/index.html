@@ -537,6 +537,61 @@ html,body{overscroll-behavior-y:none}
 /* 진행 보고 버튼도 색을 채움 (완료 처리처럼) */
 .btn.btn-amber{background:#a15f0a;border-color:#a15f0a;color:#fff}
 .btn.btn-amber:active{background:#8a5108}
+/* ═══ 입체감: 층이 있는 그림자 · 상태 색 띠 · 눌림 효과 ═══ */
+:root{--bg:#eceeec;--lift1:0 1px 2px rgba(16,24,40,.06),0 2px 6px -1px rgba(16,24,40,.07),0 10px 22px -12px rgba(16,24,40,.22);--lift2:0 1px 2px rgba(16,24,40,.05),0 1px 4px rgba(16,24,40,.06)}
+body{background:var(--bg)}
+.issue,.card,.summary-row,.work-band,.push-card,.contact-box,.adm-month{box-shadow:var(--lift1)!important;border-color:rgba(16,24,40,.06)!important}
+.issue{position:relative;overflow:hidden;border-radius:16px;background:linear-gradient(180deg,#ffffff 0%,#fcfcfb 100%);transition:transform .12s ease,box-shadow .12s ease}
+.issue::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#c3c2b7}
+.issue.s-open::before{background:#d64545}
+.issue.s-progress::before{background:#c97d10}
+.issue.s-done::before{background:#1f8a4c}
+.issue:active{transform:translateY(1px) scale(.995);box-shadow:var(--lift2)!important}
+.issue .i-photo{border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 14px -6px rgba(0,0,0,.45)}
+.summary-row{border-radius:16px;background:linear-gradient(180deg,#ffffff 0%,#fafaf8 100%)}
+.stat-tile .n{text-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(16,24,40,.08)}
+.topbar{box-shadow:0 2px 10px rgba(0,0,0,.28)}
+.bottomnav{box-shadow:0 -6px 18px -8px rgba(16,24,40,.18)}
+.btn-primary,.btn-green,.btn.btn-amber,.wb-end,.pc-go,.cb-btn.pri{background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 55%,rgba(0,0,0,.06));box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 2px 4px -1px rgba(16,24,40,.25),0 6px 12px -6px rgba(16,24,40,.35)}
+.btn-gray,.btn-sm.btn-gray{box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.btn:active,.wb-end:active,.pc-go:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(16,24,40,.2)!important}
+.badge{box-shadow:0 1px 0 rgba(255,255,255,.6) inset}
+/* ═══ 입체감 전체 적용 ═══ */
+/* 창 · 확인 창 */
+.modal{box-shadow:0 -12px 34px -12px rgba(0,0,0,.4),0 -1px 0 rgba(255,255,255,.7) inset}
+@media(min-width:640px){.modal{box-shadow:0 30px 70px -20px rgba(0,0,0,.45)}}
+.dlg{box-shadow:0 2px 6px rgba(0,0,0,.08),0 28px 60px -18px rgba(0,0,0,.5)}
+/* 입력칸: 살짝 들어간 느낌 */
+.form-row input,.form-row select,.form-row textarea,.search-box input,.login-box input,.login-box select,.dlg-in,#chat-text{box-shadow:inset 0 1px 2px rgba(16,24,40,.07);background-color:#fff}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus,.search-box input:focus,.dlg-in:focus,#chat-text:focus{box-shadow:inset 0 1px 2px rgba(16,24,40,.05),0 0 0 3px rgba(36,80,216,.14)}
+/* 칩 버튼 (분류 · 접수 경로 · 답변 고르기 · 빠른 문구) */
+.chip,.chat-quick button{box-shadow:0 1px 2px rgba(16,24,40,.07),0 2px 5px -3px rgba(16,24,40,.12);transition:transform .1s,box-shadow .1s}
+.chip.active{background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 60%);box-shadow:0 2px 4px -1px rgba(16,24,40,.3),0 5px 10px -6px rgba(16,24,40,.4)}
+.chip:active,.chat-quick button:active{transform:translateY(1px);box-shadow:0 1px 1px rgba(16,24,40,.1)}
+/* 사진 */
+.photos img,.photo-add .thumb{box-shadow:0 1px 2px rgba(0,0,0,.1),0 6px 14px -8px rgba(0,0,0,.45);border:2px solid #fff}
+.photo-btn{background:linear-gradient(180deg,#fff,#f7f7f5);box-shadow:0 1px 2px rgba(16,24,40,.05)}
+/* 채팅 */
+.msg .m-bubble{box-shadow:0 1px 2px rgba(16,24,40,.06),0 4px 10px -6px rgba(16,24,40,.18)}
+.msg.mine .m-bubble{background-image:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,0) 60%);box-shadow:0 2px 4px -1px rgba(0,0,0,.25),0 6px 12px -8px rgba(0,0,0,.4)}
+.msg.sys .m-bubble{background:#fff!important;box-shadow:0 1px 2px rgba(16,24,40,.05),0 3px 8px -5px rgba(16,24,40,.15)}
+.chat-input{box-shadow:0 -6px 16px -10px rgba(16,24,40,.2)}
+.chat-row .ic-btn{box-shadow:0 1px 2px rgba(16,24,40,.08),0 4px 8px -5px rgba(16,24,40,.2)}
+.chat-row .ic-btn.send{background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 60%);box-shadow:0 2px 4px -1px rgba(0,0,0,.3),0 6px 12px -6px rgba(0,0,0,.4)}
+/* 처리 과정 표시 · 완료 민원 버튼 · 연락처 */
+.tl-ic{box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.done-acts .da,.cb-btn{box-shadow:0 1px 2px rgba(16,24,40,.07),0 4px 10px -6px rgba(16,24,40,.2)}
+.contact-in{box-shadow:inset 0 1px 3px rgba(16,24,40,.05)}
+/* 통계 */
+.bar-row .bar{box-shadow:inset 0 1px 2px rgba(16,24,40,.1)}
+.bar-row .bar > div{background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0))!important;box-shadow:0 1px 2px rgba(36,80,216,.35)}
+.daily > div{box-shadow:0 -1px 0 rgba(255,255,255,.4) inset}
+.month-nav button,.am-nav button{box-shadow:0 1px 2px rgba(16,24,40,.08),0 4px 8px -5px rgba(16,24,40,.2);background:#fff}
+/* 로그인 */
+.login-box{box-shadow:0 2px 6px rgba(16,24,40,.06),0 30px 60px -28px rgba(16,24,40,.45)!important}
+/* 상단 버튼 */
+.tb-btn{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 6px -3px rgba(0,0,0,.6)}
+.bottomnav button.active svg{filter:drop-shadow(0 2px 3px rgba(16,24,40,.25))}
 </style>
 </head>
 <body>
