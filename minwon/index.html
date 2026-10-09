@@ -667,6 +667,8 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .msg.sys .m-bubble{background:#fff!important}
 .msg.notice .m-bubble{background:#fff7e6!important}
 .msg.work-end .m-bubble{background:#e9f6ee!important}
+/* 내가 보낸 작업 안내 · 작업 끝: 밝은 바탕이므로 글씨는 진하게 */
+.msg.mine.notice .m-bubble,.msg.mine.work-end .m-bubble{color:var(--e-ink)!important;box-shadow:0 1px 2px rgba(17,24,39,.05),0 8px 16px -12px rgba(17,24,39,.35)!important}
 .chat-input{background:#fff!important;border-top:0!important;box-shadow:0 -10px 24px -18px rgba(17,24,39,.4)!important}
 .chat-row .ic-btn{border:1px solid var(--e-line)!important;box-shadow:none!important}
 .chat-row .ic-btn.send{border:0!important}
