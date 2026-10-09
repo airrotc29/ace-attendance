@@ -842,6 +842,8 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .handoff div{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e8ebf0;font-size:15px}
 .handoff div:last-child{border-bottom:0}
 .handoff span{color:#6b7280}.handoff b{color:#111;font-weight:800}
+.handoff .ho-in{width:58%;min-width:0;height:40px;border:1px solid #d6dbe6;border-radius:10px;padding:0 10px;font:inherit;font-size:15px;font-weight:700;text-align:right;background:#fff}
+
 .handoff .hp{font-size:20px;letter-spacing:.08em;color:var(--e-blue)}
 
 /* 화면 하단 관리단 표시 */
@@ -1441,7 +1443,7 @@ async function adminCreate(){
   try{
     const nid = await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
     await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
-    await adminHome(); showMgrHandoff(name, code, mg);
+    knownOfficePw[code]=pw; await adminHome(); showMgrHandoff(name, code, mg, pw);
   }catch(e){
     const dup = /duplicate|unique/i.test(e.message||'');
     toast(dup ? '이미 있는 사업소 코드입니다' : '만들지 못했습니다');
@@ -1450,7 +1452,7 @@ async function adminCreate(){
 async function adminPw(id,name){
   const np = await askInput({title:'사업소 비밀번호 바꾸기', msg:`${name} 의 새 비밀번호를 입력하세요. 바꾸면 직원들은 새 비밀번호로 다시 로그인합니다.`, placeholder:'6자 이상', min:6}); if(!np) return;
   if(np.length<6){ toast('6자 이상이어야 합니다'); return; }
-  try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); toast('비밀번호를 바꿨습니다'); }
+  try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); const o=adminOffices.find(x=>x.id===id); if(o) knownOfficePw[o.code]=np; toast('비밀번호를 바꿨습니다'); }
   catch(e){ toast(/same_as_manager/.test(e.message||'') ? '소장 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '바꾸지 못했습니다', 3500); }
 }
 // 소장 로그인 비밀번호: 본사가 정해서 소장에게만 따로 알려 줌
@@ -1470,19 +1472,39 @@ async function saveMgrPw(id,name,code){
   const np=$('#mgrset-pw').value.trim(), err=$('#mgrset-err');
   const fail=t=>{ err.textContent=t; err.classList.remove('hidden'); };
   if(np.length<4) return fail('4자 이상 입력하세요');
-  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); closeById('mgrset-modal'); await adminHome(); showMgrHandoff(name, code, np); }
+  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); closeById('mgrset-modal'); await adminHome(); showMgrHandoff(name, code, np, knownOfficePw[code]||''); }
   catch(e){ fail(/same_as_office/.test(e.message||'') ? '사업소(직원) 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '정하지 못했습니다. 인터넷을 확인하세요'); }
 }
 // 정한 직후 한 번만 보여 줌 (서버에는 암호화되어 저장되어 다시 볼 수 없음)
-function showMgrHandoff(name, code, pw){
-  const msg=`[민원처리 앱] ${name} 소장 입장 안내\n주소: ${location.origin+location.pathname}\n사업소 코드: ${code}\n소장 비밀번호: ${pw}\n※ 소장 비밀번호는 다른 직원에게 알려 주지 마세요.`;
+// 소장 입장 안내: 사업소 코드 · 사업소(직원 공통) 비밀번호 · 소장 비밀번호를 함께 전달
+// 사업소 비밀번호는 서버에 암호화되어 있어 본사도 다시 볼 수 없음 → 이번에 정한 것이면 자동으로, 아니면 본사가 입력(맞는지 확인 후 전달)
+const knownOfficePw={};
+let handoff=null;
+function showMgrHandoff(name, code, pw, officePw=''){
+  handoff={name, code, pw, opw:officePw||''};
   closeById('handoff-modal');
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="handoff-modal"><div class="modal" style="max-width:440px">
     <div class="modal-head"><h2>소장에게 전달하세요</h2><button class="modal-close" onclick="closeById('handoff-modal')">✕</button></div>
     <p class="hint">소장 비밀번호는 <b>지금만</b> 보입니다. 서버에는 암호화되어 저장되어 본사도 다시 볼 수 없습니다. 잊으면 새로 정하면 됩니다.</p>
-    <div class="handoff"><div><span>사업소</span><b>${esc(name)}</b></div><div><span>사업소 코드</span><b>${esc(code)}</b></div><div><span>소장 비밀번호</span><b class="hp">${esc(pw)}</b></div></div>
-    <div class="btn-row" style="margin-top:14px"><button class="btn btn-gray" onclick="copyText(${esc(JSON.stringify(msg))})">안내문 복사</button><button class="btn btn-primary" onclick="openExternal('sms:?body='+encodeURIComponent(${esc(JSON.stringify(msg))}))">문자로 보내기</button></div>
+    <div class="handoff"><div><span>사업소</span><b>${esc(name)}</b></div><div><span>사업소 코드</span><b>${esc(code)}</b></div>
+      <div><span>사업소 비밀번호<br><small style="font-size:12px">직원 공통</small></span>${officePw?`<b>${esc(officePw)}</b>`:`<input id="ho-opw" class="ho-in" type="text" autocomplete="off" placeholder="직원 공통 비밀번호 입력" oninput="handoff.opw=this.value.trim();handoff.verified=false;$('#ho-err').textContent=''">`}</div>
+      <div><span>소장 비밀번호</span><b class="hp">${esc(pw)}</b></div></div>
+    ${officePw?'':'<p class="hint" id="ho-hint" style="margin-top:8px">사업소 비밀번호는 암호화되어 있어 다시 보여 드릴 수 없습니다. 알고 있는 비밀번호를 넣으면 맞는지 확인한 뒤 안내문에 넣습니다.</p><div class="dlg-err" id="ho-err" style="color:var(--red);font-size:13px;min-height:18px"></div>'}
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-gray" onclick="handoffSend('copy')">안내문 복사</button><button class="btn btn-primary" onclick="handoffSend('sms')">문자로 보내기</button></div>
   </div></div>`);
+}
+function handoffMsg(h){
+  return `[민원처리 앱] ${h.name} 소장 입장 안내\n주소: ${location.origin+location.pathname}\n사업소 코드: ${h.code}\n사업소 비밀번호(직원 공통): ${h.opw}\n소장 비밀번호: ${h.pw}\n입장: 사업소 코드 · 사업소 비밀번호 → 이름(소장) 선택 → 소장 비밀번호\n※ 소장 비밀번호는 다른 직원에게 알려 주지 마세요.`;
+}
+async function handoffSend(kind){
+  const h=handoff; if(!h) return; const err=document.getElementById('ho-err');
+  if(!h.opw){ if(err) err.textContent='사업소(직원 공통) 비밀번호를 넣어 주세요'; const i=document.getElementById('ho-opw'); if(i) i.focus(); return; }
+  if(document.getElementById('ho-opw') && !h.verified){
+    try{ await rpc('mw_login', {}, {code:h.code, pw:h.opw}); h.verified=true; knownOfficePw[h.code]=h.opw; }
+    catch(e){ if(err) err.textContent='사업소 비밀번호가 맞지 않습니다. 다시 확인하세요'; return; }
+  }
+  const msg=handoffMsg(h);
+  if(kind==='sms') openExternal('sms:?body='+encodeURIComponent(msg)); else copyText(msg);
 }
 // 본사: 사업소 건물 사진
 async function adminCover(id){
