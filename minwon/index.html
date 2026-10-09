@@ -527,6 +527,10 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .work-band .wb-tag{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;background:#a5650c;border-radius:5px;padding:1px 6px;margin-right:6px;vertical-align:2px}
 .work-band .wb-t p i{font-style:normal;font-weight:500;color:#9a7a45;font-size:12.5px}
 .badge.b-work{background:#a5650c;color:#fff}
+/* 길게 누르기 · 버튼에서 글자가 선택되지 않도록 (입력칸과 채팅 대화 · 민원 내용은 그대로 복사 가능) */
+.topbar,.bottomnav,.summary-row,.work-band,.issue,.msg.sys,.chat-quick,.dlg,.btn,button,.chip,.qpick,.contact-box .cb-act,.done-acts,.modal-head{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.dlg-in{-webkit-user-select:text;user-select:text}
+.issue.lp-on,.msg.sys.lp-on .m-bubble{transform:scale(.98);box-shadow:0 0 0 2px var(--accent);transition:transform .12s,box-shadow .12s}
 </style>
 </head>
 <body>
@@ -1458,15 +1462,22 @@ const QUICK = [
   {label:'출발', text:'지금 현장 갑니다.'}];
 let chatPhotos=[]; let chatDraft='';
 // ── 민원을 길게 눌러 '작업 중' 표시 ──
-let lpTimer=null, lpFired=false, lpStart=null;
-function lpCancel(){ clearTimeout(lpTimer); lpTimer=null; }
+let lpTimer=null, lpFired=false, lpStart=null, lpEl=null, lpReady=null;
+function lpCancel(){ clearTimeout(lpTimer); lpTimer=null; if(lpEl && !lpReady) lpEl.classList.remove('lp-on'); }
+// 길게 누르면(0.5초) 진동과 함께 카드가 눌린 표시가 되고, 손을 떼면 확인 창이 뜸
+// (누르고 있는 동안 창을 띄우면 손가락 아래 글자가 선택되기 때문)
 document.addEventListener('pointerdown',e=>{
   const el=e.target.closest('[data-issue]'); if(!el || !me) return;
-  lpFired=false; lpStart={x:e.clientX,y:e.clientY};
-  lpCancel(); lpTimer=setTimeout(()=>{ lpFired=true; try{ navigator.vibrate&&navigator.vibrate(30); }catch{} issueWorkMenu(el.dataset.issue); setTimeout(()=>{ lpFired=false; },700); }, 550);
+  lpFired=false; lpReady=null; lpStart={x:e.clientX,y:e.clientY}; lpEl=el;
+  lpCancel(); lpTimer=setTimeout(()=>{ lpReady=el.dataset.issue; el.classList.add('lp-on'); try{ navigator.vibrate&&navigator.vibrate(30); }catch{} }, 500);
 },{passive:true});
-document.addEventListener('pointermove',e=>{ if(lpTimer && lpStart && Math.hypot(e.clientX-lpStart.x,e.clientY-lpStart.y)>10) lpCancel(); },{passive:true});
-['pointerup','pointercancel','scroll'].forEach(ev=>document.addEventListener(ev,lpCancel,{passive:true,capture:true}));
+document.addEventListener('pointermove',e=>{ if(lpTimer && !lpReady && lpStart && Math.hypot(e.clientX-lpStart.x,e.clientY-lpStart.y)>10) lpCancel(); },{passive:true});
+document.addEventListener('pointerup',()=>{
+  clearTimeout(lpTimer); lpTimer=null;
+  if(lpEl) lpEl.classList.remove('lp-on');
+  if(lpReady){ const id=lpReady; lpReady=null; lpFired=true; try{ window.getSelection().removeAllRanges(); }catch{} setTimeout(()=>issueWorkMenu(id),30); setTimeout(()=>{ lpFired=false; },600); }
+},{capture:true});
+['pointercancel','scroll'].forEach(ev=>document.addEventListener(ev,()=>{ clearTimeout(lpTimer); lpTimer=null; lpReady=null; if(lpEl) lpEl.classList.remove('lp-on'); },{passive:true,capture:true}));
 document.addEventListener('contextmenu',e=>{ if(e.target.closest('[data-issue]')) e.preventDefault(); });
 const issueWork = id=>activeWorks().find(m=>m.issueId===id);
 async function issueWorkMenu(id){
