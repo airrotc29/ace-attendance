@@ -1898,6 +1898,8 @@ window.addEventListener('popstate',async()=>{
   const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
   const mr=$('#modal-root');
   if(mr && mr.lastElementChild){ const top=mr.lastElementChild; if(top.id==='detail-modal') closeModal(); else top.remove(); return; }
+  // 접수 · 채팅 · 통계 · 검색 탭에서는 앱을 나가지 않고 민원 탭으로
+  if(me && !$('#app').classList.contains('hidden') && tab!=='list'){ go('list'); return; }
   if(await askConfirm({title:'앱을 종료할까요?', msg:'작성 중인 내용은 이 기기에 남아 있습니다.', ok:'종료'})){ exiting=true; history.go(-2); }
 });
 
