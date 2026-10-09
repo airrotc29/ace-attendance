@@ -408,6 +408,9 @@ mark{background:#fff1a8;box-shadow:none}
 #tb-push .slash{display:inline}
 #tb-push.on .slash{display:none}
 #tb-push.on{color:var(--accent)}
+#tb-sound .slash{display:none}
+#tb-sound.off .slash{display:inline}
+#tb-sound.off .wave{display:none}
 .qpick{margin-bottom:12px}
 .qpick .qp-l{font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:7px}
 .qpick .qp-l span{font-weight:400;color:var(--mute);margin-left:2px}
@@ -604,6 +607,9 @@ body,.login-wrap,#app .content{background:var(--e-bg)!important}
 .tb-btn{color:var(--e-blue)!important;border:0!important;background:var(--e-blue-soft)!important;box-shadow:none!important;border-radius:12px!important}
 .tb-btn:active{background:#dfe7ff!important}
 #tb-push.on{background:var(--e-blue)!important;color:#fff!important}
+.chat-quick .snd-chip{display:inline-flex;align-items:center;gap:4px;background:var(--e-blue-soft)!important;color:var(--e-blue)!important;border-color:transparent!important}
+.chat-quick .snd-chip svg{width:15px;height:15px;flex:none}
+.chat-quick .snd-chip.off{background:#f3f4f6!important;color:#9ca3af!important}
 /* 카드류: 테두리 없이 떠 있게 */
 .issue,.card,.work-band,.push-card,.contact-box,.adm-month,.login-box,.contact-in{border:0!important;box-shadow:var(--e-float)!important}
 .issue,.card{border-radius:20px!important;background:#fff!important}
@@ -893,7 +899,7 @@ async function fetchAll(forceFull){
     const full = forceFull || !cur || !cur.since || (Date.now()-(cur.fullAt||0)>FULL_SYNC_MS);
     const reqAt = Date.now();
     const r = await rpc('mw_sync', {p_since: full ? null : cur.since});
-    const prev = {...issues}, prevN = Object.keys(chat).length;
+    const prev = {...issues}, prevN = Object.keys(chat).length, prevChat = new Set(Object.keys(chat));
     const p = pending(); let nChg = 0;
     // 요청을 보낸 뒤에 이 기기에서 쓴 항목은 이번 응답이 옛 내용일 수 있으므로 기기 버전을 유지
     ['issues','chat','del'].forEach(k=>Object.entries(wroteAt[k]).forEach(([id,ts])=>{ if(ts>=reqAt) p[k][id]=true; else if(Date.now()-ts>60000) delete wroteAt[k][id]; }));
@@ -918,6 +924,8 @@ async function fetchAll(forceFull){
       lsSet(K.issues(), issues); lsSet(K.chat(), pruneChat(chat));
       notifyNewAssignments(prev, issues);
       if(Object.keys(chat).length>prevN){ const last=Object.values(chat).sort((a,b)=>b.ts-a.ts)[0]; if(last && last.ts>lsGet(K.seenChat(),0)) notifyNewChat(last); }
+      // 다른 사람이 쓴 새 채팅 글이면 "민원!" 소리 (앱을 처음 열 때 받은 지난 글은 제외)
+      if(notifInit && Object.values(chat).some(m=>!prevChat.has(m.id) && m.kind!=='sys' && m.by && m.by.empId!==me.empId && Date.now()-m.ts<120000)) dingChat();
     }else if(!notifInit){ notifInit=true; }
     setSync('on','자동 동기화 중');
     if(changed) render(true);
@@ -949,6 +957,58 @@ function notifyNewChat(last){
 }
 function notify(title, body){ try{ if(pushOn()) return; if('Notification' in window && Notification.permission==='granted' && document.visibilityState!=='visible') new Notification(title,{body}); }catch{} }
 function vibrate(){ try{ navigator.vibrate && navigator.vibrate([120,60,120]); }catch{} }
+
+// ── 새 채팅 소리: 휴대폰 음성으로 "민원!" (음성이 없는 기기는 '띠링') ──
+const SOUND_KEY = 'mw_sound';
+const soundOn = ()=>lsGet(SOUND_KEY, true)!==false;
+let actx = null, lastDing = 0, koVoice = null;
+// 휴대폰은 화면을 한 번 누른 뒤에만 소리를 낼 수 있어서, 누를 때마다 소리 장치를 깨워 둠
+function unlockAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C(); } if(actx && actx.state==='suspended') actx.resume(); }catch{} }
+['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev, unlockAudio, {capture:true, passive:true}));
+function pickVoice(){ try{ const vs=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang)); koVoice=vs.find(v=>/female|여성|yuna|sunhi|heami|google/i.test(v.name))||vs[0]||null; }catch{} }
+if('speechSynthesis' in window){ pickVoice(); try{ speechSynthesis.addEventListener('voiceschanged', pickVoice); }catch{} }
+function chime(){
+  try{
+    unlockAudio(); if(!actx) return;
+    const t=actx.currentTime;
+    [[1318.5,0],[1760,0.1]].forEach(([f,d])=>{
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t+d); g.gain.exponentialRampToValueAtTime(0.4,t+d+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.28);
+      o.connect(g); g.connect(actx.destination); o.start(t+d); o.stop(t+d+0.32);
+    });
+  }catch{}
+}
+function sayMinwon(){
+  const ss = window.speechSynthesis;
+  // 한국어 음성이 없는 기기는 영어식으로 읽지 않도록 '띠링'만
+  if(!ss || !window.SpeechSynthesisUtterance || (!koVoice && ss.getVoices().length)) return chime();
+  try{
+    const u=new SpeechSynthesisUtterance('민원!');
+    u.lang='ko-KR'; if(koVoice) u.voice=koVoice;
+    u.pitch=1.6; u.rate=1.15; u.volume=1;   // 높고 짧게 → 카톡 알림처럼 경쾌하게
+    let started=false; const fb=setTimeout(()=>{ if(!started) chime(); }, 1200);
+    u.onstart=()=>{ started=true; clearTimeout(fb); };
+    u.onerror=()=>{ clearTimeout(fb); if(!started) chime(); };
+    ss.cancel(); ss.speak(u);
+  }catch{ chime(); }
+}
+function dingChat(preview){
+  if(!preview && (!soundOn() || document.visibilityState!=='visible' || Date.now()-lastDing<1500)) return;
+  lastDing=Date.now(); sayMinwon();
+  try{ navigator.vibrate && navigator.vibrate(60); }catch{}
+}
+function toggleSound(){
+  const on=!soundOn(); lsSet(SOUND_KEY, on); refreshSoundUI();
+  if(on){ dingChat(true); toast('새 채팅이 오면 "민원!" 하고 울립니다'); }
+  else toast('이 기기의 채팅 소리를 껐습니다');
+}
+function refreshSoundUI(){
+  const b=document.getElementById('tb-sound'); if(!b) return;
+  const on=soundOn(); b.classList.toggle('off', !on);
+  const sp=b.querySelector('span'); if(sp) sp.textContent = on ? '소리 켬' : '소리 끔';
+  b.title = b.ariaLabel = on ? '새 채팅 소리 켜짐 (누르면 끄기)' : '새 채팅 소리 꺼짐 (누르면 켜기)';
+}
 function isMine(it){ const a=it.assignee||{}; return (a.type==='person'&&a.empId===me.empId)||(a.type==='team'&&a.name===me.team); }
 
 // ══════════════════════════════════════════════
@@ -1688,7 +1748,7 @@ function renderChat(){
     ${workBand('chat')}
     <div class="chat-list" id="chat-list">${html}</div>
     <div class="chat-input">
-      <div class="chat-quick">${QUICK.map((q,i)=>`<button onclick="quickMsg(${i})">${q.label}</button>`).join('')}</div>
+      <div class="chat-quick"><button id="tb-sound" class="snd-chip${soundOn()?'':' off'}" onclick="toggleSound()" aria-label="새 채팅 소리" title="새 채팅 소리"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="slash" d="M16 9l6 6M22 9l-6 6"/></svg><span>${soundOn()?'소리 켬':'소리 끔'}</span></button>${QUICK.map((q,i)=>`<button onclick="quickMsg(${i})">${q.label}</button>`).join('')}</div>
       ${chatPhotos.length?`<div class="chat-pending">${chatPhotos.map((p,i)=>`<img src="${p}" onclick="chatPhotos.splice(${i},1);render()">`).join('')}</div>`:''}
       <div class="chat-row"><button class="ic-btn" onclick="chatDraft=document.getElementById('chat-text').value;pickPhotos(ps=>{chatPhotos.push(...ps);render()})"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <textarea id="chat-text" rows="1" placeholder="메시지 입력" oninput="chatDraft=this.value;this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendChatText()}">${esc(chatDraft)}</textarea>
@@ -2317,6 +2377,7 @@ function pushMenu(){
   showAlert({title:'알림을 지원하지 않는 브라우저입니다', msg:'크롬 · 엣지 · 삼성 인터넷 또는 아이폰 홈 화면 앱에서 사용하세요.'});
 }
 function refreshPushUI(){
+  refreshSoundUI();
   const b=document.getElementById('tb-push'); if(!b) return;
   const st = me ? pushState() : 'none';
   b.classList.toggle('hidden', st==='none');
