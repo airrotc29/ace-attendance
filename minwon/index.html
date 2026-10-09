@@ -495,6 +495,9 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .done-acts .da.del:hover{background:#fdf1f1;border-color:#f0c4c4}
 .stat-tile.purple .n{color:var(--purple)}
 @media (max-width:420px){.summary-row .stat-tile{padding-left:2px;padding-right:2px}.summary-row .stat-tile .n{font-size:22px}.summary-row .stat-tile .l{font-size:12px;white-space:nowrap}}
+/* 조치 내용: 굵은 파란 글씨 (진행 보고 · 완료 처리 입력칸과 처리 과정) */
+#log-text{color:var(--accent);font-weight:700}
+.tl-item.t-progress .txt,.tl-item.t-done .txt{color:var(--accent);font-weight:700}
 </style>
 </head>
 <body>
@@ -672,7 +675,7 @@ function saveIssue(it){
 function deleteIssue(id){
   delete issues[id]; lsSet(K.issues(), issues); render();
   if(!sbOn){ queue('del',id); return; }
-  track('del',id,rpc('mw_issue_delete',{p_id:id})).catch(e=>{ console.warn(e); queue('del',id); });
+  track('del',id,rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId})).catch(e=>{ console.warn(e); if(/forbidden/.test(e.message||'')){ toast('민원 삭제는 소장만 할 수 있습니다'); fetchAll(true); } else queue('del',id); });
 }
 function sendChat(msg){
   msg.id = msg.id||uid(); msg.ts = msg.ts||Date.now();
@@ -687,7 +690,7 @@ async function flushPending(){
   const p=lsGet(K.pending(),{issues:{},chat:{},del:{}}); const left={issues:{},chat:{},del:{}};
   for(const id of Object.keys(p.issues)){ const it=issues[id]; if(!it) continue; try{ await rpc('mw_issue_save',{p_row:issueToRow(it)}); }catch(e){ left.issues[id]=true; } }
   for(const id of Object.keys(p.chat)){ const m=chat[id]; if(!m) continue; try{ await rpc('mw_chat_save',{p_row:msgToRow(m)}); }catch(e){ left.chat[id]=true; } }
-  for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id}); }catch(e){ left.del[id]=true; } }
+  for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId}); }catch(e){ if(!/forbidden/.test(e.message||'')) left.del[id]=true; } }
   lsSet(K.pending(), left);
 }
 
@@ -1265,7 +1268,7 @@ function refreshDetail(){
   const it=issues[openDetailId]; if(!it){ closeModal(); return; }
   const logs=[...(it.logs||[])].sort((a,b)=>a.ts-b.ts);
   const ic={create:'접수',assign:'담당',progress:'진행',comment:'댓글',done:'완료',reopen:'재개',edit:'수정',contact:'연락'};
-  const canDel = me.boss || (it.reporter&&it.reporter.empId===me.empId);
+  const canDel = me.boss;   // 민원 삭제는 소장만
   const html = `<div class="modal-bg" id="detail-modal" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-head"><h2><span class="badge b-${it.status}">${STATUS[it.status]}</span> ${it.urgent?'<span class="badge b-urgent">긴급</span> ':''}${esc(it.title)}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
     <dl class="detail-meta">
@@ -1278,7 +1281,7 @@ function refreshDetail(){
     ${contactBox(it)}
     ${it.content?`<div class="detail-content">${esc(it.content)}</div>`:''}
     ${it.photos&&it.photos.length?`<div class="photos">${it.photos.map(p=>`<img src="${p}" onclick="viewImg(this.src)">`).join('')}</div>`:''}
-    <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item"><div class="tl-ic ${l.type}">${ic[l.type]||'기록'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(l.text)}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this.src)">`:''}</div></div>`).join('')}</div>
+    <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item t-${l.type}"><div class="tl-ic ${l.type}">${ic[l.type]||'기록'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(l.text)}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this.src)">`:''}</div></div>`).join('')}</div>
     <div class="action-bar">
       ${it.status!=='done'?`
       <div class="form-row"><label>담당 변경</label><select onchange="assign('${it.id}',this.value)">${assigneeOptions(it.assignee)}</select></div>
@@ -1301,8 +1304,21 @@ function refreshDetail(){
   else $('#modal-root').insertAdjacentHTML('afterbegin',html);
 }
 function viewImg(src){ const v=document.createElement('div'); v.className='viewer'; v.innerHTML=`<img src="${src}">`; v.onclick=()=>v.remove(); document.body.appendChild(v); }
-function assign(id,v){
-  const it=issues[id]; const a=parseAssignee(v); it.assignee=a; it.assignedBy=me.empId;
+// '으로/로': 받침이 있으면(ㄹ 제외) '으로'
+const josaRo = w=>{ const c=(w||'').charCodeAt((w||'').length-1)-0xAC00; if(c<0||c>11171) return '(으)로'; const j=c%28; return (j===0||j===8)?'로':'으로'; };
+// confirmed=true 이면 확인 창 없이 바로 (내부 호출용)
+async function assign(id,v,confirmed){
+  const it=issues[id]; if(!it) return; const a=parseAssignee(v);
+  if(!confirmed){
+    const mine = a.type==='person' && a.empId===me.empId;
+    const who = a.type==='none' ? null : (a.type==='team' ? `${a.name} 전체` : a.name);
+    const ok = await askConfirm({
+      title: mine ? '이 민원을 내가 처리할까요?' : (a.type==='none' ? '담당을 해제할까요?' : `담당을 ${who}${josaRo(who)} 바꿀까요?`),
+      msg: `"${it.title}"\n${mine ? '담당이 나로 바뀌고 진행중이 됩니다. 채팅에 "제가 처리합니다"가 공유됩니다.' : a.type==='none' ? '누구나 가져갈 수 있는 미지정 상태가 됩니다.' : '새 담당에게 알림이 갑니다.'}`,
+      ok: mine ? '내가 처리' : (a.type==='none' ? '해제' : '바꾸기') });
+    if(!ok){ if(openDetailId===id) refreshDetail(); return; }   // 취소하면 선택 상자를 원래 담당으로
+  }
+  it.assignee=a; it.assignedBy=me.empId;
   if(a.type!=='none' && it.status==='open') it.status='progress';
   if(a.type==='none' && it.status==='progress') it.status='open';
   it.logs.push({ts:Date.now(),type:'assign',by:{empId:me.empId,name:me.name},text:a.type==='none'?'담당 해제':(a.type==='person'&&a.empId===me.empId?'내가 처리하겠습니다':`담당 지정 → ${a.name}`)});
@@ -1348,7 +1364,16 @@ function addLog(id,type){
     $('#log-submit').onclick=async()=>{
       const text=$('#log-text').value.trim();
       if(!text && !photos.length && type!=='done'){ toast('내용이나 사진을 넣어 주세요'); return; }
-      const btn=$('#log-submit'); if(btn.disabled) return; btn.disabled=true; btn.textContent='저장 중…';
+      const btn=$('#log-submit'); if(btn.disabled) return;
+      if(type==='done' || type==='progress'){
+        const done = type==='done';
+        const ok = await askConfirm({
+          title: done ? '완료 처리할까요?' : '진행 보고를 등록할까요?',
+          msg: `"${it.title}"\n${text ? '· '+text : (done ? '· 처리 완료' : '')}${done && !photos.length ? '\n완료 사진이 없습니다. 사진을 남기면 월간 보고서에 함께 실립니다.' : ''}${done ? '\n완료되면 채팅에 공유되고 목록에서 빠집니다.' : ''}`,
+          ok: done ? '완료 처리' : '등록' });
+        if(!ok) return;
+      }
+      btn.disabled=true; btn.textContent='저장 중…';
       photos = await uploadPhotos(photos);
       const now=Date.now();
       photos.forEach((p,i)=>it.logs.push({ts:now+i,type,by:{empId:me.empId,name:me.name},text:i===0?text:'',photo:p}));
@@ -1367,7 +1392,7 @@ function addLog(id,type){
 }
 let logDraftText='';
 async function reopen(id){ const it=issues[id]; if(!await askConfirm({title:'이 민원을 다시 열까요?', msg:'같은 문제가 다시 생겼거나 해결되지 않았을 때 엽니다. 재발 횟수가 통계에 반영됩니다.', ok:'다시 열기'})) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`다시 열림 · ${it.title} · ${me.name} (재발)`, id); }
-async function delIssue(id){ const it=issues[id]; if(!await askConfirm({title:'이 민원을 삭제할까요?', msg:`"${it.title}"\n삭제하면 처리 기록과 사진도 함께 지워집니다.`, ok:'삭제', danger:true})) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
+async function delIssue(id){ const it=issues[id]; if(!me.boss){ toast('민원 삭제는 소장만 할 수 있습니다'); return; } if(!await askConfirm({title:'이 민원을 삭제할까요?', msg:`"${it.title}"\n삭제하면 처리 기록과 사진도 함께 지워집니다.`, ok:'삭제', danger:true})) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
 function editIssue(id){
   const it=issues[id];
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="edit-modal" onclick="if(event.target===this)this.remove()"><div class="modal">
