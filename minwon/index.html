@@ -488,6 +488,7 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .list-note button{border:0;background:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:4px 0}
 .done-acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .done-acts.two{grid-template-columns:repeat(2,1fr)}
+.done-acts.one{grid-template-columns:1fr}
 .done-acts .da{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:68px;padding:10px 6px;border:1px solid var(--line2);border-radius:14px;background:#fff;color:var(--ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s}
 .done-acts .da svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .done-acts .da small{font-size:11px;font-weight:600;color:var(--mute);margin-top:-3px}
@@ -856,7 +857,7 @@ const ago = ts=>{ const s=(Date.now()-ts)/1000; if(s<60)return '방금'; if(s<36
 const dur = ms=>{ if(ms<=0)return '-'; const h=ms/3600000; if(h<1)return Math.round(ms/60000)+'분'; if(h<24)return h.toFixed(1)+'시간'; return (h/24).toFixed(1)+'일'; };
 const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const toast = (m,ms=2200)=>{ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); };
-const STATUS = {open:'미지정',progress:'진행중',done:'완료'};   // open: 아무도 맡지 않음(또는 재발로 다시 열림)
+const STATUS = {open:'미지정',progress:'진행중',done:'완료'};   // open: 아무도 맡지 않음
 const lsGet = (k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch{ return d; } };
 const lsSet = (k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ console.warn('ls',e); } };
 
@@ -1403,7 +1404,7 @@ function issueCard(it){
   </div>`;
 }
 // 위 숫자 칸을 누르면 그 민원만, 같은 칸을 다시 누르면 진행 중 전체
-// 미지정 = 아무도 맡지 않았거나, 다시 열려(재발) 접수 상태로 돌아온 처리 중 민원
+// 미지정 = 아무도 맡지 않은 처리 중 민원
 const isUnassigned = it=>it.status!=='done' && (it.status==='open' || !it.assignee || it.assignee.type==='none');
 function tileFilter(k){ listFilter = listFilter===k ? 'active' : k; render(); }
 function renderList(){
@@ -1455,7 +1456,7 @@ function renderNew(){
         <div class="form-row"><label>민원인 (호실 · 호칭)</label><input id="n-cname" value="${esc(d.cName||'')}" placeholder="예) 1105호 김OO님" oninput="newDraft.cName=this.value"></div>
         <div class="form-row"><label>전화번호</label><input id="n-cphone" type="tel" inputmode="tel" autocomplete="off" value="${esc(d.cPhone||'')}" placeholder="010-0000-0000" oninput="newDraft.cPhone=this.value" onblur="this.value=newDraft.cPhone=fmtPhone(this.value)"></div>
       </div>
-      <p class="ci-n">민원 처리와 재발 시 연락에만 쓰이며 관리사무소에 보관됩니다. 전화로 받을 때 <b>"처리 결과 안내를 위해 연락처를 받아 보관하겠습니다"</b>라고 알려 주세요. 민원인이 삭제를 원하면 민원 수정에서 지웁니다.</p>
+      <p class="ci-n">민원 처리와 결과 안내 연락에만 쓰이며 관리사무소에 보관됩니다. 전화로 받을 때 <b>"처리 결과 안내를 위해 연락처를 받아 보관하겠습니다"</b>라고 알려 주세요. 민원인이 삭제를 원하면 민원 수정에서 지웁니다.</p>
     </div>
     <div class="form-row"><label>상세 내용 (선택)</label><textarea id="n-content" placeholder="상세 상황 등" oninput="newDraft.content=this.value">${esc(d.content)}</textarea></div>
     <div class="form-row"><label>사진</label><div class="photo-add">${d.photos.map((p,i)=>`<div class="thumb-wrap"><img class="thumb" src="${p}"><button class="thumb-del" onclick="newDraft.photos.splice(${i},1);render()">✕</button></div>`).join('')}<div class="photo-btn" onclick="pickPhotos(ps=>{newDraft.photos.push(...ps);render()})"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</div></div></div>
@@ -1608,9 +1609,8 @@ function refreshDetail(){
         <button class="btn btn-green" onclick="addLog('${it.id}','done')">완료 처리</button>
       </div>
       <div class="btn-row"><button class="btn btn-gray btn-sm" onclick="addLog('${it.id}','comment')">댓글</button><button class="btn btn-gray btn-sm" onclick="editIssue('${it.id}')">수정</button>${canDel?`<button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="delIssue('${it.id}')">삭제</button>`:''}</div>`
-      :`<div class="done-acts ${canDel?'':'two'}">
+      :`<div class="done-acts ${canDel?'two':'one'}">
         <button class="da" onclick="addLog('${it.id}','comment')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>댓글</button>
-        <button class="da re" onclick="reopen('${it.id}')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>다시 열기<small>재발</small></button>
         ${canDel?`<button class="da del" onclick="delIssue('${it.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>삭제</button>`:''}
       </div>`}
     </div>
@@ -1717,7 +1717,6 @@ function addLog(id,type){
   logDraftText=composeLog(type, sel); draw();
 }
 let logDraftText='';
-async function reopen(id){ const it=issues[id]; if(!await askConfirm({title:'이 민원을 다시 열까요?', msg:'같은 문제가 다시 생겼거나 해결되지 않았을 때 엽니다. 재발 횟수가 통계에 반영됩니다.', ok:'다시 열기'})) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`다시 열림 · ${it.title} · ${me.name} (재발)`, id); }
 async function delIssue(id){ const it=issues[id]; if(!me.boss){ toast('민원 삭제는 소장만 할 수 있습니다'); return; } if(!await askConfirm({title:'이 민원을 삭제할까요?', msg:`"${it.title}"\n삭제하면 처리 기록과 사진도 함께 지워집니다.`, ok:'삭제', danger:true})) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
 function editIssue(id){
   const it=issues[id];
