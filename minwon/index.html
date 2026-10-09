@@ -669,6 +669,12 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .msg.work-end .m-bubble{background:#e9f6ee!important}
 /* 내가 보낸 작업 안내 · 작업 끝: 밝은 바탕이므로 글씨는 진하게 */
 .msg.mine.notice .m-bubble,.msg.mine.work-end .m-bubble{color:var(--e-ink)!important;box-shadow:0 1px 2px rgba(17,24,39,.05),0 8px 16px -12px rgba(17,24,39,.35)!important}
+/* 읽음 표시 숫자 */
+.m-unread{color:#d18b00;font-weight:800;margin-right:5px;font-size:12.5px}
+.m-unread:empty{display:none}
+/* 채팅 글자는 모두 검정 · 내 말풍선은 연한 파랑 바탕 */
+.msg .m-bubble,.msg.sys .m-bubble,.msg.mine .m-bubble,.msg.mine.notice .m-bubble,.msg.mine.work-end .m-bubble{color:#111!important}
+.msg.mine:not(.notice):not(.work-end) .m-bubble{background:#e3ebff!important;box-shadow:0 1px 2px rgba(17,24,39,.05),0 8px 16px -12px rgba(29,71,204,.45)!important}
 .chat-input{background:#fff!important;border-top:0!important;box-shadow:0 -10px 24px -18px rgba(17,24,39,.4)!important}
 .chat-row .ic-btn{border:1px solid var(--e-line)!important;box-shadow:none!important}
 .chat-row .ic-btn.send{border:0!important}
@@ -685,6 +691,72 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .bar-row .bar > div{background:var(--e-blue)!important;background-image:none!important;box-shadow:none!important}
 .login-logo .mark{border-radius:16px!important}
 .sec-title{color:var(--e-ink)!important}
+
+/* ═══════════ 카카오톡 방식 채팅 ═══════════ */
+.chat-wrap{background:#bacee0}
+#chat-list{background:#bacee0;gap:0!important;padding:10px 10px 12px!important}
+#chat-list .chat-date{align-self:center;margin:14px 0 6px!important;padding:0!important}
+#chat-list .chat-date span{display:inline-block;background:rgba(255,255,255,.55);color:#1f2937;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;letter-spacing:0}
+#chat-list .msg.sys{margin-top:10px}
+#chat-list .msg.sys .m-bubble{background:rgba(255,255,255,.8)!important;box-shadow:none!important}
+#chat-list .msg.sys .m-time{color:#374151}
+#chat-list .msg.k{display:flex;flex-direction:row;align-items:flex-start;max-width:100%;align-self:stretch;gap:8px;margin-top:12px}
+#chat-list .msg.k.cont{margin-top:4px}
+#chat-list .msg.k.mine{justify-content:flex-end}
+#chat-list .k-av{flex:none;width:40px;height:40px;border-radius:15px;color:#fff;font-weight:800;font-size:16px;display:grid;place-items:center}
+#chat-list .k-body{display:flex;flex-direction:column;min-width:0;max-width:calc(100% - 96px)}
+#chat-list .msg.k.mine .k-body{align-items:flex-end;max-width:calc(100% - 56px)}
+#chat-list .msg.k .m-who{margin:1px 0 5px 2px;font-size:13px;color:#1f2937}
+#chat-list .msg.k .m-who span{color:#4b5563;font-weight:500;font-size:12px}
+#chat-list .k-row{display:flex;align-items:flex-end;gap:5px;max-width:100%}
+#chat-list .msg.k.mine .k-row{flex-direction:row-reverse}
+#chat-list .msg.k .m-bubble{position:relative;background:#fff!important;color:#111!important;border-radius:14px!important;padding:8px 12px!important;box-shadow:none!important;font-size:15.5px;line-height:1.5;min-width:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .12s,filter .12s}
+#chat-list .msg.k.mine .m-bubble{background:#fee500!important}
+#chat-list .msg.k.notice:not(.mine) .m-bubble{background:#fff4d6!important}
+#chat-list .msg.k.work-end:not(.mine) .m-bubble{background:#e6f6ec!important}
+/* 말꼬리: 묶음의 첫 말풍선에만 */
+#chat-list .msg.k:not(.cont) .m-bubble::before{content:'';position:absolute;top:0;left:-6px;width:12px;height:12px;background:inherit;clip-path:polygon(0 0,100% 0,100% 100%)}
+#chat-list .msg.k.mine:not(.cont) .m-bubble::before{left:auto;right:-6px;clip-path:polygon(0 0,100% 0,0 100%)}
+#chat-list .msg.k:not(.cont):not(.mine) .m-bubble{border-top-left-radius:4px!important}
+#chat-list .msg.k.mine:not(.cont) .m-bubble{border-top-right-radius:4px!important}
+#chat-list .msg.k.cont .k-av{background:transparent!important}
+#chat-list .msg.k .m-bubble img{max-width:220px;border-radius:8px;margin:2px 0}
+#chat-list .msg.k .m-time{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;margin:0;flex:none;font-size:11px;color:#374151;line-height:1.35;white-space:nowrap;min-height:1px}
+#chat-list .msg.k.mine .m-time{align-items:flex-end}
+#chat-list .m-unread{margin:0;padding:2px 2px 0;font-size:12px;color:#9a5b00;font-weight:800;cursor:pointer}
+#chat-list .msg.sys .m-unread{padding:0 4px 0 0}
+#chat-list .k-tag{display:block;font-size:12px;font-weight:800;color:#b45309;margin-bottom:2px}
+#chat-list .k-tag.end{color:#15803d}
+#chat-list .k-quote{display:block;border-bottom:1px solid rgba(0,0,0,.12);padding:0 0 6px;margin:0 0 6px;cursor:pointer;white-space:normal}
+#chat-list .k-quote b{display:block;font-size:12.5px;font-weight:800;color:#111}
+#chat-list .k-quote span{display:block;font-size:13px;color:#4b5563;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+#chat-list .k-del{color:#4b5563}
+#chat-list .msg.k.deleted .m-bubble{background:rgba(255,255,255,.75)!important}
+#chat-list .msg.k.lp-on .m-bubble{transform:scale(.97);filter:brightness(.93)}
+#chat-list .msg.k.k-flash .m-bubble{animation:kflash 1.2s ease}
+@keyframes kflash{0%,40%{box-shadow:0 0 0 3px #1d47cc}100%{box-shadow:0 0 0 3px rgba(29,71,204,0)}}
+.k-replybar{display:flex;align-items:center;gap:8px;background:#f3f5f9;border-radius:12px;padding:8px 8px 8px 12px;margin-bottom:8px;border-left:3px solid var(--e-blue)}
+.k-replybar .kr-tx{flex:1;min-width:0}
+.k-replybar b{display:block;font-size:13px;font-weight:800;color:#111}
+.k-replybar span{display:block;font-size:13px;color:#4b5563;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.k-replybar .kr-x{flex:none;width:32px;height:32px;border:0;background:none;color:#6b7280;border-radius:10px;display:grid;place-items:center}
+.k-replybar .kr-x svg{width:16px;height:16px}
+/* 아래에서 올라오는 선택 창 */
+.dlg-bg.sheet-bg{align-items:flex-end!important}
+.dlg.sheet{width:100%;max-width:520px;border-radius:22px 22px 0 0!important;padding:18px 16px calc(14px + env(safe-area-inset-bottom))!important;max-height:80vh;overflow-y:auto}
+.dlg.sheet h3{font-size:15px;color:#4b5563;font-weight:600;text-align:center;margin:0 0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlg.sheet .sh-acts{display:flex;flex-direction:column;background:#f6f7fb;border-radius:16px;overflow:hidden}
+.dlg.sheet .sh-acts button{border:0;background:none;font:inherit;font-size:16.5px;font-weight:700;color:#111;padding:15px;border-bottom:1px solid #e8ebf0}
+.dlg.sheet .sh-acts button:last-child{border-bottom:0}
+.dlg.sheet .sh-acts button.danger{color:#c93434}
+.dlg.sheet .sh-close{display:block;width:100%;margin-top:10px;border:0;background:#eef1f6;font:inherit;font-size:16px;font-weight:700;color:#374151;padding:14px;border-radius:16px}
+.rd-sec h4{font-size:14px;font-weight:800;color:#111;margin:6px 2px 8px}
+.rd-sec h4 em{font-style:normal;color:var(--e-blue);margin-left:4px}
+.rd-list{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:8px}
+.rd-list li{display:flex;align-items:center;gap:10px;font-size:15px}
+.rd-list li i{width:34px;height:34px;border-radius:12px;color:#fff;font-style:normal;font-weight:800;display:grid;place-items:center}
+.rd-list li span{color:#6b7280;font-size:13px}
+.rd-list li.none{color:#9ca3af;font-size:14px;padding-left:2px}
 </style>
 </head>
 <body>
@@ -830,7 +902,7 @@ let sbOn = false;         // 로그인 후 서버 동기화 사용 여부
 let syncTimer = null;
 let fetching = false;
 
-const K = { auth:'mw_auth', me:'mw_me', pending:()=>`mw_pending_${me.officeId}`, issues:()=>`mw_issues_${me.officeId}`, chat:()=>`mw_chat_${me.officeId}`, seenChat:()=>`mw_seen_chat_${me.officeId}`, seenIssue:()=>`mw_seen_issue_${me.officeId}`, cursor:()=>`mw_cursor_${me.officeId}`, push:'mw_push', pushLater:'mw_push_later' };
+const K = { auth:'mw_auth', me:'mw_me', pending:()=>`mw_pending_${me.officeId}`, issues:()=>`mw_issues_${me.officeId}`, chat:()=>`mw_chat_${me.officeId}`, seenChat:()=>`mw_seen_chat_${me.officeId}`, seenIssue:()=>`mw_seen_issue_${me.officeId}`, cursor:()=>`mw_cursor_${me.officeId}`, reads:()=>`mw_reads_${me.officeId}`, push:'mw_push', pushLater:'mw_push_later' };
 
 // ── 행 ↔ 앱 객체 변환 ──
 const tsMs = v=>v==null?null:(typeof v==='number'?v:new Date(v).getTime());
@@ -930,9 +1002,12 @@ async function fetchAll(forceFull){
     }else{
       // 겹쳐 받은 구간에서 이미 가진 것과 똑같은 항목은 건너뜀
       (r.issues||[]).forEach(x=>{ if(p.issues[x.id] || p.del[x.id]) return; const it=rowToIssue(x); if(JSON.stringify(issues[x.id])===JSON.stringify(it)) return; issues[x.id]=it; nChg++; });
-      (r.chat||[]).forEach(x=>{ if(p.chat[x.id] || chat[x.id]) return; chat[x.id]=rowToMsg(x); nChg++; });
+      (r.chat||[]).forEach(x=>{ if(p.chat[x.id]) return;
+        if(chat[x.id]){ if(x.meta&&x.meta.deleted && !(chat[x.id].meta&&chat[x.id].meta.deleted)){ chat[x.id]=rowToMsg(x); nChg++; } return; }   // 다른 기기에서 지운 글
+        chat[x.id]=rowToMsg(x); nChg++; });
       (r.deleted||[]).forEach(id=>{ if(p.issues[id] || !issues[id]) return; delete issues[id]; nChg++; });
     }
+    if(r.reads) applyReads(r.reads);
     // 서버 시각 기준 30초 겹쳐서 받음 (저장이 끝나는 순간과 겹쳐 빠지는 일이 없도록)
     lsSet(K.cursor(), { since:new Date(new Date(r.now).getTime()-30000).toISOString(), fullAt: r.full ? Date.now() : (cur&&cur.fullAt)||Date.now() });
     const changed = r.full || nChg>0;
@@ -1076,7 +1151,7 @@ function enter(empId){
   const e = EMPLOYEES.find(x=>x.empId===empId); if(!e || !lgOffice || !auth) return;
   me = { empId:e.empId, name:e.name, rank:e.rank, officeId:lgOffice.office_id, officeName:lgOffice.office_name, team:teamOf(e.rank), boss:isBoss(e) };
   lsSet(K.me, me); lsSet(K.auth, {code:auth.code, pw:auth.pw, empId:e.empId});
-  issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{});
+  issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{}); loadReads();
   $('#login').classList.add('hidden'); $('#admin').classList.add('hidden'); $('#app').classList.remove('hidden');
   $('#tb-office').textContent = me.officeName; $('#tb-name').textContent = me.name; $('#tb-team').textContent = `${me.rank} · ${me.team}`;
   $('#tb-staff').classList.toggle('hidden', !me.boss); mgrPw = null;
@@ -1294,7 +1369,7 @@ function render(fromSync){
   if(typing){}
   else if(tab==='list') c.innerHTML = renderList();
   else if(tab==='new'){ if(!newDraft) newDraft={title:'',content:'',location:'',category:'',source:'전화',urgent:false,photos:[],assignee:{type:'none'},cName:'',cPhone:''}; c.innerHTML = renderNew(); }
-  else if(tab==='chat'){ c.innerHTML = renderChat(); scrollChat(); }
+  else if(tab==='chat'){ c.innerHTML = renderChat(); scrollChat(); markChatRead(); }
   else if(tab==='stats') c.innerHTML = renderStats();
   else if(tab==='search') c.innerHTML = renderSearch();
   updateBadges();
@@ -1676,18 +1751,20 @@ function lpCancel(){ clearTimeout(lpTimer); lpTimer=null; if(lpEl && !lpReady) l
 // 길게 누르면(0.5초) 진동과 함께 카드가 눌린 표시가 되고, 손을 떼면 확인 창이 뜸
 // (누르고 있는 동안 창을 띄우면 손가락 아래 글자가 선택되기 때문)
 document.addEventListener('pointerdown',e=>{
-  const el=e.target.closest('[data-issue]'); if(!el || !me) return;
+  const kb=e.target.closest('.msg.k[data-mid] .m-bubble');
+  const el=kb?kb.closest('.msg'):e.target.closest('[data-issue]'); if(!el || !me) return;
+  if(e.target.closest('.m-unread')) return;
   lpFired=false; lpReady=null; lpStart={x:e.clientX,y:e.clientY}; lpEl=el;
-  lpCancel(); lpTimer=setTimeout(()=>{ lpReady=el.dataset.issue; el.classList.add('lp-on'); try{ navigator.vibrate&&navigator.vibrate(30); }catch{} }, 500);
+  lpCancel(); lpTimer=setTimeout(()=>{ lpReady=kb?{mid:el.dataset.mid}:el.dataset.issue; el.classList.add('lp-on'); try{ navigator.vibrate&&navigator.vibrate(30); }catch{} }, 500);
 },{passive:true});
 document.addEventListener('pointermove',e=>{ if(lpTimer && !lpReady && lpStart && Math.hypot(e.clientX-lpStart.x,e.clientY-lpStart.y)>10) lpCancel(); },{passive:true});
 document.addEventListener('pointerup',()=>{
   clearTimeout(lpTimer); lpTimer=null;
   if(lpEl) lpEl.classList.remove('lp-on');
-  if(lpReady){ const id=lpReady; lpReady=null; lpFired=true; try{ window.getSelection().removeAllRanges(); }catch{} setTimeout(()=>issueWorkMenu(id),30); setTimeout(()=>{ lpFired=false; },600); }
+  if(lpReady){ const id=lpReady; lpReady=null; lpFired=true; try{ window.getSelection().removeAllRanges(); }catch{} setTimeout(()=>(typeof id==='object'?msgMenu(id.mid):issueWorkMenu(id)),30); setTimeout(()=>{ lpFired=false; },600); }
 },{capture:true});
 ['pointercancel','scroll'].forEach(ev=>document.addEventListener(ev,()=>{ clearTimeout(lpTimer); lpTimer=null; lpReady=null; if(lpEl) lpEl.classList.remove('lp-on'); },{passive:true,capture:true}));
-document.addEventListener('contextmenu',e=>{ if(e.target.closest('[data-issue]')) e.preventDefault(); });
+document.addEventListener('contextmenu',e=>{ if(e.target.closest('[data-issue]')||e.target.closest('.msg.k .m-bubble')) e.preventDefault(); });
 const issueWork = id=>activeWorks().find(m=>m.issueId===id);
 async function issueWorkMenu(id){
   const it=issues[id]; if(!it) return;
@@ -1753,11 +1830,21 @@ function sysHtml(m){
 function renderChat(){
   const msgs=Object.values(chat).sort((a,b)=>a.ts-b.ts);
   let html='', lastDate='';
-  msgs.forEach(m=>{
-    const d=fmtDate(m.ts); if(d!==lastDate){ html+=`<div class="chat-date">${d} (${['일','월','화','수','목','금','토'][new Date(m.ts).getDay()]})</div>`; lastDate=d; }
+  msgs.forEach((m,i)=>{
+    const d=fmtDate(m.ts); if(d!==lastDate){ html+=`<div class="chat-date"><span>${kDate(m.ts)}</span></div>`; lastDate=d; }
     const mine=m.by&&m.by.empId===me.empId;
-    if(m.kind==='sys'){ html+=`<div class="msg sys" ${m.issueId?`data-issue="${m.issueId}" onclick="if(!lpFired)openDetail('${m.issueId}')"`:''}><div class="m-bubble">${sysHtml(m)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
-    html+=`<div class="msg ${mine?'mine':''} ${m.kind==='notice'?'notice':''} ${m.meta&&m.meta.endOf?'work-end':''}">${!mine?`<div class="m-who"><b class="who-n">${esc(m.by?.name)}</b> <span style="font-weight:400">· ${esc(m.by?.team||'')}</span></div>`:''}<div class="m-bubble">${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="viewImg(this.src)">`:''}</div><div class="m-time">${fmtTime(m.ts)}</div></div>`;
+    if(m.kind==='sys'){ html+=`<div class="msg sys" data-mid="${m.id}" ${m.issueId?`data-issue="${m.issueId}" onclick="if(!lpFired)openDetail('${m.issueId}')"`:''}><div class="m-bubble">${sysHtml(m)}${m.photo?`<img src="${m.photo}" style="max-width:160px;margin:6px auto 0" onclick="event.stopPropagation();viewImg(this.src)">`:''}</div><div class="m-time" style="text-align:center">${unreadTag(m)}${fmtTime(m.ts)}${m.issueId?' · 눌러서 민원 보기':''}</div></div>`; return; }
+    // 같은 사람이 같은 분에 연달아 쓴 글은 한 묶음: 프로필 · 이름은 첫 글에만, 시간은 마지막 글에만
+    const who=m.by&&m.by.empId;
+    const same=x=>x && x.kind!=='sys' && x.by && x.by.empId===who && fmtDate(x.ts)===d && fmtTime(x.ts)===fmtTime(m.ts);
+    const cont=same(msgs[i-1]), tail=!same(msgs[i+1]);
+    const del=!!(m.meta&&m.meta.deleted), end=!!(m.meta&&m.meta.endOf);
+    const tag=del?'':end?'<span class="k-tag end">작업 끝</span>':m.kind==='notice'?'<span class="k-tag">작업 안내</span>':'';
+    const rp=!del&&m.meta&&m.meta.reply;
+    const quote=rp?`<span class="k-quote" onclick="event.stopPropagation();if(!lpFired)jumpTo('${esc(rp.id)}')"><b>${esc(rp.name||'')}에게 답장</b><span>${esc(rp.text||'(사진)')}</span></span>`:'';
+    const body=del?'<span class="k-del">삭제된 메시지입니다.</span>':`${tag}${quote}${m.text?esc(m.text):''}${m.photo?`<img src="${m.photo}" onclick="if(!lpFired)viewImg(this.src)">`:''}`;
+    const av=mine?'':`<div class="k-av"${cont?'':` style="background:${avColor(who||m.by?.name)}"`}>${cont?'':esc((m.by?.name||'?').slice(0,1))}</div>`;
+    html+=`<div class="msg k ${mine?'mine':''} ${m.kind==='notice'?'notice':''} ${end?'work-end':''} ${cont?'cont':''} ${del?'deleted':''}" data-mid="${m.id}">${av}<div class="k-body">${!mine&&!cont?`<div class="m-who"><b class="who-n">${esc(m.by?.name)}</b> <span>${esc(m.by?.team||'')}</span></div>`:''}<div class="k-row"><div class="m-bubble">${body}</div><div class="m-time">${unreadTag(m)}${tail?`<span class="k-t">${fmtTime(m.ts)}</span>`:''}</div></div></div></div>`;
   });
   if(!msgs.length) html=`<div class="empty"><b>아직 대화가 없습니다</b>작업 안내, 민원 공유, 현장 사진을 자유롭게 올려 주세요</div>`;
   return `<div class="chat-wrap" style="margin:-14px -14px calc(-1 * (var(--nav-h) + 20px))">
@@ -1765,6 +1852,7 @@ function renderChat(){
     <div class="chat-list" id="chat-list">${html}</div>
     <div class="chat-input">
       <div class="chat-quick"><button id="tb-sound" class="snd-chip${soundOn()?'':' off'}" onclick="toggleSound()" aria-label="새 채팅 소리" title="새 채팅 소리"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="slash" d="M16 9l6 6M22 9l-6 6"/></svg><span>${soundOn()?'소리 켬':'소리 끔'}</span></button>${QUICK.map((q,i)=>`<button onclick="quickMsg(${i})">${q.label}</button>`).join('')}</div>
+      ${replyBar()}
       ${chatPhotos.length?`<div class="chat-pending">${chatPhotos.map((p,i)=>`<img src="${p}" onclick="chatPhotos.splice(${i},1);render()">`).join('')}</div>`:''}
       <div class="chat-row"><button class="ic-btn" onclick="chatDraft=document.getElementById('chat-text').value;pickPhotos(ps=>{chatPhotos.push(...ps);render()})"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <textarea id="chat-text" rows="1" placeholder="메시지 입력" oninput="chatDraft=this.value;this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendChatText()}">${esc(chatDraft)}</textarea>
@@ -1772,15 +1860,125 @@ function renderChat(){
     </div></div>`;
 }
 function scrollChat(){ const l=$('#chat-list'); if(l) l.scrollTop=l.scrollHeight; }
+
+// ── 카톡 방식 채팅: 날짜 · 프로필 색 · 답장 · 길게 누르기 메뉴 · 읽은 사람 ──
+const kDate=ts=>{ const d=new Date(ts); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${['일','월','화','수','목','금','토'][d.getDay()]}요일`; };
+const AV_COLORS=['#5b8def','#f08c5a','#4fb286','#a77be0','#e26d8f','#3fb3c6','#d9a23a','#7d8fa8'];
+function avColor(k){ let h=0; String(k||'').split('').forEach(c=>h=(h*31+c.charCodeAt(0))>>>0); return AV_COLORS[h%AV_COLORS.length]; }
+let replyTo=null;
+const snip=t=>{ t=String(t||'').replace(/\s+/g,' ').trim(); return t.length>40?t.slice(0,40)+'…':t; };
+function replyMeta(){ const m=replyTo&&chat[replyTo]; if(!m) return null; return {id:m.id, name:(m.by&&m.by.name)||'', text:snip(m.text)||(m.photo?'(사진)':'')}; }
+function replyBar(){
+  const m=replyTo&&chat[replyTo]; if(!m) return '';
+  return `<div class="k-replybar"><div class="kr-tx"><b>${esc(m.by?.name||'')}에게 답장</b><span>${esc(snip(m.text)||(m.photo?'(사진)':''))}</span></div><button class="kr-x" onclick="replyTo=null;chatDraft=document.getElementById('chat-text').value;render()" aria-label="답장 취소"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
+}
+function startReply(id){
+  const t=$('#chat-text'); if(t) chatDraft=t.value;
+  replyTo=id; render();
+  const n=$('#chat-text'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); }
+}
+function jumpTo(id){
+  const el=document.querySelector(`#chat-list .msg[data-mid="${CSS.escape(id)}"]`);
+  if(!el){ toast('원래 글을 찾을 수 없습니다'); return; }
+  el.scrollIntoView({behavior:'smooth', block:'center'}); el.classList.remove('k-flash'); void el.offsetWidth; el.classList.add('k-flash');
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); }
+  catch{ const a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch{} a.remove(); }
+  toast('복사했습니다');
+}
+// 아래에서 올라오는 선택 창 (버튼 목록 · 내용)
+function openSheet({title, html='', actions=[]}){
+  return new Promise(res=>{
+    if(dlgClose) dlgClose(null);
+    const root=document.createElement('div'); root.className='dlg-bg sheet-bg';
+    root.innerHTML=`<div class="dlg sheet" role="dialog" aria-modal="true">${title?`<h3>${esc(title)}</h3>`:''}${html}
+      ${actions.length?`<div class="sh-acts">${actions.map((a,i)=>`<button data-i="${i}" class="${a.danger?'danger':''}">${esc(a.label)}</button>`).join('')}</div>`:''}
+      <button class="sh-close">${actions.length?'취소':'닫기'}</button></div>`;
+    document.body.appendChild(root);
+    const done=v=>{ if(!root.isConnected) return; root.remove(); document.removeEventListener('keydown',key,true); dlgClose=null; res(v); };
+    const key=e=>{ if(e.key==='Escape'){ e.preventDefault(); done(null); } };
+    document.addEventListener('keydown',key,true);
+    root.addEventListener('click',e=>{ if(e.target===root) done(null); });
+    root.querySelectorAll('.sh-acts button').forEach(b=>b.onclick=()=>done(actions[+b.dataset.i].value));
+    root.querySelector('.sh-close').onclick=()=>done(null);
+    dlgClose=()=>done(null);
+  });
+}
+async function msgMenu(id){
+  const m=chat[id]; if(!m || m.kind==='sys' || (m.meta&&m.meta.deleted)) return;
+  const mine=m.by&&m.by.empId===me.empId;
+  const acts=[{value:'reply',label:'답장'}];
+  if(m.text) acts.push({value:'copy',label:'복사'});
+  acts.push({value:'readers',label:'읽은 사람 보기'});
+  if(mine) acts.push({value:'del',label:'삭제',danger:true});
+  const v=await openSheet({title:snip(m.text)||'(사진)', actions:acts});
+  if(v==='reply') startReply(id);
+  else if(v==='copy') copyText(m.text);
+  else if(v==='readers') showReaders(id);
+  else if(v==='del') deleteChatMsg(id);
+}
+async function deleteChatMsg(id){
+  const m=chat[id]; if(!m) return;
+  if(!await askConfirm({title:'이 메시지를 삭제할까요?', msg:'모든 직원의 채팅에서 "삭제된 메시지입니다."로 바뀝니다.', ok:'삭제', danger:true})) return;
+  const meta={...(m.meta||{}), deleted:true}; delete meta.reply;
+  chat[id]={...m, text:'', photo:null, meta}; if(replyTo===id) replyTo=null;
+  lsSet(K.chat(), pruneChat(chat)); render();
+  if(!sbOn) return;
+  rpc('mw_chat_delete',{p_id:id, p_emp_id:me.empId}).catch(e=>{ console.warn('chat delete', e); toast('서버에서 삭제하지 못했습니다. 잠시 후 다시 시도하세요', 3500); fetchAll(true); });
+}
+// 노란 숫자를 누르면: 안 읽은 사람 · 읽은 사람
+function showReaders(id){
+  const m=chat[id]; if(!m) return;
+  const by=m.by&&m.by.empId;
+  const ppl=EMPLOYEES.filter(e=>e.empId && e.empId!==by);
+  const un=ppl.filter(e=>(reads[e.empId]||0)<m.ts), rd=ppl.filter(e=>(reads[e.empId]||0)>=m.ts);
+  const li=a=>a.length?a.map(e=>`<li><i style="background:${avColor(e.empId)}">${esc(e.name.slice(0,1))}</i><b>${esc(e.name)}</b><span>${esc(e.rank||'')}</span></li>`).join(''):'<li class="none">없음</li>';
+  openSheet({title:'읽음 확인', html:`<div class="rd-sec"><h4>안 읽은 사람 <em>${un.length}</em></h4><ul class="rd-list">${li(un)}</ul></div><div class="rd-sec"><h4>읽은 사람 <em>${rd.length}</em></h4><ul class="rd-list">${li(rd)}</ul></div>`});
+}
+
+// ── 읽음 표시: 채팅 줄마다 '아직 안 읽은 직원 수' (카톡처럼, 다 읽으면 사라짐) ──
+let reads = {};   // 사번 → 마지막으로 읽은 채팅 시각(ms)
+let readSending = 0;
+function loadReads(){ reads = lsGet(K.reads(), {}) || {}; }
+function applyReads(raw){
+  const nr={}; Object.entries(raw||{}).forEach(([k,v])=>{ const t=tsMs(v); if(t) nr[k]=t; });
+  Object.keys(reads).forEach(k=>{ if((reads[k]||0)>(nr[k]||0)) nr[k]=reads[k]; });   // 방금 이 기기에서 읽은 것은 유지
+  if(JSON.stringify(nr)===JSON.stringify(reads)) return;
+  reads=nr; lsSet(K.reads(), reads); updateUnread();
+}
+function unreadCount(m){
+  const by=m.by&&m.by.empId;
+  return EMPLOYEES.filter(e=>e.empId && e.empId!==by && (reads[e.empId]||0) < m.ts).length;
+}
+function unreadTag(m){ const n=unreadCount(m); return `<b class="m-unread" onclick="event.stopPropagation();showReaders('${m.id}')">${n||''}</b>`; }
+// 다시 그리지 않고 숫자만 바꿈 (읽던 위치가 튀지 않도록)
+function updateUnread(){
+  if(tab!=='chat') return;
+  document.querySelectorAll('#chat-list .msg[data-mid]').forEach(el=>{
+    const m=chat[el.dataset.mid], b=el.querySelector('.m-unread'); if(!m||!b) return;
+    const n=unreadCount(m); b.textContent = n||'';
+  });
+}
+// 채팅 화면을 보고 있으면 마지막 글까지 읽은 것으로 서버에 기록
+function markChatRead(){
+  if(!me || tab!=='chat' || document.visibilityState!=='visible') return;
+  const last=Object.values(chat).reduce((a,m)=>Math.max(a,m.ts||0),0);
+  if(!last || last<=(reads[me.empId]||0)) return;
+  reads[me.empId]=last; lsSet(K.reads(), reads); updateUnread();
+  if(!sbOn || !auth) return;
+  const my=++readSending;
+  rpc('mw_chat_read',{p_emp_id:me.empId, p_ts:new Date(last).toISOString()}).catch(e=>{ if(my===readSending) console.warn('read', e); });
+}
 function quickMsg(i){ if(/작업 끝/.test(QUICK[i].label)){ const ws=activeWorks(); if(ws.length===1) return endWork(ws[0].id); if(ws.length>1){ toast('끝난 작업 옆의 \'작업 끝\'을 눌러 주세요'); const b=document.querySelector('.work-band'); if(b) b.scrollIntoView({behavior:'smooth'}); return; } }
   const t=$('#chat-text'); t.value=QUICK[i].text; chatDraft=QUICK[i].text; t.focus(); t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,120)+'px'; }
 async function sendChatText(){
   const t=$('#chat-text'); const text=t.value.trim();
   if(!text && !chatPhotos.length) return;
   const notice=/작업 안내|수돗물|잠급|정전|점검 중/.test(text);
-  if(chatPhotos.length){ toast('사진 업로드 중…',6000); chatPhotos = await uploadPhotos(chatPhotos); chatPhotos.forEach((p,i)=>sendChat({kind:notice?'notice':'msg',text:i===0?text:'',photo:p,by:{name:me.name,empId:me.empId,team:me.team}})); }
-  else sendChat({kind:notice?'notice':'msg',text,by:{name:me.name,empId:me.empId,team:me.team}});
-  chatPhotos=[]; chatDraft=''; render();
+  if(chatPhotos.length){ toast('사진 업로드 중…',6000); chatPhotos = await uploadPhotos(chatPhotos); const rm=replyMeta(); chatPhotos.forEach((p,i)=>sendChat({kind:notice?'notice':'msg',text:i===0?text:'',photo:p,by:{name:me.name,empId:me.empId,team:me.team},...(i===0&&rm?{meta:{reply:rm}}:{})})); }
+  else { const rm=replyMeta(); sendChat({kind:notice?'notice':'msg',text,by:{name:me.name,empId:me.empId,team:me.team},...(rm?{meta:{reply:rm}}:{})}); }
+  chatPhotos=[]; chatDraft=''; replyTo=null; render();
 }
 
 // ── 통계 ─────────────────────────────────────
@@ -2476,7 +2674,7 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
 }
 refreshInstallUI();
 
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll(); if(tab==='chat') lsSet(K.seenChat(),Date.now()); updateBadges(); } });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll(); if(tab==='chat'){ lsSet(K.seenChat(),Date.now()); markChatRead(); } updateBadges(); } });
 window.addEventListener('online',()=>{ if(sbOn) fetchAll(); });
 setInterval(()=>{ if(me && tab==='list') render(); },60000); // "n분 전" 갱신
 boot();
