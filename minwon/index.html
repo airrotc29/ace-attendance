@@ -803,6 +803,19 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .viewer .vw-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;border-radius:12px;background:rgba(0,0,0,.35);color:#fff;font-size:34px;line-height:1}
 .viewer .vw-nav.prev{left:8px}.viewer .vw-nav.next{right:8px}
 .viewer .vw-nav.off{opacity:0;pointer-events:none}
+
+/* 민원 화면 맨 위 건물 사진 */
+.cover-band{position:relative;height:clamp(140px,38vw,220px);overflow:hidden;background:#dfe6f3}
+.cover-band img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-band::after{content:'';position:absolute;inset:auto 0 0 0;height:40%;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.18));pointer-events:none}
+.cover-band .cv-edit{position:absolute;right:12px;bottom:12px;z-index:1;display:flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:8px 13px;background:rgba(17,24,39,.6);color:#fff;font:inherit;font-size:13px;font-weight:700;backdrop-filter:blur(6px)}
+.cover-band .cv-edit svg{width:16px;height:16px}
+.cover-band.cv-empty{height:auto;background:transparent}
+.cover-band.cv-empty::after{display:none}
+.cover-band .cv-add{display:flex;align-items:center;gap:12px;width:calc(100% - 32px);margin:14px 16px 0;padding:14px 16px;border:1.5px dashed #b9c4dc;border-radius:16px;background:#fff;color:var(--e-blue);font:inherit;text-align:left}
+.cover-band .cv-add svg{width:26px;height:26px;flex:none}
+.cover-band .cv-add b{display:block;font-size:15px;color:#111}
+.cover-band .cv-add small{display:block;font-size:12.5px;color:#6b7280;margin-top:2px}
 </style>
 </head>
 <body>
@@ -848,6 +861,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 
 <!-- ══ 앱 ══ -->
 <div id="app" class="hidden">
+  <div id="cover-band" class="cover-band hidden"></div>
   <div class="topbar">
     <div class="tb-title"><span id="tb-office"></span><small><span class="sync-dot" id="sync-dot"></span><span id="sync-text">연결 중…</span></small></div>
     <div class="tb-user"><b id="tb-name"></b><span id="tb-team"></span></div>
@@ -1179,7 +1193,7 @@ async function loginSubmit(){
     const info = await rpc('mw_login', {}, cand);
     auth = cand;
     if(info.is_hq){ lsSet(K.auth,{code,pw,hq:true}); adminEnter(); return; }
-    lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null};
+    lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null, cover:info.cover||null};
     EMPLOYEES = await loadEmployees();
     if(!EMPLOYEES.length){ setLoginErr('등록된 직원이 없습니다. 본사 관리자에게 명단 등록을 요청하세요'); auth=null; return; }
     renderNameStep(); showStep(2);
@@ -1210,7 +1224,7 @@ async function doLogin(){
 
 function enter(empId, mgr){
   const e = EMPLOYEES.find(x=>x.empId===empId); if(!e || !lgOffice || !auth) return;
-  me = { empId:e.empId, name:e.name, rank:e.rank, officeId:lgOffice.office_id, officeName:lgOffice.office_name, brand:lgOffice.brand||null, team:teamOf(e.rank), boss:isBoss(e) };
+  me = { empId:e.empId, name:e.name, rank:e.rank, officeId:lgOffice.office_id, officeName:lgOffice.office_name, brand:lgOffice.brand||null, cover:lgOffice.cover||null, team:teamOf(e.rank), boss:isBoss(e) };
   lsSet(K.me, me); lsSet(K.auth, {code:auth.code, pw:auth.pw, empId:e.empId, ...(me.boss&&mgr?{mgr}:{})});
   issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{}); loadReads();
   $('#login').classList.add('hidden'); $('#admin').classList.add('hidden'); $('#app').classList.remove('hidden');
@@ -1237,7 +1251,7 @@ async function boot(){
     try{
       if(saved.hq){ await rpc('mw_offices_list'); adminEnter(); return; }
       const info = await rpc('mw_login');
-      lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null};
+      lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null, cover:info.cover||null};
       EMPLOYEES = await loadEmployees();
       const pick = saved.empId;
       const pe = pick && EMPLOYEES.find(e=>e.empId===pick);
@@ -1343,6 +1357,7 @@ function renderAdminHome(){
             <button class="btn btn-gray btn-sm" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">직원 비밀번호</button>
             <button class="btn btn-sm ${o.has_mgr?'btn-gray':'btn-primary'}" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}','${esc(o.code)}')">소장 비밀번호</button>
             <button class="btn btn-gray btn-sm" onclick="adminBrand('${esc(o.id)}')">관리단 표시</button>
+            <button class="btn btn-gray btn-sm" onclick="adminCover('${esc(o.id)}')">건물 사진</button>
             <button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">삭제</button>
           </div>
         </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>위에서 사업소를 만들어 주세요</div>'}
@@ -1400,6 +1415,14 @@ function showMgrHandoff(name, code, pw){
     <div class="handoff"><div><span>사업소</span><b>${esc(name)}</b></div><div><span>사업소 코드</span><b>${esc(code)}</b></div><div><span>소장 비밀번호</span><b class="hp">${esc(pw)}</b></div></div>
     <div class="btn-row" style="margin-top:14px"><button class="btn btn-gray" onclick="copyText(${esc(JSON.stringify(msg))})">안내문 복사</button><button class="btn btn-primary" onclick="openExternal('sms:?body='+encodeURIComponent(${esc(JSON.stringify(msg))}))">문자로 보내기</button></div>
   </div></div>`);
+}
+// 본사: 사업소 건물 사진
+async function adminCover(id){
+  const o=adminOffices.find(x=>x.id===id); if(!o) return;
+  const acts=[{value:'pick',label:o.cover?'다른 사진으로 바꾸기':'사진 고르기'}]; if(o.cover) acts.push({value:'del',label:'사진 빼기',danger:true});
+  const v=await openSheet({title:`${o.name} · 건물 사진`, html:o.cover?`<img src="${esc(o.cover)}" alt="" style="width:100%;max-height:200px;object-fit:cover;border-radius:14px;margin-bottom:12px">`:'<p class="hint" style="margin-bottom:12px">아직 사진이 없습니다. 직원 앱 민원 화면 맨 위에 보입니다.</p>', actions:acts});
+  if(v==='pick') pickCover(async d=>{ try{ toast('사진 올리는 중…',6000); const url=await uploadCover(d, id); await rpc('mw_hq_set_cover',{p_office:id, p_url:url}); toast('건물 사진을 바꿨습니다',3000); adminHome(); }catch(e){ console.warn(e); toast('사진을 올리지 못했습니다',3500); } });
+  if(v==='del' && await askConfirm({title:'건물 사진을 뺄까요?', ok:'빼기', danger:true})){ try{ await rpc('mw_hq_set_cover',{p_office:id, p_url:null}); toast('건물 사진을 뺐습니다'); adminHome(); }catch(e){ toast('빼지 못했습니다'); } }
 }
 // 관리단 표시 정하기 (화면 하단에 나오는 이름 · 문구 · 배지 글자)
 function adminBrand(id){
@@ -1484,11 +1507,45 @@ function brandHtml(b, officeName){
   const name=(b&&b.name)||`${officeName||''} 관리단`;
   return `<div class="brand-foot"><div class="bf-row"><img class="bf-icon" src="icons/icon.svg?v=3" alt=""><b>${esc(name)}</b><span class="bf-en">· FACILITY MANAGEMENT</span></div>${b&&b.slogan?`<div class="bf-slogan">${esc(b.slogan)}</div>`:''}</div>`;
 }
+// ── 건물 사진 (민원 화면 맨 위) · 소장(소장 비밀번호로 입장) · 본사만 바꿈 ──
+const CAM_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+function renderCover(){
+  const el=document.getElementById('cover-band'); if(!el) return;
+  const can=me && me.boss && mgrPw;
+  const show = me && tab==='list' && (me.cover || can);
+  el.classList.toggle('hidden', !show); el.classList.toggle('cv-empty', !!(show && !me.cover));
+  if(!show){ el.innerHTML=''; return; }
+  const key=(me.cover||'')+'|'+!!can; if(el.dataset.key===key) return; el.dataset.key=key;
+  el.innerHTML = me.cover
+    ? `<img src="${esc(me.cover)}" alt="" onclick="viewImg('${esc(me.cover)}')">${can?`<button class="cv-edit" onclick="coverMenu()">${CAM_SVG}<span>사진 바꾸기</span></button>`:''}`
+    : `<button class="cv-add" onclick="coverMenu()">${CAM_SVG}<span><b>건물 사진 넣기</b><small>민원 화면 맨 위에 보입니다 · 소장만 보이는 버튼</small></span></button>`;
+}
+function pickCover(cb){
+  const inp=$('#file-input'); inp.value=''; inp.multiple=false;
+  inp.onchange=async()=>{ const f=inp.files[0]; inp.multiple=true; if(!f) return; const d=await compressImage(f, 1600, 0.82); if(d) cb(d); };
+  inp.click();
+}
+async function uploadCover(dataUrl, officeId){
+  const path=`${officeId}/cover/${uid()}.jpg`;
+  const {error}=await sb.storage.from(PHOTO_BUCKET).upload(path, dataUrlToBlob(dataUrl), {contentType:'image/jpeg', upsert:false});
+  if(error) throw error;
+  return sb.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+async function coverMenu(){
+  if(!(me && me.boss && mgrPw)) return;
+  const acts=[{value:'pick',label:me.cover?'다른 사진으로 바꾸기':'사진 고르기'}]; if(me.cover) acts.push({value:'del',label:'사진 빼기',danger:true});
+  const v=await openSheet({title:'건물 사진', actions:acts});
+  if(v==='pick') pickCover(async d=>{ try{ toast('사진 올리는 중…',6000); const url=await uploadCover(d, me.officeId); await rpc('mw_office_set_cover',{p_mgr_pw:mgrPw, p_url:url}); setCover(url); toast('건물 사진을 바꿨습니다. 직원들은 다음에 앱을 열 때 보입니다',3500); }
+    catch(e){ console.warn(e); toast(/manager_/.test(e.message||'')?'소장 비밀번호가 바뀌었습니다. 다시 입장하세요':'사진을 올리지 못했습니다',3500); } });
+  if(v==='del' && await askConfirm({title:'건물 사진을 뺄까요?', ok:'빼기', danger:true})){ try{ await rpc('mw_office_set_cover',{p_mgr_pw:mgrPw, p_url:null}); setCover(null); toast('건물 사진을 뺐습니다'); }catch(e){ toast('빼지 못했습니다'); } }
+}
+function setCover(url){ me.cover=url; lsSet(K.me, me); if(lgOffice) lgOffice.cover=url; const el=document.getElementById('cover-band'); if(el) el.dataset.key=''; renderCover(); }
 function brandFooter(){ return me ? brandHtml(me.brand, me.officeName) : ''; }
 // 내용이 짧아도 관리단 표시는 화면 맨 아래(하단 메뉴 바로 위)에 붙도록 감쌈
 const withFoot = html=>`<div class="pg-wrap"><div class="pg-body">${html}</div>${brandFooter()}</div>`;
 function render(fromSync){
   if(!me) return;
+  renderCover();
   const c = $('#content');
   // 동기화로 다시 그릴 때, 접수 · 검색 칸에 입력 중이면 화면을 그대로 둠 (키보드가 내려가지 않도록)
   const ae=document.activeElement;
