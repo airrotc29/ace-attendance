@@ -767,6 +767,10 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 /* 로그인 화면 로고 = 앱 아이콘과 같은 그림 */
 .login-logo .mark{background:none!important;overflow:hidden;box-shadow:0 10px 22px -10px rgba(10,26,82,.7)!important}
 .login-logo .mark img{width:100%;height:100%;display:block}
+
+/* 소장 비밀번호 칸 */
+#lg-mgr-row label{margin-top:12px}
+#lg-mgr-row .lg-mgr-hint{font-size:12.5px;color:#6b7280;margin:6px 2px 0;line-height:1.5}
 </style>
 </head>
 <body>
@@ -791,6 +795,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
       <div class="lg-office">사업소 · <b id="lg-office-name"></b></div>
       <label>이름</label>
       <select id="lg-emp"></select>
+      <div id="lg-mgr-row" class="hidden"><label>소장 비밀번호</label><input id="lg-mgr" type="password" autocomplete="off" placeholder="소장 비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()"><p class="lg-mgr-hint">소장은 사업소 비밀번호와 다른 <b>소장 비밀번호</b>로 입장합니다.</p></div>
       <button class="btn-login" id="lg-btn2" onclick="doLogin()" disabled>입장하기</button>
       <button class="lg-back" onclick="showStep(1)">다른 사업소로 로그인</button>
     </div>
@@ -943,7 +948,9 @@ function saveIssue(it){
 function deleteIssue(id){
   delete issues[id]; lsSet(K.issues(), issues); render();
   if(!sbOn){ queue('del',id); return; }
-  track('del',id,rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId})).catch(e=>{ console.warn(e); if(/forbidden/.test(e.message||'')){ toast('민원 삭제는 소장만 할 수 있습니다'); fetchAll(true); } else queue('del',id); });
+  track('del',id,rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId, p_mgr_pw:mgrPw||''})).catch(e=>{ console.warn(e); const m=String(e.message||'');
+    if(/manager_/.test(m)){ toast('소장 비밀번호가 바뀌었습니다. 나가기 후 다시 입장하세요', 4000); fetchAll(true); }
+    else if(/forbidden/.test(m)){ toast('민원 삭제는 소장만 할 수 있습니다'); fetchAll(true); } else queue('del',id); });
 }
 function sendChat(msg){
   msg.id = msg.id||uid(); msg.ts = msg.ts||Date.now();
@@ -958,7 +965,7 @@ async function flushPending(){
   const p=lsGet(K.pending(),{issues:{},chat:{},del:{}}); const left={issues:{},chat:{},del:{}};
   for(const id of Object.keys(p.issues)){ const it=issues[id]; if(!it) continue; try{ await rpc('mw_issue_save',{p_row:issueToRow(it)}); }catch(e){ left.issues[id]=true; } }
   for(const id of Object.keys(p.chat)){ const m=chat[id]; if(!m) continue; try{ await rpc('mw_chat_save',{p_row:msgToRow(m)}); }catch(e){ left.chat[id]=true; } }
-  for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId}); }catch(e){ if(!/forbidden/.test(e.message||'')) left.del[id]=true; } }
+  for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId, p_mgr_pw:mgrPw||''}); }catch(e){ if(!/forbidden|manager_/.test(e.message||'')) left.del[id]=true; } }
   lsSet(K.pending(), left);
 }
 
@@ -1152,19 +1159,32 @@ async function loginSubmit(){
 function renderNameStep(){
   $('#lg-office-name').textContent = lgOffice.office_name;
   $('#lg-emp').innerHTML = '<option value="">-- 이름 선택 --</option>' + EMPLOYEES.map(e=>`<option value="${esc(e.empId)}">${esc(e.name)} (${esc(e.rank)})</option>`).join('');
-  $('#lg-emp').onchange = ()=>{ $('#lg-btn2').disabled = !$('#lg-emp').value; };
-  $('#lg-btn2').disabled = true;
+  const sync=()=>{ const e=EMPLOYEES.find(x=>x.empId===$('#lg-emp').value); const boss=!!(e&&isBoss(e));
+    $('#lg-btn2').disabled = !e; $('#lg-mgr-row').classList.toggle('hidden', !boss); if(!boss) $('#lg-mgr').value='';
+    if(boss) setTimeout(()=>$('#lg-mgr').focus(),30); setLoginErr(''); };
+  $('#lg-emp').onchange = sync; $('#lg-mgr').value=''; sync();
 }
-function doLogin(){ enter($('#lg-emp').value); }
+// 소장은 소장 비밀번호를 서버에서 확인한 뒤 입장 (삭제 · 직원 등록 같은 권한 보호)
+async function doLogin(){
+  const empId=$('#lg-emp').value; const e=EMPLOYEES.find(x=>x.empId===empId); if(!e) return;
+  if(!isBoss(e)) return enter(empId);
+  const v=$('#lg-mgr').value; if(!v){ setLoginErr('소장 비밀번호를 입력하세요'); $('#lg-mgr').focus(); return; }
+  const btn=$('#lg-btn2'); btn.disabled=true;
+  try{ await rpc('mw_mgr_check',{p_mgr_pw:v}); enter(empId, v); }
+  catch(err){ const m=String(err.message||'');
+    setLoginErr(m.includes('manager_not_set') ? '소장 비밀번호가 아직 없습니다. 본사 관리자에게 설정을 요청하세요' : m.includes('manager_unauthorized') ? '소장 비밀번호가 맞지 않습니다' : '확인하지 못했습니다. 인터넷을 확인하세요'); }
+  finally{ btn.disabled=false; }
+}
 
-function enter(empId){
+function enter(empId, mgr){
   const e = EMPLOYEES.find(x=>x.empId===empId); if(!e || !lgOffice || !auth) return;
   me = { empId:e.empId, name:e.name, rank:e.rank, officeId:lgOffice.office_id, officeName:lgOffice.office_name, team:teamOf(e.rank), boss:isBoss(e) };
-  lsSet(K.me, me); lsSet(K.auth, {code:auth.code, pw:auth.pw, empId:e.empId});
+  lsSet(K.me, me); lsSet(K.auth, {code:auth.code, pw:auth.pw, empId:e.empId, ...(me.boss&&mgr?{mgr}:{})});
   issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{}); loadReads();
   $('#login').classList.add('hidden'); $('#admin').classList.add('hidden'); $('#app').classList.remove('hidden');
   $('#tb-office').textContent = me.officeName; $('#tb-name').textContent = me.name; $('#tb-team').textContent = `${me.rank} · ${me.team}`;
-  $('#tb-staff').classList.toggle('hidden', !me.boss); mgrPw = null;
+  $('#tb-staff').classList.toggle('hidden', !me.boss); mgrPw = me.boss ? (mgr||null) : null;
+  if(me.boss && mgr && mgr===auth.pw) setTimeout(()=>showAlert({title:'소장 비밀번호를 바꿔 주세요', msg:'소장 비밀번호가 사업소 비밀번호와 같아서 직원도 소장으로 들어올 수 있습니다.\n본사 관리자에게 다른 비밀번호로 바꿔 달라고 요청하세요.'}), 800);
   sbOn = true; setSync('on','자동 동기화 중');
   startSync(); fetchAll();
   // 새로고침되어도 보던 탭으로 (같은 창 안에서만)
@@ -1188,7 +1208,14 @@ async function boot(){
       lgOffice = {office_id:info.office_id, office_name:info.office_name};
       EMPLOYEES = await loadEmployees();
       const pick = saved.empId;
-      if(pick && EMPLOYEES.find(e=>e.empId===pick)){ enter(pick); return; }
+      const pe = pick && EMPLOYEES.find(e=>e.empId===pick);
+      if(pe && !isBoss(pe)){ enter(pick); return; }
+      if(pe){   // 소장: 소장 비밀번호가 그대로인지 확인, 아니면 이름 단계에서 다시 입력
+        if(saved.mgr){ try{ await rpc('mw_mgr_check',{p_mgr_pw:saved.mgr}); enter(pick, saved.mgr); return; }catch(e){ console.warn('mgr check', e); } }
+        renderNameStep(); showStep(2); $('#lg-emp').value=pick; $('#lg-emp').onchange();
+        setLoginErr(saved.mgr ? '소장 비밀번호가 바뀌었습니다. 새 소장 비밀번호를 입력하세요' : '소장은 이제 소장 비밀번호로 입장합니다');
+        return;
+      }
     }catch(e){ console.warn('auto login failed', e); }
     auth = null; lsSet(K.auth, null);
   }
@@ -1295,7 +1322,8 @@ async function adminCreate(){
   if(mg && mg.length<4){ toast('소장 비밀번호는 4자 이상이어야 합니다'); return; }
   try{
     const nid = await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
-    if(mg) await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
+    if(mg && mg===pw){ toast('소장 비밀번호는 사업소 비밀번호와 달라야 합니다. 목록에서 다시 정하세요', 4000); }
+    else if(mg) await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
     toast('사업소를 만들었습니다'); adminHome();
   }catch(e){
     const dup = /duplicate|unique/i.test(e.message||'');
@@ -1306,13 +1334,13 @@ async function adminPw(id,name){
   const np = await askInput({title:'사업소 비밀번호 바꾸기', msg:`${name} 의 새 비밀번호를 입력하세요. 바꾸면 직원들은 새 비밀번호로 다시 로그인합니다.`, placeholder:'6자 이상', min:6}); if(!np) return;
   if(np.length<6){ toast('6자 이상이어야 합니다'); return; }
   try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); toast('비밀번호를 바꿨습니다'); }
-  catch(e){ toast('바꾸지 못했습니다'); }
+  catch(e){ toast(/same_as_manager/.test(e.message||'') ? '소장 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '바꾸지 못했습니다', 3500); }
 }
 async function adminMgrPw(id,name){
-  const np = await askInput({title:'소장 비밀번호 정하기', msg:`${name} 소장이 직원을 추가 · 삭제할 때 쓰는 비밀번호입니다.`, placeholder:'4자 이상', min:4}); if(!np) return;
+  const np = await askInput({title:'소장 비밀번호 정하기', msg:`${name} 소장이 입장할 때와 민원 삭제 · 직원 등록에 쓰는 비밀번호입니다. 사업소 비밀번호와 달라야 합니다.`, placeholder:'4자 이상', min:4}); if(!np) return;
   if(np.length<4){ toast('4자 이상이어야 합니다'); return; }
-  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); toast('소장 비밀번호를 정했습니다'); adminHome(); }
-  catch(e){ toast('정하지 못했습니다'); }
+  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); toast('소장 비밀번호를 정했습니다. 소장은 새 비밀번호로 다시 입장합니다', 3500); adminHome(); }
+  catch(e){ toast(/same_as_office/.test(e.message||'') ? '사업소 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '정하지 못했습니다', 3500); }
 }
 async function adminDelete(id,name){
   if(!await askConfirm({title:`"${name}" 사업소를 삭제할까요?`, msg:'민원 · 채팅 · 직원 명단이 모두 지워지고 되돌릴 수 없습니다.', ok:'삭제', danger:true})) return;
@@ -2095,7 +2123,7 @@ function renderOnly(t){ if(t==='search'){ const tmp=document.createElement('div'
 // 소장: 직원 관리 (소장 비밀번호 필요)
 // ══════════════════════════════════════════════
 const RANKS = ['소장','관리과장','관리대리','경리과장','경리대리','경리주임','서무주임','시설과장','시설대리','시설주임','전기기사','기계기사','통신기사','미화반장','미화원(여)','미화원(남)','경비반장','경비원','주차요원','안내원'];
-let mgrPw = null;   // 이번 접속 동안만 기억 (기기에 저장하지 않음)
+let mgrPw = null;   // 소장 비밀번호 (소장으로 입장할 때 확인 · 그 소장의 기기에만 보관)
 function closeById(id){ const el=document.getElementById(id); if(el) el.remove(); }
 function openStaff(){ if(!mgrPw) return askMgrPw(); renderStaff(); }
 function askMgrPw(){
