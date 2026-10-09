@@ -493,7 +493,6 @@ button.stat-tile.on .l{color:var(--accent);font-weight:700}
 .done-acts .da.re small{color:var(--amber);opacity:.8}
 .done-acts .da.del{color:var(--red)}
 .done-acts .da.del:hover{background:#fdf1f1;border-color:#f0c4c4}
-.summary-row{grid-template-columns:repeat(5,1fr)}
 .stat-tile.purple .n{color:var(--purple)}
 @media (max-width:420px){.summary-row .stat-tile{padding-left:2px;padding-right:2px}.summary-row .stat-tile .n{font-size:22px}.summary-row .stat-tile .l{font-size:12px;white-space:nowrap}}
 </style>
@@ -1084,14 +1083,16 @@ function issueCard(it){
   </div>`;
 }
 // 위 숫자 칸을 누르면 그 민원만, 같은 칸을 다시 누르면 진행 중 전체
+// 미지정 = 아무도 맡지 않았거나, 다시 열려(재발) 접수 상태로 돌아온 처리 중 민원
+const isUnassigned = it=>it.status!=='done' && (it.status==='open' || !it.assignee || it.assignee.type==='none');
 function tileFilter(k){ listFilter = listFilter===k ? 'active' : k; render(); }
 function renderList(){
-  if(!['active','open','progress','none','today','mine'].includes(listFilter)) listFilter='active';
+  if(!['active','progress','none','today','mine'].includes(listFilter)) listFilter='active';
   const all = Object.values(issues).sort((a,b)=>(b.urgent-a.urgent)||(b.createdAt-a.createdAt));
   const list = all.filter(it=>{
     if(listFilter==='active') return it.status!=='done';
     if(listFilter==='mine') return isMine(it)&&it.status!=='done';
-    if(listFilter==='none') return (!it.assignee||it.assignee.type==='none')&&it.status!=='done';
+    if(listFilter==='none') return isUnassigned(it);
     if(listFilter==='all') return true;
     if(listFilter==='today') return it.status==='done' && fmtDate(it.doneAt||it.updatedAt)===fmtDate(Date.now());
     return it.status===listFilter;
@@ -1099,10 +1100,10 @@ function renderList(){
   const n = s=>all.filter(i=>i.status===s).length;
   return `${pushBanner()}
     <div class="summary-row">
-      ${[['open','red',n('open'),'접수'],['progress','amber',n('progress'),'진행중'],['none','purple',all.filter(i=>(!i.assignee||i.assignee.type==='none')&&i.status!=='done').length,'미지정'],['today','green',all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length,'오늘 완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
+      ${[['none','red',all.filter(isUnassigned).length,'미지정'],['progress','amber',n('progress'),'진행중'],['today','green',all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length,'오늘 완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
         .map(([k,c,v,l])=>`<button type="button" class="stat-tile ${c} ${listFilter===k?'on':''}" aria-pressed="${listFilter===k}" onclick="tileFilter('${k}')"><div class="n">${v}</div><div class="l">${l}</div></button>`).join('')}
     </div>
-    ${listFilter!=='active'?`<div class="list-note"><span><b>${({open:'접수',progress:'진행중',none:'미지정',today:'오늘 완료',mine:'내 담당'})[listFilter]||''}</b> 민원 ${list.length}건</span><button onclick="tileFilter('${listFilter}')">전체 보기</button></div>`:''}
+    ${listFilter!=='active'?`<div class="list-note"><span><b>${({progress:'진행중',none:'미지정',today:'오늘 완료',mine:'내 담당'})[listFilter]||''}</b> 민원 ${list.length}건</span><button onclick="tileFilter('${listFilter}')">전체 보기</button></div>`:''}
     ${list.length?list.map(issueCard).join(''):`<div class="empty"><b>${listFilter==='today'?'오늘 완료한 민원이 없습니다':'처리할 민원이 없습니다'}</b>접수 탭에서 새 민원을 올릴 수 있습니다</div>`}`;
 }
 
