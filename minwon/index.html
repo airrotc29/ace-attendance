@@ -647,6 +647,8 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .chips.pick{display:grid;gap:7px}
 .chips.pick4{grid-template-columns:repeat(4,1fr)}
 .chips.pick3{grid-template-columns:repeat(3,1fr)}
+/* 마지막 줄에 혼자 남은 칸(기타)은 줄 끝까지 길게 */
+.chips.pick4 .chip:last-child:nth-child(4n+1),.chips.pick3 .chip:last-child:nth-child(3n+1){grid-column:1/-1}
 .chips.pick .chip{height:42px;padding:0 4px;border-radius:12px!important;background:#f3f5f9!important;border:1px solid transparent!important;box-shadow:none!important;color:#374151!important;font-size:14px;font-weight:600;letter-spacing:-.03em;overflow:hidden;text-overflow:ellipsis}
 .chips.pick .chip.active{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important;box-shadow:0 6px 12px -8px rgba(29,71,204,.8)!important}
 @media (max-width:370px){.chips.pick .chip{font-size:13px;letter-spacing:-.05em}}
