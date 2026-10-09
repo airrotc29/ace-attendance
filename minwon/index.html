@@ -1727,7 +1727,7 @@ function refreshDetail(){
     ${contactBox(it)}
     ${it.content?`<div class="detail-content">${esc(it.content)}</div>`:''}
     ${it.photos&&it.photos.length?`<div class="photos">${it.photos.map(p=>`<img src="${p}" onclick="viewImg(this)">`).join('')}</div>`:''}
-    <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item t-${l.type}"><div class="tl-ic ${l.type}">${ic[l.type]||'기록'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(l.text)}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this)">`:''}</div></div>`).join('')}</div>
+    <div class="timeline"><h4>처리 과정</h4>${logs.map(l=>`<div class="tl-item t-${l.type}"><div class="tl-ic ${l.type}">${ic[l.type]||'기록'}</div><div class="tl-body"><div class="who">${esc(l.by?.name)}<span>${fmtKo(l.ts)}</span></div>${l.text?`<div class="txt">${esc(String(l.text||'').replace('내가 처리하겠습니다','제가 처리하겠습니다'))}</div>`:''}${l.photo?`<img src="${l.photo}" onclick="viewImg(this)">`:''}</div></div>`).join('')}</div>
     <div class="action-bar">
       ${it.status!=='done'?`
       <div class="form-row"><label>담당 변경</label><select onchange="assign('${it.id}',this.value)">${assigneeOptions(it.assignee)}</select></div>
@@ -1802,7 +1802,7 @@ async function assign(id,v,confirmed){
   it.assignee=a; it.assignedBy=me.empId;
   if(a.type!=='none' && it.status==='open') it.status='progress';
   if(a.type==='none' && it.status==='progress') it.status='open';
-  it.logs.push({ts:Date.now(),type:'assign',by:{empId:me.empId,name:me.name},text:a.type==='none'?'담당 해제':(a.type==='person'&&a.empId===me.empId?'내가 처리하겠습니다':`담당 지정 → ${a.name}`)});
+  it.logs.push({ts:Date.now(),type:'assign',by:{empId:me.empId,name:me.name},text:a.type==='none'?'담당 해제':(a.type==='person'&&a.empId===me.empId?'제가 처리하겠습니다':`담당 지정 → ${a.name}`)});
   saveIssue(it);
   sysMsg(a.type==='none'?`담당 해제 · ${it.title}`:(a.empId===me.empId?`${me.name} · ${it.title} · 제가 처리합니다`:`담당 지정 · ${it.title} → ${a.name} (${me.name})`), id);
   toast('담당이 변경되었습니다');
