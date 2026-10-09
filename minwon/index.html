@@ -696,6 +696,12 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .new-form .form-row > label{font-size:16.5px;font-weight:800;color:#111827;margin-bottom:9px;letter-spacing:-.02em}
 .new-form .contact-in .ci-h b{font-size:16.5px;font-weight:800;color:#111827;letter-spacing:-.02em}
 .new-form .contact-in .form-row > label{font-size:15px;font-weight:700}
+/* 상세: '처리 과정' · '담당 변경' 제목을 크고 굵게 */
+.timeline h4,.action-bar .form-row > label{font-size:16.5px!important;font-weight:800!important;color:#111827!important;letter-spacing:-.02em!important;margin-bottom:12px}
+/* 월간보고서 자동분석 버튼 */
+.btn.btn-auto{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;background:#f1f4ff!important;color:var(--e-blue)!important;border:1.5px dashed #b8c6f3!important;box-shadow:none!important;margin:2px 0 16px;font-weight:800}
+.btn.btn-auto svg{width:18px;height:18px}
+.btn.btn-auto small{flex-basis:100%;font-size:12px;font-weight:600;color:#5b6b9a}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -2472,6 +2478,7 @@ function openReportDialog(){
       <div class="form-row"><label>보고일</label><input id="rp-date" type="date" value="${esc(n.date||fmtDate(Date.now()))}"></div>
       <div class="form-row"><label>작성자</label><input id="rp-writer" value="${esc(n.writer||(me.rank+' '+me.name))}"></div>
     </div>
+    <button type="button" class="btn btn-auto btn-block" onclick="autoFillReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>자동분석 <small>이 달 민원으로 개선 건의 · 특이사항 채우기</small></button>
     <div class="form-row"><label>개선 건의 (반복 민원 대책, 예산 요청 등)</label><textarea id="rp-improve" placeholder="예) 2층 남자화장실 출입문 경첩 노후로 반복 발생. 문짝 교체 검토 요청">${esc(n.improve||'')}</textarea></div>
     <div class="form-row"><label>특이사항</label><textarea id="rp-note" placeholder="예) 10월 15일 승강기 정기점검 실시, 이상 없음">${esc(n.note||'')}</textarea></div>
     <label class="rp-check"><input type="checkbox" id="rp-photos" ${n.photos===false?'':'checked'}> 처리 사진 대장 포함</label>
@@ -2486,6 +2493,47 @@ function openReportDialog(){
       if(d.photos===false) $('#rp-photos').checked=false;
     }).catch(()=>{});
   }
+}
+// ── 월간보고서 자동분석: 이 달 민원 기록으로 개선 건의 · 특이사항 초안 (기기 안에서 계산 · 외부 전송 없음) ──
+function reportAnalysis(ym){
+  const st=monthStats(ym); const [y,m]=ym.split('-').map(Number); const [s,e]=monthRange(ym);
+  const pd=new Date(y,m-2,1); const prevYm=`${pd.getFullYear()}-${pad(pd.getMonth()+1)}`; const pv=monthStats(prevYm);
+  const ref=Math.min(Date.now(), e); const isNow=Date.now()<e;
+  const short=i=>[i.location,i.title].filter(Boolean).join(' ');
+  const imp=[], note=[];
+  if(!st.recv.length && !st.open.length) return {improve:'· 이 달 접수된 민원이 없습니다.', note:`· ${m}월 접수 민원 없음.`};
+  // 개선 건의 ① 반복 민원
+  repeatIssues().filter(g=>g.items.some(i=>i.createdAt>=s&&i.createdAt<e)).slice(0,3).forEach(g=>{ const i=g.items[0];
+    imp.push(`· ${i.location||i.title} ${i.category} 민원 ${g.count}회 반복(최근 6개월). 임시 조치가 반복되고 있어 근본 원인 점검 및 보수 · 교체 검토 요청.`); });
+  // ② 오래 끝나지 않은 민원
+  const old=st.open.filter(i=>ref-i.createdAt>7*864e5).sort((a,b)=>a.createdAt-b.createdAt);
+  if(old.length) imp.push(`· 7일 넘게 미처리 ${old.length}건(${old.slice(0,2).map(short).join(', ')}${old.length>2?' 등':''}). 자재 · 외부 업체 필요 여부 확인 후 처리 일정 수립 요청.`);
+  // ③ 전월보다 크게 늘어난 분류
+  const pvc=Object.fromEntries(pv.byCat);
+  st.byCat.filter(([k,v])=>k!=='기타' && v>=3 && v>=1.5*(pvc[k]||0)+1).slice(0,2).forEach(([k,v])=>imp.push(`· ${k} 민원 증가(전월 ${pvc[k]||0}건 → ${m}월 ${v}건). 관련 설비 일괄 점검 검토.`));
+  // ④ 처리 속도
+  if(st.avg>2*864e5) imp.push(`· 평균 처리시간 ${dur(st.avg)}로 길어짐. 접수 즉시 담당 지정 및 진행 상황 공유 강화.`);
+  const unassigned=st.recv.filter(i=>i.status!=='done' && (!i.assignee||i.assignee.type==='none')).length;
+  if(unassigned>=3) imp.push(`· 담당 미지정 민원 ${unassigned}건. 접수 시 담당(팀) 바로 지정 요청.`);
+  if(!imp.length) imp.push('· 반복 민원 · 장기 미처리 민원 없음. 현재 관리 수준 유지.');
+  // 특이사항
+  const diff=st.recv.length-pv.recv.length;
+  const rate=st.recv.length?Math.round(st.recv.filter(i=>i.status==='done').length/st.recv.length*100):0;
+  note.push(`· 접수 ${st.recv.length}건(전월 대비 ${diff>0?'+':''}${diff}건), 완료 ${st.done.length}건, 당월 처리율 ${rate}%${st.avg?`, 평균 처리시간 ${dur(st.avg)}`:''}.`);
+  if(st.byCat.length){ const tot=st.recv.length||1; note.push(`· 많이 들어온 분류: ${st.byCat.slice(0,3).map(([k,v])=>`${k} ${v}건(${Math.round(v/tot*100)}%)`).join(', ')}.`); }
+  const urg=st.recv.filter(i=>i.urgent);
+  if(urg.length) note.push(`· 긴급 민원 ${urg.length}건: ${urg.slice(0,3).map(i=>`${short(i)}(${i.status==='done'?'완료':'처리 중'})`).join(', ')}${urg.length>3?' 등':''}.`);
+  const daily={}; st.recv.forEach(i=>{ const d=new Date(i.createdAt).getDate(); daily[d]=(daily[d]||0)+1; });
+  const pk=Object.entries(daily).sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]; if(pk && pk[1]>=3) note.push(`· 접수가 가장 많은 날: ${m}월 ${pk[0]}일 ${pk[1]}건.`);
+  note.push(`· ${isNow?'오늘':'월말'} 기준 미완료 ${st.open.length}건${st.open.length?(isNow?'(처리 중)':'(다음 달로 이어서 처리)'):''}.`);
+  return {improve:imp.join('\n'), note:note.join('\n')};
+}
+async function autoFillReport(){
+  const im=$('#rp-improve'), nt=$('#rp-note'); if(!im||!nt) return;
+  if((im.value.trim()||nt.value.trim()) && !await askConfirm({title:'자동분석 결과로 바꿀까요?', msg:'지금 적어 둔 개선 건의 · 특이사항이 자동분석 내용으로 바뀝니다.', ok:'바꾸기'})) return;
+  const r=reportAnalysis(statMonth); im.value=r.improve; nt.value=r.note;
+  [im,nt].forEach(t=>{ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+4,320)+'px'; });
+  toast('자동분석 내용을 채웠습니다. 확인하고 고쳐 쓰세요',3000);
 }
 function makeReport(){
   const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked};
