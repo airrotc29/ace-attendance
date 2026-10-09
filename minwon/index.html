@@ -595,7 +595,7 @@ const ago = ts=>{ const s=(Date.now()-ts)/1000; if(s<60)return '방금'; if(s<36
 const dur = ms=>{ if(ms<=0)return '-'; const h=ms/3600000; if(h<1)return Math.round(ms/60000)+'분'; if(h<24)return h.toFixed(1)+'시간'; return (h/24).toFixed(1)+'일'; };
 const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const toast = (m,ms=2200)=>{ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); };
-const STATUS = {open:'접수',progress:'진행중',done:'완료'};
+const STATUS = {open:'미지정',progress:'진행중',done:'완료'};   // open: 아무도 맡지 않음(또는 재발로 다시 열림)
 const lsGet = (k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch{ return d; } };
 const lsSet = (k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ console.warn('ls',e); } };
 
