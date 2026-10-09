@@ -692,6 +692,10 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .bar-row .bi.av{border-radius:50%;font-size:12.5px;font-weight:800}
 @media (max-width:370px){.rate-card{gap:12px}.rate-card .ring{width:112px;height:112px}.bar-row.has-i{grid-template-columns:104px 1fr 66px!important}}
 @media print{.rate-card .ring{width:110px;height:110px}.daily > div.on{background:#1d47cc!important}}
+/* 접수: 항목명(내용 · 장소 · 분류 …)은 크고 굵게 */
+.new-form .form-row > label{font-size:16.5px;font-weight:800;color:#111827;margin-bottom:9px;letter-spacing:-.02em}
+.new-form .contact-in .ci-h b{font-size:16.5px;font-weight:800;color:#111827;letter-spacing:-.02em}
+.new-form .contact-in .form-row > label{font-size:15px;font-weight:700}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -1682,7 +1686,7 @@ function parseAssignee(v){
 function renderNew(){
   const d=newDraft;
   return `<div class="sec-title">민원 접수 <small>전화 · 방문 · 순찰 발견</small></div>
-  <div class="card">
+  <div class="card new-form">
     <div class="form-row"><label>내용 (한 줄 요약) <span class="req">*</span></label><input id="n-title" value="${esc(d.title)}" placeholder="예) 2층 화장실 문 삐걱거림" oninput="newDraft.title=this.value"></div>
     <div class="form-row"><label>장소</label><input id="n-loc" value="${esc(d.location)}" placeholder="예) 2층 남자화장실 / 지하1층 주차장" oninput="newDraft.location=this.value"></div>
     <div class="form-row"><label>분류</label><div class="chips pick pick4">${CATEGORIES.map(c=>`<button class="chip ${d.category===c?'active':''}" onclick="newDraft.category='${c}';render()">${c}</button>`).join('')}</div></div>
