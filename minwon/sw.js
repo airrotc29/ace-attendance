@@ -1,7 +1,7 @@
 // 민원 처리 공유 시스템 · 서비스 워커
 // 앱 화면은 항상 최신 버전을 먼저 받고(네트워크 우선), 끊겼을 때만 저장본을 씁니다.
 // 서버 데이터(Supabase)는 저장하지 않습니다.
-const CACHE = 'minwon-v6';
+const CACHE = 'minwon-v7';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/badge-72.png'];
 const CDN = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 

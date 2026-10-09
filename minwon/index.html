@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="민원처리"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
 <link rel="manifest" href="manifest.webmanifest"/>
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2"/>
-<link rel="icon" type="image/svg+xml" href="icons/icon.svg"/>
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2"/>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=3"/>
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=3"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=3"/>
 <title>민원 처리 공유 시스템</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
@@ -763,6 +763,10 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .chat-input .chat-quick{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible!important;padding-bottom:8px}
 .chat-input .chat-quick button{min-width:0;padding:7px 2px!important;font-size:13px!important;text-align:center;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}
 .chat-input .chat-quick .snd-chip svg{width:14px;height:14px}
+
+/* 로그인 화면 로고 = 앱 아이콘과 같은 그림 */
+.login-logo .mark{background:none!important;overflow:hidden;box-shadow:0 10px 22px -10px rgba(10,26,82,.7)!important}
+.login-logo .mark img{width:100%;height:100%;display:block}
 </style>
 </head>
 <body>
@@ -771,7 +775,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 <div id="login" class="login-wrap">
   <div class="login-box">
     <div class="login-logo">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M15 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg></div>
+      <div class="mark"><img src="icons/icon.svg?v=3" alt=""></div>
       <h1>민원 처리 공유 시스템</h1>
       <div class="rule"></div>
       <p>접수 · 담당 · 처리 보고 · 채팅 · 월간 통계</p>
@@ -2683,7 +2687,7 @@ function showInstallGuide(){
   const block=(k,main)=>{ const g=guides[k]; return `<div class="ig ${main?'main':''}"><h3>${g.t}</h3><ol>${g.s.map(x=>`<li>${x}</li>`).join('')}</ol><p class="hint">${g.n}</p></div>`; };
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="inst-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:460px">
     <div class="modal-head"><h2>앱으로 설치하기</h2><button class="modal-close" onclick="closeById('inst-modal')">✕</button></div>
-    <div class="inst-app"><img src="icons/icon-192.png" alt=""><div><b>민원처리</b><small>홈 화면 · 바탕화면에 아이콘이 생기고<br>주소창 없이 앱처럼 열립니다</small></div></div>
+    <div class="inst-app"><img src="icons/icon-192.png?v=3" alt=""><div><b>민원처리</b><small>홈 화면 · 바탕화면에 아이콘이 생기고<br>주소창 없이 앱처럼 열립니다</small></div></div>
     ${block(order[0],true)}
     <details class="ig-more"><summary>다른 기기에서 설치하는 법</summary>${order.slice(1).map(k=>block(k,false)).join('')}</details>
   </div></div>`);
