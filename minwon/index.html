@@ -1476,6 +1476,8 @@ function issueCard(it){
 // 위 숫자 칸을 누르면 그 민원만, 같은 칸을 다시 누르면 진행 중 전체
 // 미지정 = 아무도 맡지 않은 처리 중 민원
 const isUnassigned = it=>it.status!=='done' && (it.status==='open' || !it.assignee || it.assignee.type==='none');
+// 완료 칸: 이번 달(1일~오늘)에 완료한 민원 전체
+const doneThisMonth = it=>it.status==='done' && fmtDate(it.doneAt||it.updatedAt).slice(0,7)===fmtDate(Date.now()).slice(0,7);
 function tileFilter(k){ listFilter = listFilter===k ? 'active' : k; render(); }
 function renderList(){
   if(!['active','progress','none','today','mine'].includes(listFilter)) listFilter='active';
@@ -1485,17 +1487,17 @@ function renderList(){
     if(listFilter==='mine') return isMine(it)&&it.status!=='done';
     if(listFilter==='none') return isUnassigned(it);
     if(listFilter==='all') return true;
-    if(listFilter==='today') return it.status==='done' && fmtDate(it.doneAt||it.updatedAt)===fmtDate(Date.now());
+    if(listFilter==='today') return doneThisMonth(it);
     return it.status===listFilter;
   });
   const n = s=>all.filter(i=>i.status===s).length;
   return `${installBanner()}${pushBanner()}${workBand('list')}
     <div class="summary-row">
-      ${[['none','red',all.filter(isUnassigned).length,'미지정'],['progress','amber',n('progress'),'진행중'],['today','green',all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length,'오늘 완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
+      ${[['none','red',all.filter(isUnassigned).length,'미지정'],['progress','amber',n('progress'),'진행중'],['today','green',all.filter(doneThisMonth).length,'완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
         .map(([k,c,v,l])=>`<button type="button" class="stat-tile ${c} ${listFilter===k?'on':''}" aria-pressed="${listFilter===k}" onclick="tileFilter('${k}')"><div class="n">${v}</div><div class="l">${l}</div></button>`).join('')}
     </div>
-    ${listFilter!=='active'?`<div class="list-note"><span><b>${({progress:'진행중',none:'미지정',today:'오늘 완료',mine:'내 담당'})[listFilter]||''}</b> 민원 ${list.length}건</span><button onclick="tileFilter('${listFilter}')">전체 보기</button></div>`:''}
-    ${list.length?list.map(issueCard).join(''):`<div class="empty"><b>${listFilter==='today'?'오늘 완료한 민원이 없습니다':'처리할 민원이 없습니다'}</b>접수 탭에서 새 민원을 올릴 수 있습니다</div>`}`;
+    ${listFilter!=='active'?`<div class="list-note"><span><b>${({progress:'진행중',none:'미지정',today:`${new Date().getMonth()+1}월 완료`,mine:'내 담당'})[listFilter]||''}</b> 민원 ${list.length}건</span><button onclick="tileFilter('${listFilter}')">전체 보기</button></div>`:''}
+    ${list.length?list.map(issueCard).join(''):`<div class="empty"><b>${listFilter==='today'?'이번 달 완료한 민원이 없습니다':'처리할 민원이 없습니다'}</b>접수 탭에서 새 민원을 올릴 수 있습니다</div>`}`;
 }
 
 // ── 접수 ─────────────────────────────────────
