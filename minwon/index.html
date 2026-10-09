@@ -672,7 +672,7 @@ function saveIssue(it){
 function deleteIssue(id){
   delete issues[id]; lsSet(K.issues(), issues); render();
   if(!sbOn){ queue('del',id); return; }
-  track('del',id,rpc('mw_issue_delete',{p_id:id})).catch(e=>{ console.warn(e); queue('del',id); });
+  track('del',id,rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId})).catch(e=>{ console.warn(e); if(/forbidden/.test(e.message||'')){ toast('민원 삭제는 소장만 할 수 있습니다'); fetchAll(true); } else queue('del',id); });
 }
 function sendChat(msg){
   msg.id = msg.id||uid(); msg.ts = msg.ts||Date.now();
@@ -687,7 +687,7 @@ async function flushPending(){
   const p=lsGet(K.pending(),{issues:{},chat:{},del:{}}); const left={issues:{},chat:{},del:{}};
   for(const id of Object.keys(p.issues)){ const it=issues[id]; if(!it) continue; try{ await rpc('mw_issue_save',{p_row:issueToRow(it)}); }catch(e){ left.issues[id]=true; } }
   for(const id of Object.keys(p.chat)){ const m=chat[id]; if(!m) continue; try{ await rpc('mw_chat_save',{p_row:msgToRow(m)}); }catch(e){ left.chat[id]=true; } }
-  for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id}); }catch(e){ left.del[id]=true; } }
+  for(const id of Object.keys(p.del)){ try{ await rpc('mw_issue_delete',{p_id:id, p_emp_id:me.empId}); }catch(e){ if(!/forbidden/.test(e.message||'')) left.del[id]=true; } }
   lsSet(K.pending(), left);
 }
 
@@ -1265,7 +1265,7 @@ function refreshDetail(){
   const it=issues[openDetailId]; if(!it){ closeModal(); return; }
   const logs=[...(it.logs||[])].sort((a,b)=>a.ts-b.ts);
   const ic={create:'접수',assign:'담당',progress:'진행',comment:'댓글',done:'완료',reopen:'재개',edit:'수정',contact:'연락'};
-  const canDel = me.boss || (it.reporter&&it.reporter.empId===me.empId);
+  const canDel = me.boss;   // 민원 삭제는 소장만
   const html = `<div class="modal-bg" id="detail-modal" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-head"><h2><span class="badge b-${it.status}">${STATUS[it.status]}</span> ${it.urgent?'<span class="badge b-urgent">긴급</span> ':''}${esc(it.title)}</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
     <dl class="detail-meta">
@@ -1367,7 +1367,7 @@ function addLog(id,type){
 }
 let logDraftText='';
 async function reopen(id){ const it=issues[id]; if(!await askConfirm({title:'이 민원을 다시 열까요?', msg:'같은 문제가 다시 생겼거나 해결되지 않았을 때 엽니다. 재발 횟수가 통계에 반영됩니다.', ok:'다시 열기'})) return; it.status='open'; it.doneAt=null; it.reopened=(it.reopened||0)+1; it.logs.push({ts:Date.now(),type:'reopen',by:{empId:me.empId,name:me.name},text:'다시 열림 (재발)'}); saveIssue(it); sysMsg(`다시 열림 · ${it.title} · ${me.name} (재발)`, id); }
-async function delIssue(id){ const it=issues[id]; if(!await askConfirm({title:'이 민원을 삭제할까요?', msg:`"${it.title}"\n삭제하면 처리 기록과 사진도 함께 지워집니다.`, ok:'삭제', danger:true})) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
+async function delIssue(id){ const it=issues[id]; if(!me.boss){ toast('민원 삭제는 소장만 할 수 있습니다'); return; } if(!await askConfirm({title:'이 민원을 삭제할까요?', msg:`"${it.title}"\n삭제하면 처리 기록과 사진도 함께 지워집니다.`, ok:'삭제', danger:true})) return; deleteIssue(id); closeModal(); toast('삭제되었습니다'); }
 function editIssue(id){
   const it=issues[id];
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="edit-modal" onclick="if(event.target===this)this.remove()"><div class="modal">
