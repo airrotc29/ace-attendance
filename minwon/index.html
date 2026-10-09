@@ -705,6 +705,26 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 /* 나가기 숨김: 내 이름을 누르면 나가기 */
 .topbar .tb-user{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:10px;padding:2px 4px}
 .topbar .tb-user:active{background:rgba(17,24,39,.06)}
+/* 본사 사업소 목록: 정렬 · 고급스럽게 */
+.adm-item.ao{display:block;padding:16px 0 18px}
+.ao-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.ao-thumb{width:58px;height:58px;border-radius:16px;flex:none;overflow:hidden;background:linear-gradient(145deg,#1d47cc,#0f2a7a);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 16px -10px rgba(29,71,204,.7)}
+.ao-thumb img{width:100%;height:100%;object-fit:cover}
+.ao-thumb svg{width:28px;height:28px}
+.ao-info{min-width:0;flex:1}
+.ao-info > b{display:block;font-size:17.5px!important;font-weight:800;color:#111827;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ao-meta{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;color:#6b7280;font-weight:600}
+.ao-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:700;letter-spacing:.06em;color:#1d47cc;background:#eef3ff;border-radius:6px;padding:2px 7px}
+.ao-st{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12.5px;font-weight:700}
+.ao-st i{width:7px;height:7px;border-radius:50%}
+.ao-st.ok{color:#16804f}.ao-st.ok i{background:#22a06b}
+.ao-st.bad{color:var(--red)}.ao-st.bad i{background:var(--red)}
+.adm-acts.ao-acts{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.ao-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:68px;border:0;border-radius:14px;background:#f4f6fa;color:#374151;font:inherit;font-size:13px;font-weight:700;letter-spacing:-.02em;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .12s,transform .1s}
+.ao-btn svg{width:21px;height:21px;color:#1d47cc}
+.ao-btn:active{transform:scale(.97);background:#e9edf5}
+.ao-btn.hot{background:#1d47cc;color:#fff}.ao-btn.hot svg{color:#fff}
+.ao-btn.del{background:#fdf1f0;color:var(--red)}.ao-btn.del svg{color:var(--red)}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -1403,6 +1423,17 @@ async function adminReport(id){
     console.warn(e); w.document.body.textContent='보고서를 불러오지 못했습니다. 잠시 후 다시 시도하세요.';
   }
 }
+// 본사 사업소 목록 아이콘
+const AO_SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const AO_IC={
+  bldg:AO_SV('<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 21v-3h4v3"/>'),
+  users:AO_SV('<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 4.5a3 3 0 0 1 0 6M18 14.5a5.5 5.5 0 0 1 3 5"/>'),
+  key:AO_SV('<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3M14 9l2 2"/>'),
+  shield:AO_SV('<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><circle cx="12" cy="11" r="2"/><path d="M12 13v3"/>'),
+  tag:AO_SV('<path d="M4 5h16v10H4z"/><path d="M8 19h8M12 15v4"/><path d="M8 9h8M8 12h5"/>'),
+  img:AO_SV('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>'),
+  trash:AO_SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>')
+};
 function renderAdminHome(){
   $('#adm-content').innerHTML = `
     <div class="sec-title">월간 현황 <small>사업소별 민원 처리 · 월간보고서</small></div>
@@ -1415,20 +1446,26 @@ function renderAdminHome(){
         <div class="form-row"><label>비밀번호 (6자 이상)</label><input id="ad-pw" type="text"></div>
       </div>
       <div class="form-row"><label>소장 로그인 비밀번호 (사업소 비밀번호와 다르게 · 4자 이상)</label>
-        <div style="display:flex;gap:8px"><input id="ad-mgr" type="text" style="flex:1" placeholder="소장에게만 따로 알려 줄 비밀번호"><button class="btn btn-gray" type="button" onclick="$('#ad-mgr').value=genMgrPw($('#ad-pw').value)">자동 만들기</button></div></div>
+        <div style="display:flex;gap:8px"><input id="ad-mgr" type="text" style="flex:1" placeholder="소장에게만 알려 줄 번호"><button class="btn btn-gray" type="button" onclick="$('#ad-mgr').value=genMgrPw($('#ad-pw').value)">자동 만들기</button></div></div>
       <button class="btn btn-primary btn-block" onclick="adminCreate()">사업소 만들기</button>
     </div>
     <div class="card"><h3>사업소 목록 <small style="font-weight:400;color:var(--mute)">${adminOffices.length}곳</small></h3>
       ${adminOffices.length ? adminOffices.map(o=>`
-        <div class="adm-item">
-          <div><b>${esc(o.name)}</b><small>코드 ${esc(o.code)} · 직원 ${o.count}명 · 소장 로그인 ${o.has_mgr?'설정됨':'<b style="color:var(--red)">미설정 · 소장 입장 불가</b>'}</small></div>
-          <div class="adm-acts">
-            <button class="btn btn-gray btn-sm" onclick="adminRoster('${esc(o.id)}')">명단</button>
-            <button class="btn btn-gray btn-sm" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">직원 비밀번호</button>
-            <button class="btn btn-sm ${o.has_mgr?'btn-gray':'btn-primary'}" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}','${esc(o.code)}')">소장 비밀번호</button>
-            <button class="btn btn-gray btn-sm" onclick="adminBrand('${esc(o.id)}')">관리단 표시</button>
-            <button class="btn btn-gray btn-sm" onclick="adminCover('${esc(o.id)}')">건물 사진</button>
-            <button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">삭제</button>
+        <div class="adm-item ao">
+          <div class="ao-head">
+            <div class="ao-thumb">${o.cover?`<img src="${esc(o.cover)}" alt="">`:AO_IC.bldg}</div>
+            <div class="ao-info"><b>${esc(o.name)}</b>
+              <div class="ao-meta"><span class="ao-code">${esc(o.code)}</span><span>직원 ${o.count}명</span></div>
+              <div class="ao-st ${o.has_mgr?'ok':'bad'}"><i></i>${o.has_mgr?'소장 로그인 설정됨':'소장 로그인 미설정 · 소장 입장 불가'}</div>
+            </div>
+          </div>
+          <div class="adm-acts ao-acts">
+            <button class="ao-btn" onclick="adminRoster('${esc(o.id)}')">${AO_IC.users}<span>명단</span></button>
+            <button class="ao-btn" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">${AO_IC.key}<span>직원 비밀번호</span></button>
+            <button class="ao-btn ${o.has_mgr?'':'hot'}" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}','${esc(o.code)}')">${AO_IC.shield}<span>소장 비밀번호</span></button>
+            <button class="ao-btn" onclick="adminBrand('${esc(o.id)}')">${AO_IC.tag}<span>관리단 표시</span></button>
+            <button class="ao-btn" onclick="adminCover('${esc(o.id)}')">${AO_IC.img}<span>건물 사진</span></button>
+            <button class="ao-btn del" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">${AO_IC.trash}<span>삭제</span></button>
           </div>
         </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>위에서 사업소를 만들어 주세요</div>'}
     </div>
