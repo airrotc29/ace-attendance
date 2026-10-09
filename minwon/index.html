@@ -778,6 +778,15 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .handoff div:last-child{border-bottom:0}
 .handoff span{color:#6b7280}.handoff b{color:#111;font-weight:800}
 .handoff .hp{font-size:20px;letter-spacing:.08em;color:var(--e-blue)}
+
+/* 화면 하단 관리단 표시 */
+.brand-foot{text-align:center;padding:26px 8px 8px;margin-top:6px}
+.brand-foot .bf-row{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}
+.brand-foot .bf-mark{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 5px;border-radius:9px;background:linear-gradient(160deg,#2a4bb5,#132f86);color:#fff;font-size:12.5px;font-weight:900;letter-spacing:-.02em;box-shadow:inset 0 -3px 0 -1.5px rgba(255,255,255,.35)}
+.brand-foot b{font-size:14.5px;font-weight:800;color:#111827}
+.brand-foot .bf-en{font-size:12.5px;color:#9aa1ad;letter-spacing:.02em}
+.brand-foot .bf-slogan{margin-top:7px;font-size:12.5px;color:#8b93a1}
+.br-prev{background:#f6f7fb;border-radius:14px;margin:4px 0 14px;padding:4px 0 14px}
 </style>
 </head>
 <body>
@@ -1154,7 +1163,7 @@ async function loginSubmit(){
     const info = await rpc('mw_login', {}, cand);
     auth = cand;
     if(info.is_hq){ lsSet(K.auth,{code,pw,hq:true}); adminEnter(); return; }
-    lgOffice = {office_id:info.office_id, office_name:info.office_name};
+    lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null};
     EMPLOYEES = await loadEmployees();
     if(!EMPLOYEES.length){ setLoginErr('등록된 직원이 없습니다. 본사 관리자에게 명단 등록을 요청하세요'); auth=null; return; }
     renderNameStep(); showStep(2);
@@ -1185,7 +1194,7 @@ async function doLogin(){
 
 function enter(empId, mgr){
   const e = EMPLOYEES.find(x=>x.empId===empId); if(!e || !lgOffice || !auth) return;
-  me = { empId:e.empId, name:e.name, rank:e.rank, officeId:lgOffice.office_id, officeName:lgOffice.office_name, team:teamOf(e.rank), boss:isBoss(e) };
+  me = { empId:e.empId, name:e.name, rank:e.rank, officeId:lgOffice.office_id, officeName:lgOffice.office_name, brand:lgOffice.brand||null, team:teamOf(e.rank), boss:isBoss(e) };
   lsSet(K.me, me); lsSet(K.auth, {code:auth.code, pw:auth.pw, empId:e.empId, ...(me.boss&&mgr?{mgr}:{})});
   issues = lsGet(K.issues(),{}); chat = lsGet(K.chat(),{}); loadReads();
   $('#login').classList.add('hidden'); $('#admin').classList.add('hidden'); $('#app').classList.remove('hidden');
@@ -1212,7 +1221,7 @@ async function boot(){
     try{
       if(saved.hq){ await rpc('mw_offices_list'); adminEnter(); return; }
       const info = await rpc('mw_login');
-      lgOffice = {office_id:info.office_id, office_name:info.office_name};
+      lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null};
       EMPLOYEES = await loadEmployees();
       const pick = saved.empId;
       const pe = pick && EMPLOYEES.find(e=>e.empId===pick);
@@ -1317,6 +1326,7 @@ function renderAdminHome(){
             <button class="btn btn-gray btn-sm" onclick="adminRoster('${esc(o.id)}')">명단</button>
             <button class="btn btn-gray btn-sm" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">직원 비밀번호</button>
             <button class="btn btn-sm ${o.has_mgr?'btn-gray':'btn-primary'}" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}','${esc(o.code)}')">소장 비밀번호</button>
+            <button class="btn btn-gray btn-sm" onclick="adminBrand('${esc(o.id)}')">관리단 표시</button>
             <button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">삭제</button>
           </div>
         </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>위에서 사업소를 만들어 주세요</div>'}
@@ -1375,6 +1385,29 @@ function showMgrHandoff(name, code, pw){
     <div class="btn-row" style="margin-top:14px"><button class="btn btn-gray" onclick="copyText(${esc(JSON.stringify(msg))})">안내문 복사</button><button class="btn btn-primary" onclick="openExternal('sms:?body='+encodeURIComponent(${esc(JSON.stringify(msg))}))">문자로 보내기</button></div>
   </div></div>`);
 }
+// 관리단 표시 정하기 (화면 하단에 나오는 이름 · 문구 · 배지 글자)
+function adminBrand(id){
+  const o=adminOffices.find(x=>x.id===id); if(!o) return; const b=o.brand||{}; brandEditId=id;
+  closeById('brand-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="brand-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:480px">
+    <div class="modal-head"><h2>관리단 표시</h2><button class="modal-close" onclick="closeById('brand-modal')">✕</button></div>
+    <p class="hint"><b>${esc(o.name)}</b> 직원 앱의 민원 · 통계 · 검색 화면 맨 아래에 보입니다.</p>
+    <div class="form-row"><label>관리단 이름</label><input id="br-name" maxlength="60" value="${esc(b.name||'')}" placeholder="${esc(o.name)} 관리단" oninput="brandPreview()"></div>
+    <div class="form-grid"><div class="form-row"><label>배지 글자 (3자까지)</label><input id="br-mark" maxlength="3" value="${esc(b.mark||'')}" placeholder="${esc(String(o.name).slice(0,1))}" oninput="brandPreview()"></div><div></div></div>
+    <div class="form-row"><label>문구</label><input id="br-slogan" maxlength="80" value="${esc(b.slogan||'')}" placeholder="예) 사람을 먼저 생각하는 관리" oninput="brandPreview()"></div>
+    <div class="br-prev" id="br-prev"></div>
+    <button class="btn btn-primary btn-block" onclick="saveBrand('${esc(id)}')">저장</button>
+  </div></div>`);
+  brandPreview();
+}
+let brandEditId=null;
+function brandPreview(){ const o=adminOffices.find(x=>x.id===brandEditId);
+  $('#br-prev').innerHTML = brandHtml({name:$('#br-name').value.trim(), mark:$('#br-mark').value.trim(), slogan:$('#br-slogan').value.trim()}, o&&o.name); }
+async function saveBrand(id){
+  const b={name:$('#br-name').value.trim(), mark:$('#br-mark').value.trim(), slogan:$('#br-slogan').value.trim()};
+  try{ await rpc('mw_office_set_brand',{p_office:id, p_brand:b}); closeById('brand-modal'); toast('관리단 표시를 저장했습니다. 직원 앱은 다음에 열 때 바뀝니다', 3500); adminHome(); }
+  catch(e){ toast('저장하지 못했습니다'); }
+}
 async function adminDelete(id,name){
   if(!await askConfirm({title:`"${name}" 사업소를 삭제할까요?`, msg:'민원 · 채팅 · 직원 명단이 모두 지워지고 되돌릴 수 없습니다.', ok:'삭제', danger:true})) return;
   try{ await rpc('mw_office_delete',{p_office:id}); toast('삭제되었습니다'); adminHome(); }
@@ -1431,6 +1464,13 @@ async function rosterSave(){
 // ══════════════════════════════════════════════
 function go(t){ tab=t; try{ sessionStorage.setItem('mw_tab',t); }catch{} document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); if(t==='chat') lsSet(K.seenChat(), Date.now()); if(t==='list') lsSet(K.seenIssue(), Date.now()); render(); window.scrollTo(0,0); }
 let newDraft = null;
+// 화면 하단 관리단 표시 (본사가 사업소별로 정함 · 없으면 '사업소 이름 관리단')
+function brandHtml(b, officeName){
+  const name=(b&&b.name)||`${officeName||''} 관리단`;
+  const mark=(b&&b.mark)||String(officeName||'').trim().slice(0,1);
+  return `<div class="brand-foot"><div class="bf-row"><span class="bf-mark">${esc(mark)}</span><b>${esc(name)}</b><span class="bf-en">· FACILITY MANAGEMENT</span></div>${b&&b.slogan?`<div class="bf-slogan">${esc(b.slogan)}</div>`:''}</div>`;
+}
+function brandFooter(){ return me ? brandHtml(me.brand, me.officeName) : ''; }
 function render(fromSync){
   if(!me) return;
   const c = $('#content');
@@ -1438,11 +1478,11 @@ function render(fromSync){
   const ae=document.activeElement;
   const typing = fromSync===true && (tab==='new'||tab==='search') && ae && c.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
   if(typing){}
-  else if(tab==='list') c.innerHTML = renderList();
+  else if(tab==='list') c.innerHTML = renderList() + brandFooter();
   else if(tab==='new'){ if(!newDraft) newDraft={title:'',content:'',location:'',category:'',source:'전화',urgent:false,photos:[],assignee:{type:'none'},cName:'',cPhone:''}; c.innerHTML = renderNew(); }
   else if(tab==='chat'){ c.innerHTML = renderChat(); scrollChat(); markChatRead(); }
-  else if(tab==='stats') c.innerHTML = renderStats();
-  else if(tab==='search') c.innerHTML = renderSearch();
+  else if(tab==='stats') c.innerHTML = renderStats() + brandFooter();
+  else if(tab==='search') c.innerHTML = renderSearch() + brandFooter();
   updateBadges();
   if(openDetailId && issues[openDetailId]) refreshDetail();
 }
