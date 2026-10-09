@@ -702,6 +702,9 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .btn.btn-auto{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;background:#f1f4ff!important;color:var(--e-blue)!important;border:1.5px dashed #b8c6f3!important;box-shadow:none!important;margin:2px 0 16px;font-weight:800}
 .btn.btn-auto svg{width:18px;height:18px}
 .btn.btn-auto small{flex-basis:100%;font-size:12px;font-weight:600;color:#5b6b9a}
+/* 나가기 숨김: 내 이름을 누르면 나가기 */
+.topbar .tb-user{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:10px;padding:2px 4px}
+.topbar .tb-user:active{background:rgba(17,24,39,.06)}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -926,10 +929,9 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
   <div id="cover-band" class="cover-band hidden"></div>
   <div class="topbar">
     <div class="tb-title"><span id="tb-office"></span><small><span class="sync-dot" id="sync-dot"></span><span id="sync-text">연결 중…</span></small></div>
-    <div class="tb-user"><b id="tb-name"></b><span id="tb-team"></span></div>
+    <div class="tb-user" role="button" tabindex="0" onclick="meMenu()" title="내 정보 · 나가기"><b id="tb-name"></b><span id="tb-team"></span></div>
     <button class="tb-btn tb-ic hidden" id="tb-push" onclick="pushMenu()" aria-label="휴대폰 알림" title="휴대폰 알림"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path class="slash" d="M3 3l18 18"/></svg></button>
     <button class="tb-btn tb-two hidden" id="tb-staff" onclick="openStaff()">직원<br>등록·해제</button>
-    <button class="tb-btn" onclick="logout()">나가기</button>
   </div>
   <div class="content" id="content"></div>
   <div class="bottomnav">
@@ -1302,6 +1304,10 @@ function enter(empId, mgr){
   armBackTrap();
   setTimeout(askContactDone, 1500);   // 전화 · 문자 중 앱이 닫혔다 다시 열린 경우
 }
+// 나가기는 상단에서 숨기고, 오른쪽 위 내 이름을 누르면 나옴
+async function meMenu(){ if(!me) return;
+  const v=await openSheet({title:`${me.name} · ${me.rank}`, html:`<p class="hint" style="margin-bottom:12px;text-align:center">${esc(me.officeName)} · ${esc(me.team)}</p>`, actions:[{value:'out',label:'나가기 (로그아웃)',danger:true}]});
+  if(v==='out') logout(); }
 async function logout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'다음에 들어올 때 사업소 코드와 비밀번호를 다시 입력합니다.', ok:'나가기'})) return; await pushOff(true).catch(console.warn); localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
 
 // 기기에 저장된 로그인 정보로 자동 입장
