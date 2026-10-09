@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<meta name="theme-color" content="#111111"/>
+<meta name="theme-color" content="#ffffff"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="민원처리"/>
@@ -593,6 +593,75 @@ body{background:var(--bg)}
 .tb-btn{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 6px -3px rgba(0,0,0,.6)}
 .bottomnav button.active svg{filter:drop-shadow(0 2px 3px rgba(16,24,40,.25))}
 .login-logo .mark{background:linear-gradient(135deg,#3d74ff 0%,#1f4fd6 55%,#0b2370 100%);box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 8px 18px -8px rgba(11,35,112,.7)}
+/* ═══════════ 디자인 E · 플로팅 화이트 (흰 바탕에 떠 있는 카드 · 파란 포인트) ═══════════ */
+:root{--e-bg:#f6f7fb;--e-blue:#1d47cc;--e-blue-soft:#eef3ff;--e-ink:#111827;--e-mute:#6b7280;--e-line:#e8ebf0;
+  --e-float:0 1px 2px rgba(17,24,39,.04),0 16px 32px -22px rgba(17,24,39,.45);--e-float-s:0 1px 2px rgba(17,24,39,.05),0 8px 18px -14px rgba(17,24,39,.4)}
+body,.login-wrap,#app .content{background:var(--e-bg)!important}
+/* 상단 바 */
+.topbar{background:#fff!important;color:var(--e-ink)!important;box-shadow:0 1px 0 #eef0f4,0 6px 18px -14px rgba(17,24,39,.35)!important}
+.topbar .tb-title{color:var(--e-ink)!important}.topbar .tb-title small{color:#9aa1ad!important}
+.topbar .tb-user{color:var(--e-mute)!important}.topbar .tb-user b{color:var(--e-ink)!important}
+.tb-btn{color:var(--e-blue)!important;border:0!important;background:var(--e-blue-soft)!important;box-shadow:none!important;border-radius:12px!important}
+.tb-btn:active{background:#dfe7ff!important}
+#tb-push.on{background:var(--e-blue)!important;color:#fff!important}
+/* 카드류: 테두리 없이 떠 있게 */
+.issue,.card,.work-band,.push-card,.contact-box,.adm-month,.login-box,.contact-in{border:0!important;box-shadow:var(--e-float)!important}
+.issue,.card{border-radius:20px!important;background:#fff!important}
+.issue{margin-bottom:14px!important}
+.issue::before{display:none!important}
+.issue .i-title{font-weight:800!important;color:var(--e-ink)!important}
+.issue .i-photo,.photos img,.photo-add .thumb{border:0!important;border-radius:14px!important;box-shadow:0 8px 16px -10px rgba(17,24,39,.6)!important}
+.issue:active{transform:scale(.99)!important;box-shadow:var(--e-float-s)!important}
+/* 숫자 칸: 네 개의 떠 있는 카드 */
+.summary-row{background:transparent!important;border:0!important;box-shadow:none!important;gap:10px!important;overflow:visible!important}
+.stat-tile{background:#fff!important;border:0!important;border-radius:18px!important;box-shadow:var(--e-float-s)!important}
+.stat-tile .n{text-shadow:none!important}
+button.stat-tile.on{background:var(--e-blue-soft)!important;box-shadow:0 0 0 2px var(--e-blue),var(--e-float-s)!important}
+button.stat-tile.on .l{color:var(--e-blue)!important}
+/* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
+.btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
+.btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
+.btn-green{box-shadow:0 8px 16px -10px rgba(31,138,76,.8)!important}.btn.btn-amber{box-shadow:0 8px 16px -10px rgba(161,95,10,.8)!important}
+.dlg-o.danger{box-shadow:0 8px 16px -10px rgba(194,71,61,.8)!important}
+.btn-gray,.done-acts .da,.cb-btn:not(.pri),.dlg-c,.month-nav button,.am-nav button{background:#fff!important;border:1px solid var(--e-line)!important;box-shadow:0 1px 2px rgba(17,24,39,.04)!important}
+.dlg-c{border:0!important;background:#f1f3f7!important}
+.btn:active,.da:active{transform:scale(.98)!important}
+/* 칩: 흰 바탕 · 선택하면 파랑 */
+.chip,.chat-quick button{background:#fff!important;border:1px solid var(--e-line)!important;box-shadow:0 1px 2px rgba(17,24,39,.04)!important;color:#374151!important}
+.chip.active,.qpick .chip.active{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important;background-image:none!important;box-shadow:0 6px 12px -8px rgba(29,71,204,.8)!important}
+.chip.red.active{background:#c2473d!important;border-color:#c2473d!important}
+/* 입력칸 */
+.form-row input,.form-row select,.form-row textarea,.search-box input,.login-box input,.login-box select,.dlg-in,#chat-text{border:1px solid var(--e-line)!important;border-radius:14px!important;background-color:#fff!important;box-shadow:none!important}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus,.search-box input:focus,.login-box input:focus,.dlg-in:focus,#chat-text:focus{border-color:var(--e-blue)!important;box-shadow:0 0 0 3px rgba(29,71,204,.14)!important}
+#log-text{color:var(--e-blue)!important}
+/* 창 · 확인 창 */
+.modal{border-radius:24px 24px 0 0!important;box-shadow:0 -16px 40px -18px rgba(17,24,39,.4)!important}
+@media(min-width:640px){.modal{border-radius:24px!important}}
+.dlg{border-radius:22px!important;box-shadow:0 30px 60px -22px rgba(17,24,39,.55)!important}
+.modal-bg,.dlg-bg{background:rgba(17,24,39,.36)!important}
+/* 채팅 */
+.chat-wrap{background:var(--e-bg)}
+.msg .m-bubble{border:0!important;box-shadow:var(--e-float-s)!important}
+.msg.mine .m-bubble{background:var(--e-blue)!important;background-image:none!important;color:#fff!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.8)!important}
+.msg.sys .m-bubble{background:#fff!important}
+.msg.notice .m-bubble{background:#fff7e6!important}
+.msg.work-end .m-bubble{background:#e9f6ee!important}
+.chat-input{background:#fff!important;border-top:0!important;box-shadow:0 -10px 24px -18px rgba(17,24,39,.4)!important}
+.chat-row .ic-btn{border:1px solid var(--e-line)!important;box-shadow:none!important}
+.chat-row .ic-btn.send{border:0!important}
+.who-n,.sm-w{color:var(--e-blue)!important}
+/* 하단 메뉴 */
+.bottomnav{background:#fff!important;border-top:0!important;box-shadow:0 -10px 24px -18px rgba(17,24,39,.4)!important}
+.bottomnav button.active{color:var(--e-blue)!important}
+.bottomnav button.active svg{filter:none!important}
+/* 진행 중인 작업 띠 · 알림 카드 · 기타 */
+.work-band{border-radius:20px!important;background:#fffaf0!important}
+.badge{box-shadow:none!important;border-radius:8px!important}
+.tl-ic{box-shadow:none!important;border-radius:8px!important}
+.bar-row .bar{box-shadow:none!important;background:#eef1f6!important}
+.bar-row .bar > div{background:var(--e-blue)!important;background-image:none!important;box-shadow:none!important}
+.login-logo .mark{border-radius:16px!important}
+.sec-title{color:var(--e-ink)!important}
 </style>
 </head>
 <body>
