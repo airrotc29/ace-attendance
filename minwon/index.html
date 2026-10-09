@@ -1287,7 +1287,7 @@ function refreshDetail(){
       ${it.status!=='done'?`
       <div class="form-row"><label>담당 변경</label><select onchange="assign('${it.id}',this.value)">${assigneeOptions(it.assignee)}</select></div>
       <div class="btn-row" style="margin-bottom:8px">
-        ${!isMine(it)?`<button class="btn btn-primary" onclick="assign('${it.id}','p:${me.empId}')">내가 처리</button>`:''}
+        ${!(it.assignee&&it.assignee.type==='person'&&it.assignee.empId===me.empId)?`<button class="btn btn-primary" onclick="assign('${it.id}','p:${me.empId}')">내가 처리</button>`:''}
         <button class="btn btn-amber" onclick="addLog('${it.id}','progress')">진행 보고</button>
         <button class="btn btn-green" onclick="addLog('${it.id}','done')">완료 처리</button>
       </div>
@@ -1306,6 +1306,7 @@ function refreshDetail(){
 }
 function viewImg(src){ const v=document.createElement('div'); v.className='viewer'; v.innerHTML=`<img src="${src}">`; v.onclick=()=>v.remove(); document.body.appendChild(v); }
 // '으로/로': 받침이 있으면(ㄹ 제외) '으로'
+const josaIga = w=>{ const c=(w||'').charCodeAt((w||'').length-1)-0xAC00; if(c<0||c>11171) return '이(가)'; return c%28?'이':'가'; };
 const josaRo = w=>{ const c=(w||'').charCodeAt((w||'').length-1)-0xAC00; if(c<0||c>11171) return '(으)로'; const j=c%28; return (j===0||j===8)?'로':'으로'; };
 // confirmed=true 이면 확인 창 없이 바로 (내부 호출용)
 async function assign(id,v,confirmed){
@@ -1379,8 +1380,15 @@ function addLog(id,type){
       const now=Date.now();
       photos.forEach((p,i)=>it.logs.push({ts:now+i,type,by:{empId:me.empId,name:me.name},text:i===0?text:'',photo:p}));
       if(!photos.length) it.logs.push({ts:now,type,by:{empId:me.empId,name:me.name},text:text||(type==='done'?'처리 완료':'')});
-      if(type==='done'){ it.status='done'; it.doneAt=now; if(!it.assignee||it.assignee.type==='none') it.assignee={type:'person',empId:me.empId,name:me.name,team:me.team}; }
-      else if(type==='progress' && it.status==='open'){ it.status='progress'; if(!it.assignee||it.assignee.type==='none') it.assignee={type:'person',empId:me.empId,name:me.name,team:me.team}; }
+      // 담당이 없거나 팀 지정이면, 진행 보고 · 완료를 한 사람이 담당이 됨 (누가 맡았는지 보이고 실적이 개인 이름으로 남도록)
+      const takeOver = !it.assignee || it.assignee.type==='none' || it.assignee.type==='team';
+      const fromTeam = it.assignee && it.assignee.type==='team' ? it.assignee.name : null;
+      if((type==='done' || type==='progress') && takeOver){
+        it.assignee={type:'person',empId:me.empId,name:me.name,team:me.team}; it.assignedBy=me.empId;
+        if(fromTeam) it.logs.push({ts:now-1,type:'assign',by:{empId:me.empId,name:me.name},text:`${fromTeam} 민원을 ${me.name}${josaIga(me.name)} 맡음`});
+      }
+      if(type==='done'){ it.status='done'; it.doneAt=now; }
+      else if(type==='progress' && it.status==='open'){ it.status='progress'; }
       saveIssue(it);
       const sysText = type==='done'?`처리 완료 · ${it.title} · ${me.name}${text?' · '+text:''}`:type==='progress'?`진행 · ${it.title} · ${me.name}: ${text||'진행 중'}`:`댓글 · ${it.title} · ${me.name}: ${text}`;
       sendChat({kind:'sys',text:sysText,issueId:id,photo:photos[0]||null,by:{name:me.name,empId:me.empId,team:me.team}});
