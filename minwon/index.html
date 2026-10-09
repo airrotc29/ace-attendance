@@ -2489,18 +2489,31 @@ const askInput = o=>openDialog({...o, ok:o.ok||'저장', input:{placeholder:o.pl
 let backTrap=false, exiting=false;
 // 크롬은 사용자가 화면을 누르지 않은 상태에서 만든 기록을 뒤로가기 때 건너뛰므로(앱이 그냥 닫힘),
 // '뒤로가기 막기'는 화면을 누르는 순간(사용자 동작 중)에 걸어 둠
-function pushTrap(){ if(!backTrap || exiting) return; if(history.state && history.state.mwTrap) return; try{ history.pushState({mwTrap:1},''); }catch{} }
-function armBackTrap(){ backTrap=true; exiting=false; if(navigator.userActivation && navigator.userActivation.isActive) pushTrap(); }
+// 최신 크롬(안드로이드)은 CloseWatcher로 뒤로 버튼을 직접 받음 → 앱을 열고 화면을 누르기 전에 눌러도 확인 창이 뜸
+const HAS_CW = typeof window.CloseWatcher==='function';
+let cw=null;
+function armCloseWatcher(){
+  if(!HAS_CW || !backTrap || exiting) return;
+  try{ if(cw) cw.destroy(); cw=new CloseWatcher(); cw.onclose=()=>{ cw=null; if(!backTrap || exiting) return; handleBack(); armCloseWatcher(); }; }
+  catch(e){ console.warn('closewatcher', e); }
+}
+function pushTrap(){ if(HAS_CW || !backTrap || exiting) return; if(history.state && history.state.mwTrap) return; try{ history.pushState({mwTrap:1},''); }catch{} }
+function armBackTrap(){ backTrap=true; exiting=false; if(HAS_CW) return armCloseWatcher(); if(navigator.userActivation && navigator.userActivation.isActive) pushTrap(); }
 ['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev, pushTrap, {capture:true, passive:true}));
 function exitApp(){
   exiting=true;
+  if(cw){ try{ cw.destroy(); }catch{} cw=null; }   // 막기를 풀어서, 한 번 더 누르면 바로 닫히게
   try{ window.close(); }catch{}
-  setTimeout(()=>{ if(document.visibilityState==='hidden') return; history.back(); }, 150);   // 막기 기록을 빼서, 한 번 더 누르면 바로 닫히게
-  setTimeout(()=>{ if(document.visibilityState==='hidden') return; toast('뒤로 버튼을 한 번 더 누르면 앱이 닫힙니다', 3000); setTimeout(()=>{ if(document.visibilityState==='visible'){ exiting=false; } }, 3000); }, 400);
+  if(!HAS_CW) setTimeout(()=>{ if(document.visibilityState==='hidden') return; history.back(); }, 150);   // 막기 기록을 빼서, 한 번 더 누르면 바로 닫히게
+  setTimeout(()=>{ if(document.visibilityState==='hidden') return; toast('뒤로 버튼을 한 번 더 누르면 앱이 닫힙니다', 3000); setTimeout(()=>{ if(document.visibilityState==='visible'){ exiting=false; armCloseWatcher(); } }, 3000); }, 400);
 }
-window.addEventListener('popstate',async()=>{
-  if(!backTrap || exiting) return;
+window.addEventListener('popstate',()=>{
+  if(HAS_CW || !backTrap || exiting) return;
   try{ history.pushState({mwTrap:1},''); }catch{}   // 다시 막아 둠 (화면을 누를 때도 한 번 더 걸어 둠)
+  handleBack();
+});
+// 뒤로 버튼 한 번: 열린 창 → 사진 → 상세 창 → 다른 탭이면 민원 탭 → 민원 탭이면 종료 확인
+async function handleBack(){
   if(dlgClose){ dlgClose(null); return; }
   const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
   const mr=$('#modal-root');
@@ -2508,7 +2521,9 @@ window.addEventListener('popstate',async()=>{
   // 접수 · 채팅 · 통계 · 검색 탭에서는 앱을 나가지 않고 민원 탭으로
   if(me && !$('#app').classList.contains('hidden') && tab!=='list'){ go('list'); return; }
   if(await askConfirm({title:'앱을 종료할까요?', msg:'작성 중인 내용은 이 기기에 남아 있습니다.', ok:'종료'})) exitApp();
-});
+}
+// 앱을 다시 보면 막기를 다시 걸어 둠 (종료 안내 뒤 돌아온 경우 등)
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && backTrap && !exiting && HAS_CW && !cw) armCloseWatcher(); });
 
 // ══════════════════════════════════════════════
 // 휴대폰 알림 (앱을 닫아도 오는 푸시 알림)
