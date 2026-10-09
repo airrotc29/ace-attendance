@@ -476,6 +476,26 @@ mark{background:#fff1a8;box-shadow:none}
 .msg.sys .m-bubble .sm-t{color:#111;font-weight:800}
 .msg.sys .m-bubble .sm-w{color:var(--accent);font-weight:800}
 .msg .m-who .who-n{color:var(--accent);font-weight:800}
+button.stat-tile{font:inherit;background:none;border:0;border-right:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .12s}
+button.stat-tile:active{background:#f3f2ee}
+button.stat-tile.on{background:var(--accent-soft);box-shadow:inset 0 -3px 0 var(--accent)}
+button.stat-tile.on .l{color:var(--accent);font-weight:700}
+.list-note{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--ink2);margin:-4px 2px 10px}
+.list-note b{color:var(--navy)}
+.list-note button{border:0;background:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:4px 0}
+.done-acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.done-acts.two{grid-template-columns:repeat(2,1fr)}
+.done-acts .da{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:68px;padding:10px 6px;border:1px solid var(--line2);border-radius:14px;background:#fff;color:var(--ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s}
+.done-acts .da svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.done-acts .da small{font-size:11px;font-weight:600;color:var(--mute);margin-top:-3px}
+.done-acts .da:active{transform:scale(.98)}
+.done-acts .da.re{color:var(--amber);border-color:var(--amber);background:var(--amber-soft,#fff8ec)}
+.done-acts .da.re small{color:var(--amber);opacity:.8}
+.done-acts .da.del{color:var(--red)}
+.done-acts .da.del:hover{background:#fdf1f1;border-color:#f0c4c4}
+.summary-row{grid-template-columns:repeat(5,1fr)}
+.stat-tile.purple .n{color:var(--purple)}
+@media (max-width:420px){.summary-row .stat-tile{padding-left:2px;padding-right:2px}.summary-row .stat-tile .n{font-size:22px}.summary-row .stat-tile .l{font-size:12px;white-space:nowrap}}
 </style>
 </head>
 <body>
@@ -823,6 +843,7 @@ function enter(empId){
   go('list');
   refreshPushUI(); syncPushSub(false);
   armBackTrap();
+  setTimeout(askContactDone, 1500);   // 전화 · 문자 중 앱이 닫혔다 다시 열린 경우
 }
 async function logout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'다음에 들어올 때 사업소 코드와 비밀번호를 다시 입력합니다.', ok:'나가기'})) return; await pushOff(true).catch(console.warn); localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
 
@@ -1062,26 +1083,27 @@ function issueCard(it){
     <div class="i-foot">${assigneeLabel(it)}${cmts?`<span class="cm"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>${cmts}</span>`:''}${it.status==='done'&&it.doneAt?`<span class="done">${fmtKo(it.doneAt)} 완료</span>`:''}</div>
   </div>`;
 }
+// 위 숫자 칸을 누르면 그 민원만, 같은 칸을 다시 누르면 진행 중 전체
+function tileFilter(k){ listFilter = listFilter===k ? 'active' : k; render(); }
 function renderList(){
+  if(!['active','open','progress','none','today','mine'].includes(listFilter)) listFilter='active';
   const all = Object.values(issues).sort((a,b)=>(b.urgent-a.urgent)||(b.createdAt-a.createdAt));
-  const filters = [['active','진행 중 전체'],['mine','내 담당'],['none','미지정'],['open','접수'],['progress','진행중'],['done','완료'],['all','전체']];
   const list = all.filter(it=>{
     if(listFilter==='active') return it.status!=='done';
     if(listFilter==='mine') return isMine(it)&&it.status!=='done';
     if(listFilter==='none') return (!it.assignee||it.assignee.type==='none')&&it.status!=='done';
     if(listFilter==='all') return true;
+    if(listFilter==='today') return it.status==='done' && fmtDate(it.doneAt||it.updatedAt)===fmtDate(Date.now());
     return it.status===listFilter;
   });
   const n = s=>all.filter(i=>i.status===s).length;
   return `${pushBanner()}
     <div class="summary-row">
-      <div class="stat-tile red"><div class="n">${n('open')}</div><div class="l">접수</div></div>
-      <div class="stat-tile amber"><div class="n">${n('progress')}</div><div class="l">진행중</div></div>
-      <div class="stat-tile green"><div class="n">${all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length}</div><div class="l">오늘 완료</div></div>
-      <div class="stat-tile blue"><div class="n">${all.filter(i=>isMine(i)&&i.status!=='done').length}</div><div class="l">내 담당</div></div>
+      ${[['open','red',n('open'),'접수'],['progress','amber',n('progress'),'진행중'],['none','purple',all.filter(i=>(!i.assignee||i.assignee.type==='none')&&i.status!=='done').length,'미지정'],['today','green',all.filter(i=>i.status==='done'&&fmtDate(i.doneAt||i.updatedAt)===fmtDate(Date.now())).length,'오늘 완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
+        .map(([k,c,v,l])=>`<button type="button" class="stat-tile ${c} ${listFilter===k?'on':''}" aria-pressed="${listFilter===k}" onclick="tileFilter('${k}')"><div class="n">${v}</div><div class="l">${l}</div></button>`).join('')}
     </div>
-    <div class="chips scroll" style="margin-bottom:12px">${filters.map(([k,l])=>`<button class="chip ${listFilter===k?'active':''}" onclick="listFilter='${k}';render()">${l}</button>`).join('')}</div>
-    ${list.length?list.map(issueCard).join(''):`<div class="empty"><b>${listFilter==='done'?'완료된 민원이 없습니다':'처리할 민원이 없습니다'}</b>접수 탭에서 새 민원을 올릴 수 있습니다</div>`}`;
+    ${listFilter!=='active'?`<div class="list-note"><span><b>${({open:'접수',progress:'진행중',none:'미지정',today:'오늘 완료',mine:'내 담당'})[listFilter]||''}</b> 민원 ${list.length}건</span><button onclick="tileFilter('${listFilter}')">전체 보기</button></div>`:''}
+    ${list.length?list.map(issueCard).join(''):`<div class="empty"><b>${listFilter==='today'?'오늘 완료한 민원이 없습니다':'처리할 민원이 없습니다'}</b>접수 탭에서 새 민원을 올릴 수 있습니다</div>`}`;
 }
 
 // ── 접수 ─────────────────────────────────────
@@ -1171,10 +1193,38 @@ function contactBox(it){
 }
 function openExternal(u){ location.href=u; }   // 전화 · 문자 앱 열기
 function logContact(it, text){ it.logs.push({ts:Date.now(),type:'contact',by:{empId:me.empId,name:me.name},text}); saveIssue(it); }
+// 전화 · 문자 앱을 열었다고 연락한 것은 아니므로, 앱으로 돌아왔을 때 실제로 했는지 묻고 '했어요'일 때만 기록
+const PEND_KEY='mw_pending_contact';
+let pendTimer=null;
+function startContact(id, kind, text, url){
+  const pc={id, kind, text, at:Date.now(), hidden:false, office:me.officeId, emp:me.empId};
+  lsSet(PEND_KEY, pc);   // 휴대폰이 앱을 닫았다 다시 열어도 물어볼 수 있게 기기에 잠시 보관
+  openExternal(url);
+  clearTimeout(pendTimer);
+  // 전화 · 문자 앱이 열리지 않고 화면이 그대로면(PC 등) 잠시 뒤 바로 물어봄
+  pendTimer=setTimeout(()=>{ const p=lsGet(PEND_KEY,null); if(p && !p.hidden && document.visibilityState==='visible') askContactDone(); }, 4000);
+}
+let askingContact=false;
+async function askContactDone(){
+  const pc=lsGet(PEND_KEY,null); if(!pc || askingContact) return;
+  if(!me || pc.office!==me.officeId || pc.emp!==me.empId || Date.now()-pc.at>3*3600e3){ localStorage.removeItem(PEND_KEY); return; }
+  const it=issues[pc.id]; if(!it){ localStorage.removeItem(PEND_KEY); return; }
+  askingContact=true; clearTimeout(pendTimer);
+  const call = pc.kind==='call';
+  const yes = await askConfirm({ title: call?'민원인과 통화하셨나요?':'문자를 보내셨나요?',
+    msg: `${it.contact?.name||'민원인'} · ${it.title}\n${call?'통화한':'보낸'} 경우에만 처리 과정에 기록됩니다.`,
+    ok: call?'통화했어요':'보냈어요', cancel: call?'안 했어요':'안 보냈어요' });
+  localStorage.removeItem(PEND_KEY); askingContact=false;
+  if(yes){ const cur=issues[pc.id]; if(cur){ logContact(cur, pc.text); toast('연락 기록을 남겼습니다'); } }
+}
+document.addEventListener('visibilitychange',()=>{
+  const pc=lsGet(PEND_KEY,null); if(!pc) return;
+  if(document.visibilityState==='hidden'){ pc.hidden=true; lsSet(PEND_KEY,pc); clearTimeout(pendTimer); }
+  else setTimeout(askContactDone, 400);   // 전화 · 문자 앱에서 돌아옴
+});
 function callContact(id){
   const it=issues[id]; const p=it&&it.contact&&it.contact.phone; if(!p) return;
-  logContact(it, '민원인에게 전화');
-  openExternal('tel:'+p.replace(/[^\d+]/g,''));
+  startContact(id, 'call', '민원인과 통화', 'tel:'+p.replace(/[^\d+]/g,''));
 }
 const SMS_TPL = {
   recv:{label:'접수 안내', text:(it,o)=>`[${o} 관리사무소] "${it.title}" 민원이 접수되었습니다. 확인 후 다시 연락드리겠습니다.`},
@@ -1200,10 +1250,9 @@ function openSms(id, pick, afterDone){
   $('#sms-send').onclick=()=>{
     const body=$('#sms-text').value.trim(); if(!body){ toast('보낼 내용을 입력해 주세요'); return; }
     const num=c.phone.replace(/[^\d+]/g,'');
-    logContact(it, `민원인에게 문자 · ${SMS_TPL[cur].label}`);
     closeById('sms-modal');
     // 아이폰은 &body=, 안드로이드는 ?body=
-    openExternal(`sms:${num}${platform()==='ios'?'&':'?'}body=${encodeURIComponent(body)}`);
+    startContact(id, 'sms', `민원인에게 문자 · ${SMS_TPL[cur].label}`, `sms:${num}${platform()==='ios'?'&':'?'}body=${encodeURIComponent(body)}`);
   };
 }
 
@@ -1238,7 +1287,11 @@ function refreshDetail(){
         <button class="btn btn-green" onclick="addLog('${it.id}','done')">완료 처리</button>
       </div>
       <div class="btn-row"><button class="btn btn-gray btn-sm" onclick="addLog('${it.id}','comment')">댓글</button><button class="btn btn-gray btn-sm" onclick="editIssue('${it.id}')">수정</button>${canDel?`<button class="btn btn-gray btn-sm" style="color:var(--red)" onclick="delIssue('${it.id}')">삭제</button>`:''}</div>`
-      :`<div class="btn-row"><button class="btn btn-gray" onclick="addLog('${it.id}','comment')">댓글</button><button class="btn btn-gray" onclick="reopen('${it.id}')">다시 열기 (재발)</button>${canDel?`<button class="btn btn-gray btn-sm" style="color:var(--red);flex:0" onclick="delIssue('${it.id}')">삭제</button>`:''}</div>`}
+      :`<div class="done-acts ${canDel?'':'two'}">
+        <button class="da" onclick="addLog('${it.id}','comment')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>댓글</button>
+        <button class="da re" onclick="reopen('${it.id}')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>다시 열기<small>재발</small></button>
+        ${canDel?`<button class="da del" onclick="delIssue('${it.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>삭제</button>`:''}
+      </div>`}
     </div>
   </div></div>`;
   // 상세 창만 바꿔 그림: 위에 열린 진행 보고 · 문자 · 수정 창은 그대로 두고, 스크롤 위치도 유지
