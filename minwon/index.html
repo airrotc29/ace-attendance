@@ -735,7 +735,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .hqv-bar > small{margin-left:auto;color:#6b7280;font-weight:600;font-size:12px;flex:none}
 #hqv-frame{flex:1;width:100%;border:0;background:#f4f6fb}
 .embed #tb-push,.embed .push-card,.embed .inst-card,.embed #lg-install{display:none!important}
-.ao-thumb,.ao-info > b{cursor:pointer}
+.ao-thumb,.ao-name > b{cursor:pointer}
 .qpick .date-chip{display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cal{margin-top:10px;background:#fff;border:1px solid var(--e-line);border-radius:14px;padding:10px 10px 12px;box-shadow:0 8px 20px -14px rgba(17,24,39,.35)}
 .cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -748,6 +748,11 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .cal-d:disabled{color:#c4c9d4;cursor:default}
 .cal-d.today{box-shadow:inset 0 0 0 1.5px #1d47cc;color:#1d47cc}
 .cal-d.on{background:#1d47cc;color:#fff;box-shadow:none}
+.ao-name{display:flex;align-items:center;gap:6px;min-width:0}
+.ao-name > b{min-width:0;font-size:17.5px!important;font-weight:800;color:#111827;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ao-rn{flex:none;width:30px;height:30px;border:0;border-radius:9px;background:#f3f5f9;color:#6b7280;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ao-rn svg{width:15px;height:15px}
+.ao-rn:active{background:#e9edf5}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -1482,6 +1487,15 @@ const AO_IC={
   img:AO_SV('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>'),
   trash:AO_SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>')
 };
+// ── 본사: 사업소 이름 바꾸기 (코드 · 비밀번호는 그대로) ──
+async function renameOffice(id){
+  const o=adminOffices.find(x=>x.id===id); if(!o) return;
+  const nm=await askInput({title:'사업소 이름 바꾸기', msg:`현재 이름: ${o.name}`, placeholder:'새 사업소 이름', min:1, ok:'바꾸기'});
+  if(!nm) return;
+  const name=nm.trim(); if(!name) return;
+  try{ await rpc('mw_office_rename',{p_office:id, p_name:name}); toast('사업소 이름을 바꿨습니다'); await adminHome(); }
+  catch(e){ console.warn(e); toast('이름을 바꾸지 못했습니다', 3500); }
+}
 // ── 본사: 사업소 소장 화면 열기 (본사 로그인으로 바로 열림 · 비밀번호 입력 없음) ──
 function pickOfficeView(id){
   const o=adminOffices.find(x=>x.id===id); if(!o) return;
@@ -1532,7 +1546,7 @@ function renderAdminHome(){
         <div class="adm-item ao">
           <div class="ao-head">
             <div class="ao-thumb" onclick="pickOfficeView('${esc(o.id)}')">${o.cover?`<img src="${esc(o.cover)}" alt="">`:AO_IC.bldg}</div>
-            <div class="ao-info"><b onclick="pickOfficeView('${esc(o.id)}')">${esc(o.name)}</b>
+            <div class="ao-info"><div class="ao-name"><b onclick="pickOfficeView('${esc(o.id)}')">${esc(o.name)}</b><button type="button" class="ao-rn" onclick="renameOffice('${esc(o.id)}')" aria-label="사업소 이름 바꾸기" title="이름 바꾸기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div>
               <div class="ao-meta"><span class="ao-code">${esc(o.code)}</span><span>직원 ${o.count}명</span></div>
               <div class="ao-st ${o.has_mgr?'ok':'bad'}"><i></i>${o.has_mgr?'소장 로그인 설정됨':'소장 로그인 미설정 · 소장 입장 불가'}</div>
             </div>
