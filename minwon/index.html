@@ -1666,7 +1666,11 @@ async function saveBrand(id){
   catch(e){ toast('저장하지 못했습니다'); }
 }
 async function adminDelete(id,name){
-  if(!await askConfirm({title:`"${name}" 사업소를 삭제할까요?`, msg:'민원 · 채팅 · 직원 명단이 모두 지워지고 되돌릴 수 없습니다.', ok:'삭제', danger:true})) return;
+  // 1단계: 삭제 확인
+  if(!await askConfirm({title:`"${name}" 사업소를 삭제할까요?`, msg:'민원 · 채팅 · 직원 명단이 모두 지워지고 되돌릴 수 없습니다.', ok:'다음', danger:true})) return;
+  // 2단계: 사업소 이름을 직접 입력해야 삭제 (실수로 누르는 것 방지)
+  const typed=await askInput({title:'정말 삭제할까요?', msg:`확인을 위해 사업소 이름 "${name}" 을(를) 그대로 입력하세요.\n삭제하면 되돌릴 수 없습니다.`, placeholder:name, min:1, ok:'영구 삭제', danger:true, match:name, matchErr:'사업소 이름이 일치하지 않습니다'});
+  if(!typed){ toast('삭제를 취소했습니다'); return; }
   try{ await rpc('mw_office_delete',{p_office:id}); toast('삭제되었습니다'); adminHome(); }
   catch(e){ toast('삭제하지 못했습니다'); }
 }
@@ -3011,7 +3015,8 @@ function openDialog({title, msg='', ok='확인', cancel='취소', danger=false, 
     document.body.appendChild(root);
     const inp=root.querySelector('.dlg-in');
     const done=v=>{ if(!root.isConnected) return; root.remove(); document.removeEventListener('keydown',key,true); dlgClose=null; res(v); };
-    const okFn=()=>{ if(!input) return done(true); const v=inp.value.trim(); if(input.min && v.length<input.min){ root.querySelector('.dlg-err').textContent=`${input.min}자 이상 입력하세요`; inp.focus(); return; } done(v); };
+    const okFn=()=>{ if(!input) return done(true); const v=inp.value.trim(); if(input.min && v.length<input.min){ root.querySelector('.dlg-err').textContent=`${input.min}자 이상 입력하세요`; inp.focus(); return; }
+      if(input.match!=null && v.replace(/\s+/g,'')!==String(input.match).replace(/\s+/g,'')){ root.querySelector('.dlg-err').textContent=input.matchErr||'입력한 내용이 일치하지 않습니다'; inp.select(); return; } done(v); };
     const key=e=>{ if(e.key==='Escape'){ e.preventDefault(); done(input?null:false); } else if(e.key==='Enter' && (input || document.activeElement===root.querySelector('.dlg-o'))){ e.preventDefault(); okFn(); } };
     document.addEventListener('keydown',key,true);
     root.addEventListener('click',e=>{ if(e.target===root) done(input?null:false); });
@@ -3023,7 +3028,7 @@ function openDialog({title, msg='', ok='확인', cancel='취소', danger=false, 
 }
 const askConfirm = o=>openDialog(o);
 const showAlert = o=>openDialog({...o, cancel:null});
-const askInput = o=>openDialog({...o, ok:o.ok||'저장', input:{placeholder:o.placeholder, min:o.min}});
+const askInput = o=>openDialog({...o, ok:o.ok||'저장', input:{placeholder:o.placeholder, min:o.min, match:o.match, matchErr:o.matchErr}});
 
 // 휴대폰 뒤로가기: 열린 창이 있으면 그 창만 닫고, 없으면 "앱을 종료할까요?" 확인
 let backTrap=false, exiting=false;
