@@ -2869,7 +2869,7 @@ thead{display:table-header-group}
     <thead><tr><th>장소</th><th>분류</th><th>횟수</th><th>발생 내역 (최근 6개월)</th></tr></thead>
     ${rep.length?rep.slice(0,10).map(g=>`<tr><td>${esc(g.items[0].location||g.items[0].title)}</td><td class="c">${esc(g.items[0].category)}</td><td class="c"><b>${g.count}회</b></td><td>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}`).join('<br>')}</td></tr>`).join(''):none(4)}
   </table>
-  <div class="box">${o.improve?esc(o.improve):'<span class="muted">개선 건의 사항 없음</span>'}</div></div>
+  <div class="box flow">${o.improve?esc(o.improve):'<span class="muted">개선 건의 사항 없음</span>'}</div></div>
 
   ${photoRows.length?`${H(`처리 사진 대장 (${photoRows.length}건)`)}
   <div class="photos">${photoRows.map((x,n)=>`<div class="ph"><div class="cap">${n+1}. ${esc(x.i.title)} <span>· ${esc(x.i.location||'')} · ${md(x.i.doneAt)} 완료</span></div>
