@@ -869,16 +869,11 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 
 /* 화면 하단 관리단 표시 */
 .brand-foot{text-align:center;padding:26px 8px 8px;margin-top:6px}
-.brand-foot .bf-row{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}
-.brand-foot .bf-icon{width:32px;height:32px;border-radius:9px;display:block;box-shadow:0 4px 10px -5px rgba(10,26,82,.55)}
-.brand-foot b{font-size:14.5px;font-weight:800;color:#111827}
-.brand-foot .bf-en{font-size:12.5px;color:#9aa1ad;letter-spacing:.02em}
-.brand-foot .bf-slogan{margin-top:7px;font-size:12.5px;color:#8b93a1}
-.br-prev{background:#f6f7fb;border-radius:14px;margin:4px 0 14px;padding:4px 0 14px}
-
-/* 관리단 표시를 항상 화면 맨 아래에 */
-#app .content{display:flex;flex-direction:column}
-#app .content > .pg-wrap{flex:1;display:flex;flex-direction:column}
+.brand-foot .bf-grid{display:inline-grid;grid-template-columns:auto auto;column-gap:10px;align-items:center;text-align:left}
+.brand-foot .bf-icon{grid-column:1;grid-row:1 / span 2;align-self:center;justify-self:center;margin-top:-10px;width:32px;height:32px;border-radius:9px;display:block;box-shadow:0 4px 10px -5px rgba(10,26,82,.55)}
+.brand-foot .bf-grid > b{grid-column:2;grid-row:1;font-size:14.5px;font-weight:800;color:#111827;line-height:1.3}
+.brand-foot .bf-en{grid-column:2;grid-row:2;font-size:12px;color:#9aa1ad;letter-spacing:.06em;font-weight:500;line-height:1.4}
+.brand-foot .bf-slogan{grid-column:2;grid-row:3;font-size:12.5px;color:#8b93a1;margin-top:5px;line-height:1.4}
 #app .content > .pg-wrap > .brand-foot{margin-top:auto}
 
 /* 사진 크게 보기 (좌우로 넘기기) */
@@ -1633,7 +1628,7 @@ let newDraft = null;
 // 화면 하단 관리단 표시 (본사가 사업소별로 정함 · 없으면 '사업소 이름 관리단')
 function brandHtml(b, officeName){
   const name=(b&&b.name)||`${officeName||''} 관리단`;
-  return `<div class="brand-foot"><div class="bf-row"><img class="bf-icon" src="icons/icon.svg?v=3" alt=""><b>${esc(name)}</b><span class="bf-en">· FACILITY MANAGEMENT</span></div>${b&&b.slogan?`<div class="bf-slogan">${esc(b.slogan)}</div>`:''}</div>`;
+  return `<div class="brand-foot"><div class="bf-grid"><img class="bf-icon" src="icons/icon.svg?v=3" alt=""><b>${esc(name)}</b><span class="bf-en">FACILITY MANAGEMENT</span>${b&&b.slogan?`<span class="bf-slogan">${esc(b.slogan)}</span>`:''}</div></div>`;
 }
 // ── 건물 사진 (민원 화면 맨 위) · 소장(소장 비밀번호로 입장) · 본사만 바꿈 ──
 const CAM_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
