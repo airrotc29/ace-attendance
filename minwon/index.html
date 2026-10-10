@@ -3106,7 +3106,8 @@ function armCloseWatcher(){
   catch(e){ console.warn('closewatcher', e); }
 }
 function pushTrap(){ if(HAS_CW || !backTrap || exiting) return; if(history.state && history.state.mwTrap) return; try{ history.pushState({mwTrap:1},''); }catch{} }
-function armBackTrap(){ if(EMBED) return; backTrap=true; exiting=false; if(HAS_CW) return armCloseWatcher(); if(navigator.userActivation && navigator.userActivation.isActive) pushTrap(); }
+// 소장 화면 안(iframe)을 누른 뒤에는 휴대폰이 뒤로가기를 iframe 쪽으로 보냄 → iframe 도 뒤로가기를 받아 처리 (기록은 남기지 않으므로 CloseWatcher 가 있을 때만)
+function armBackTrap(){ if(EMBED && !HAS_CW) return; backTrap=true; exiting=false; if(HAS_CW) return armCloseWatcher(); if(navigator.userActivation && navigator.userActivation.isActive) pushTrap(); }
 ['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev, pushTrap, {capture:true, passive:true}));
 function exitApp(){
   exiting=true;
