@@ -1013,7 +1013,7 @@ const STATUS = {open:'미지정',progress:'진행중',done:'완료'};   // open:
 const EMBED = new URLSearchParams(location.search).has('hqview');
 document.documentElement.classList.toggle('embed', EMBED);
 const nsKey = k => EMBED ? 'hqv_' + k : k;
-const lsDel = k => { try{ lsDel(nsKey(k)); }catch{} };
+const lsDel = k => { try{ localStorage.removeItem(nsKey(k)); }catch{} };
 const lsGet = (k,d)=>{ try{ const v=localStorage.getItem(nsKey(k)); return v?JSON.parse(v):d; }catch{ return d; } };
 const lsSet = (k,v)=>{ try{ localStorage.setItem(nsKey(k),JSON.stringify(v)); }catch(e){ console.warn('ls',e); } };
 
