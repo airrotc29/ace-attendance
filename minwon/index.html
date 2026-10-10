@@ -2644,9 +2644,9 @@ function buildReportHTML(ym, o){
   const bar=(x,y0,w,h,c,title)=>{ if(h<=0) return ''; const r=Math.min(4,h,w/2), yy=y0-h; return `<path d="M${x.toFixed(1)},${y0}V${(yy+r).toFixed(1)}Q${x.toFixed(1)},${yy.toFixed(1)} ${(x+r).toFixed(1)},${yy.toFixed(1)}H${(x+w-r).toFixed(1)}Q${(x+w).toFixed(1)},${yy.toFixed(1)} ${(x+w).toFixed(1)},${(yy+r).toFixed(1)}V${y0}Z" fill="${c}"><title>${title}</title></path>`; };
   const gridY=(W,pl,pr,pt,ph,ax)=>ax.ticks.map(t=>{ const yy=(pt+ph-(t/ax.top)*ph).toFixed(1); return `<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" stroke="${t===0?AXIS:GRID}" stroke-width="1"/><text x="${pl-5}" y="${(+yy+3.5).toFixed(1)}" text-anchor="end" class="ax">${t}</text>`; }).join('');
   const legend=items=>`<div class="lg">${items.map(([c,n])=>`<span><i style="background:${c}"></i>${n}</span>`).join('')}</div>`;
-  const spark=vals=>{ const w=92,h=24,p=4; const mx=Math.max(1,...vals); const xs=vals.map((v,i)=>p+i*(w-2*p)/Math.max(1,vals.length-1)); const ys=vals.map(v=>h-p-(v/mx)*(h-2*p)); const d=xs.map((x,i)=>`${i?'L':'M'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(''); return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="${AXIS}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="4" fill="${C1}" stroke="#fff" stroke-width="2"/></svg>`; };
+  const spark=vals=>{ const w=92,h=19,p=3; const mx=Math.max(1,...vals); const xs=vals.map((v,i)=>p+i*(w-2*p)/Math.max(1,vals.length-1)); const ys=vals.map(v=>h-p-(v/mx)*(h-2*p)); const d=xs.map((x,i)=>`${i?'L':'M'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(''); return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="${AXIS}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="4" fill="${C1}" stroke="#fff" stroke-width="2"/></svg>`; };
   const meter=v=>`<div class="meter" aria-hidden="true"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div>`;
-  const ring=(v,label)=>{ const r=21, c=2*Math.PI*r, f=Math.max(0,Math.min(100,v))/100; return `<svg class="ring" viewBox="0 0 56 56" width="56" height="56" role="img" aria-label="${label} ${v}%"><circle cx="28" cy="28" r="${r}" fill="none" stroke="#cde2fb" stroke-width="7"/>${f>0?`<circle cx="28" cy="28" r="${r}" fill="none" stroke="${C1}" stroke-width="7" stroke-linecap="${f<1?'round':'butt'}" stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 28 28)"><title>${label} ${v}%</title></circle>`:''}</svg>`; };
+  const ring=(v,label)=>{ const r=21, c=2*Math.PI*r, f=Math.max(0,Math.min(100,v))/100; return `<svg class="ring" viewBox="0 0 56 56" width="46" height="46" role="img" aria-label="${label} ${v}%"><circle cx="28" cy="28" r="${r}" fill="none" stroke="#cde2fb" stroke-width="7"/>${f>0?`<circle cx="28" cy="28" r="${r}" fill="none" stroke="${C1}" stroke-width="7" stroke-linecap="${f<1?'round':'butt'}" stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 28 28)"><title>${label} ${v}%</title></circle>`:''}</svg>`; };
   const rtile=(label,v,sub)=>`<div class="tile r"><div><div class="tl">${label}</div><div class="tv">${v}<small>%</small></div><div class="ts">${sub}</div></div>${ring(v,label)}</div>`;
   // dir: 1 늘면 좋음, -1 줄면 좋음, 0 중립
   const delta=(cur,prev,unit,dir)=>{ const d=Math.round((cur-prev)*10)/10; if(d===0) return `<span class="dl">전월과 같음</span>`; const good=dir===0?null:((d>0)===(dir>0)); const col=good===null?INK2:(good?GOOD:BAD); return `<span class="dl"><b style="color:${col}">${d>0?'▲':'▼'} ${Math.abs(d)}${unit}</b> 전월 대비</span>`; };
@@ -2654,7 +2654,7 @@ function buildReportHTML(ym, o){
   const avgH=s=>s.avg?Math.round(s.avg/360000)/10:0;
 
   // ── 6개월 접수·완료 (꺾은선) ──
-  const trendChart=()=>{ const W=330,Hh=176,pl=26,pr=52,pt=16,pb=24,pw=W-pl-pr,ph=Hh-pt-pb; const ax=axis(Math.max(...hist.flatMap(h=>[h.recv,h.done]))); const step=pw/Math.max(1,hist.length-1);
+  const trendChart=()=>{ const W=330,Hh=136,pl=26,pr=52,pt=16,pb=24,pw=W-pl-pr,ph=Hh-pt-pb; const ax=axis(Math.max(...hist.flatMap(h=>[h.recv,h.done]))); const step=pw/Math.max(1,hist.length-1);
     let g=gridY(W,pl,pr,pt,ph,ax); const ends=[];
     [['접수',C2,hist.map(h=>h.recv)],['완료',C1,hist.map(h=>h.done)]].forEach(([nm,c,vals])=>{
       const pts=vals.map((v,i)=>[pl+i*step, pt+ph-v/ax.top*ph]); const d=pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('');
@@ -2670,7 +2670,7 @@ function buildReportHTML(ym, o){
   const HEAT=['#9ec5f4','#6da7ec','#3987e5','#256abf','#184f95'];
   const calChart=()=>{ const cnt=Array(lastDay).fill(0); st.recv.forEach(i=>{ cnt[new Date(i.createdAt).getDate()-1]++; }); const mx=Math.max(0,...cnt);
     const idx=v=>v<=0?-1:(mx<=HEAT.length?Math.min(HEAT.length-1,v-1):Math.min(HEAT.length-1,Math.ceil(v/mx*HEAT.length)-1));
-    const first=new Date(y,m-1,1).getDay(); const rows=Math.ceil((first+lastDay)/7); const cw=42,chh=23,gp=3,top=16; const W=7*cw+6*gp, Hh=top+rows*(chh+gp)+20;
+    const first=new Date(y,m-1,1).getDay(); const rows=Math.ceil((first+lastDay)/7); const cw=42,chh=19,gp=3,top=16; const W=7*cw+6*gp, Hh=top+rows*(chh+gp)+20;
     let g=''; ['일','월','화','수','목','금','토'].forEach((w,i)=>{ g+=`<text x="${i*(cw+gp)+cw/2}" y="10" text-anchor="middle" class="ax">${w}</text>`; });
     for(let d=1; d<=lastDay; d++){ const k=first+d-1, cx=(k%7)*(cw+gp), cy=top+Math.floor(k/7)*(chh+gp), v=cnt[d-1], ix=idx(v); const fill=ix<0?'#f0efec':HEAT[ix]; const dark=ix>=2;
       g+=`<rect x="${cx}" y="${cy}" width="${cw}" height="${chh}" rx="3" fill="${fill}"><title>${m}월 ${d}일 접수 ${v}건</title></rect>`;
@@ -2703,7 +2703,7 @@ function buildReportHTML(ym, o){
     rows.forEach((r,i)=>r.c=r.other?'#a8a7a0':DON[i]);
     const R=52, SW=22, C=2*Math.PI*R; let acc=0, segs='';
     rows.forEach(r=>{ const len=r.r/tot*C, gap=rows.length>1?2:0; segs+=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="${r.c}" stroke-width="${SW}" stroke-dasharray="${Math.max(0,len-gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" transform="rotate(-90 70 70)"><title>${esc(r.k)} ${r.r}건 (${Math.round(r.r/tot*100)}%)</title></circle>`; acc+=len; });
-    const svg=`<svg viewBox="0 0 140 140" width="140" height="140" class="donut" role="img" aria-label="분류별 접수 비중">${segs}<text x="70" y="68" text-anchor="middle" class="dn">${tot}</text><text x="70" y="86" text-anchor="middle" class="ax">접수 건</text></svg>`;
+    const svg=`<svg viewBox="0 0 140 140" width="118" height="118" class="donut" role="img" aria-label="분류별 접수 비중">${segs}<text x="70" y="68" text-anchor="middle" class="dn">${tot}</text><text x="70" y="86" text-anchor="middle" class="ax">접수 건</text></svg>`;
     const tbl=`<table class="lgt"><tr><th></th><th>분류</th><th>접수</th><th>비중</th><th>처리율</th></tr>${rows.map(r=>`<tr><td><i style="background:${r.c}"></i></td><td>${esc(r.k)}</td><td class="n">${r.r}건</td><td class="n">${Math.round(r.r/tot*100)}%</td><td class="pr"><span class="mm"><b style="width:${Math.round(r.d/r.r*100)}%"></b></span>${Math.round(r.d/r.r*100)}%</td></tr>`).join('')}</table>`;
     return `<div class="donutwrap">${svg}${tbl}</div>`; };
   const unitChart=rows=>{ if(!rows.length) return '<div class="muted" style="font-size:9pt">자료 없음</div>'; const mx=Math.max(...rows.map(r=>r[1])); const per=mx>30?Math.ceil(mx/30):1;
@@ -2714,7 +2714,7 @@ function buildReportHTML(ym, o){
 <title>${y}년 ${m}월 민원 처리 현황 보고 - ${office}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-@page{size:A4;margin:14mm 13mm 15mm}
+@page{size:A4;margin:14mm 13mm 15mm;@bottom-right{content:counter(page) " / " counter(pages);font-family:Pretendard,"Noto Sans KR",sans-serif;font-size:9pt;font-weight:700;color:#52514e;vertical-align:middle}@bottom-left{content:"${office} 관리사무소 · ${y}년 ${m}월 민원 처리 현황 보고";font-family:Pretendard,"Noto Sans KR",sans-serif;font-size:7.5pt;color:#9a9a94;vertical-align:middle;white-space:nowrap}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:#111;font-size:10.3pt;line-height:1.55;background:#ececE8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .bar{position:sticky;top:0;z-index:5;background:#111;display:flex;gap:8px;justify-content:center;padding:10px}
@@ -2723,35 +2723,35 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:#111;font-size:10.
 .sheet{background:#fff;width:210mm;margin:16px auto;padding:14mm 13mm;box-shadow:0 4px 24px rgba(0,0,0,.12)}
 @media screen and (max-width:820px){.sheet{width:auto;margin:10px;padding:18px 14px}.tiles{grid-template-columns:1fr 1fr!important}.grid2{grid-template-columns:1fr!important}}
 @media print{body{background:#fff}.bar{display:none}.sheet{margin:0;padding:0;width:auto;box-shadow:none}}
-.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4mm}
+.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2mm}
 .doc{font-size:9pt;color:#6b6b66;line-height:1.5}
 table.sign{border-collapse:collapse}
 table.sign th,table.sign td{border:1px solid #111;text-align:center;font-size:9pt}
 table.sign th.v{width:7mm;padding:1mm 0;line-height:1.3}
 table.sign th{background:#f3f3f0;width:21mm;padding:1mm 0;font-weight:700}
-table.sign td{height:16mm}
-h1{text-align:center;font-size:19pt;font-weight:800;letter-spacing:-.02em;margin:1mm 0 5mm}
-table.meta{width:100%;border-collapse:collapse;margin-bottom:4mm;font-size:10pt}
-table.meta th{width:22mm;background:#f3f3f0;text-align:center;padding:1.8mm;border:1px solid #bdbdb7;font-weight:700;white-space:nowrap}
-table.meta td{padding:1.8mm 3mm;border:1px solid #bdbdb7}
-h2{font-size:12pt;font-weight:800;margin:5.5mm 0 2.5mm;padding-bottom:1.2mm;border-bottom:1.4pt solid #111;break-after:avoid}
+table.sign td{height:13mm}
+h1{text-align:center;font-size:18pt;font-weight:800;letter-spacing:-.02em;margin:0 0 3.5mm}
+table.meta{width:100%;border-collapse:collapse;margin-bottom:2mm;font-size:9.6pt}
+table.meta th{width:22mm;background:#f3f3f0;text-align:center;padding:1.15mm 1.8mm;border:1px solid #bdbdb7;font-weight:700;white-space:nowrap}
+table.meta td{padding:1.15mm 3mm;border:1px solid #bdbdb7}
+h2{font-size:12pt;font-weight:800;margin:3.6mm 0 2mm;padding-bottom:1mm;border-bottom:1.4pt solid #111;break-after:avoid}
 /* 지표 카드 */
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:2.6mm}
-.tile{border:1px solid ${GRID};border-radius:2.4mm;padding:3mm 3.4mm 2.6mm;break-inside:avoid}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2mm}
+.tile{border:1px solid ${GRID};border-radius:2.4mm;padding:2.3mm 3.2mm 2mm;break-inside:avoid}
 .tl{font-size:9pt;color:${INK2};font-weight:600}
-.tv{font-size:21pt;font-weight:700;line-height:1.15;margin:.6mm 0 .4mm;letter-spacing:-.01em}
+.tv{font-size:18pt;font-weight:700;line-height:1.12;margin:.3mm 0 .2mm;letter-spacing:-.01em}
 .tv small{font-size:10pt;font-weight:600;color:${INK2};margin-left:1px}
 .ts{font-size:8.4pt;color:${INK2}}
 .dl b{font-weight:700}
-.spark{display:block;margin:.6mm 0 .8mm}
+.spark{display:block;margin:.2mm 0 .4mm}
 .meter{height:2.2mm;background:#cde2fb;border-radius:1.1mm;overflow:hidden;margin:1.6mm 0 1.6mm}
 .meter i{display:block;height:100%;background:${C1};border-radius:0 1.1mm 1.1mm 0}
 /* 차트 카드 */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:2.6mm;margin-bottom:2.6mm}
-.fig{border:1px solid ${GRID};border-radius:2.4mm;padding:3.2mm 3.6mm 2.4mm;break-inside:avoid}
+.fig{border:1px solid ${GRID};border-radius:2.4mm;padding:2.6mm 3.4mm 2mm;break-inside:avoid}
 .fig.full{margin-bottom:2.6mm}
 .fig h3{font-size:10.3pt;font-weight:700;margin-bottom:.2mm}
-.fig .sub{font-size:8.3pt;color:${MUTE};margin-bottom:1.6mm}
+.fig .sub{font-size:8.3pt;color:${MUTE};margin-bottom:1.2mm}
 .chart{width:100%;height:auto;display:block;overflow:visible}
 .ax{font-size:9.5px;fill:${MUTE};font-variant-numeric:tabular-nums}
 .ax.cur{fill:${INK};font-weight:700}
@@ -2771,7 +2771,7 @@ table.t th{background:#f3f3f0;border:1px solid #bdbdb7;padding:1.5mm 1.8mm;font-
 table.t td{border:1px solid #bdbdb7;padding:1.5mm 1.8mm;vertical-align:top;word-break:keep-all}
 table.t td.c{text-align:center;white-space:nowrap}
 table.t tr{break-inside:avoid}
-.box{border:1px solid #bdbdb7;padding:3mm 4mm;min-height:14mm;white-space:pre-wrap;font-size:10pt}
+.box{border:1px solid #bdbdb7;padding:3mm 4mm;min-height:14mm;white-space:pre-wrap;font-size:10pt;break-inside:avoid}
 .muted{color:#7a7a75}
 .photos{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
 .ph{border:1px solid #bdbdb7;padding:2.5mm;break-inside:avoid}
@@ -2790,9 +2790,9 @@ table.t tr{break-inside:avoid}
 .donutwrap{display:flex;align-items:center;gap:7mm}
 .donut{flex:none}
 .dn{font-size:24px;font-weight:800;fill:#111}
-table.lgt{flex:1;border-collapse:collapse;font-size:9.2pt}
-table.lgt th{font-size:8pt;color:#898781;font-weight:600;text-align:left;padding:0 2mm 1.2mm;border-bottom:1px solid #e1e0d9}
-table.lgt td{padding:1.4mm 2mm;border-bottom:1px solid #f0efec}
+table.lgt{flex:1;border-collapse:collapse;font-size:8.9pt}
+table.lgt th{font-size:8pt;color:#898781;font-weight:600;text-align:left;padding:0 2mm .8mm;border-bottom:1px solid #e1e0d9}
+table.lgt td{padding:.75mm 2mm;border-bottom:1px solid #f0efec}
 table.lgt td i{display:inline-block;width:3mm;height:3mm;border-radius:.8mm;vertical-align:-.4mm}
 table.lgt td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 table.lgt td.pr{white-space:nowrap;font-variant-numeric:tabular-nums;color:#52514e}
@@ -2806,8 +2806,9 @@ table.lgt td.pr{white-space:nowrap;font-variant-numeric:tabular-nums;color:#5251
 .rk .no.first{background:#111;color:#fff}
 .rk .hl{width:15mm}
 thead{display:table-header-group}
-.end{margin-top:8mm;text-align:center;font-size:11pt;line-height:2;break-inside:avoid}
-.end .sig{margin-top:3mm;font-size:12pt;font-weight:800}
+.end{margin-top:5mm;text-align:center;font-size:11pt;line-height:1.75;break-inside:avoid;break-before:avoid}
+.box.flow{break-inside:auto;orphans:2;widows:2}
+.end .sig{margin-top:2mm;font-size:12pt;font-weight:800}
 </style></head><body>
 <div class="bar"><button onclick="window.print()">인쇄 · PDF 저장</button><button class="ghost" onclick="window.close()">닫기</button></div>
 <div class="sheet">
@@ -2851,19 +2852,19 @@ thead{display:table-header-group}
     <div class="fig"><h3>처리자 순위</h3><div class="sub">${m}월 완료 건수 상위 5명</div>${rankList(top5)}</div>
   </div>
 
-  <div class="${doneRows.length<=12?'keep':''}">${H(`처리 완료 내역 (${doneRows.length}건)`)}
+  <div>${H(`처리 완료 내역 (${doneRows.length}건)`)}
   <table class="t">
     <thead><tr><th>No</th><th>완료일</th><th>장소</th><th>민원 내용</th><th>조치 내용</th><th>처리자</th><th>소요</th></tr></thead>
     ${doneRows.length?doneRows.map((i,n)=>`<tr><td class="c">${n+1}</td><td class="c">${md(i.doneAt)}</td><td>${esc(i.location||'-')}</td><td>${esc(i.title)}</td><td>${esc(lastText(i,'done')||lastText(i,'progress')||'-')}</td><td class="c">${esc(i.assignee&&i.assignee.name||'-')}</td><td class="c">${dur(i.doneAt-i.createdAt)}</td></tr>`).join(''):none(7)}
   </table></div>
 
-  <div class="${openRows.length<=12?'keep':''}">${H(`미완료 민원 및 향후 조치 (${openRows.length}건)`)}
+  <div>${H(`미완료 민원 및 향후 조치 (${openRows.length}건)`)}
   <table class="t">
     <thead><tr><th>No</th><th>접수일</th><th>장소</th><th>민원 내용</th><th>담당</th><th>경과</th><th>현재 상황</th></tr></thead>
     ${openRows.length?openRows.map((i,n)=>`<tr><td class="c">${n+1}</td><td class="c">${md(i.createdAt)}</td><td>${esc(i.location||'-')}</td><td>${i.urgent?'<b>[긴급]</b> ':''}${esc(i.title)}</td><td class="c">${esc(i.assignee&&i.assignee.type!=='none'?i.assignee.name:'미지정')}</td><td class="c">${Math.max(0,Math.floor((Date.now()-i.createdAt)/86400000))}일</td><td>${esc(lastText(i,'progress')||STATUS[i.status])}</td></tr>`).join(''):none(7)}
   </table></div>
 
-  <div class="keep">${H('반복 민원 및 개선 건의')}
+  <div>${H('반복 민원 및 개선 건의')}
   <table class="t">
     <thead><tr><th>장소</th><th>분류</th><th>횟수</th><th>발생 내역 (최근 6개월)</th></tr></thead>
     ${rep.length?rep.slice(0,10).map(g=>`<tr><td>${esc(g.items[0].location||g.items[0].title)}</td><td class="c">${esc(g.items[0].category)}</td><td class="c"><b>${g.count}회</b></td><td>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}`).join('<br>')}</td></tr>`).join(''):none(4)}
@@ -2874,11 +2875,10 @@ thead{display:table-header-group}
   <div class="photos">${photoRows.map((x,n)=>`<div class="ph"><div class="cap">${n+1}. ${esc(x.i.title)} <span>· ${esc(x.i.location||'')} · ${md(x.i.doneAt)} 완료</span></div>
     <div class="imgs"><div>${x.before?`<img src="${esc(x.before)}">`:'<div class="na">사진 없음</div>'}<div class="lb">접수 · 조치 전</div></div><div>${x.after?`<img src="${esc(x.after)}">`:'<div class="na">사진 없음</div>'}<div class="lb">완료 · 조치 후</div></div></div></div>`).join('')}</div>`:''}
 
-  <div class="keep">${H('특이사항')}
-  <div class="box">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div></div>
-
+  <div>${H('특이사항')}
+  <div class="box flow">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div>
   <div class="end">위와 같이 ${y}년 ${m}월 민원 처리 현황을 보고합니다.<br>${esc(dt)}
-    <div class="sig">${office} 관리사무소장 ${esc(boss?boss.name:'')} (인)</div></div>
+    <div class="sig">${office} 관리사무소장 ${esc(boss?boss.name:'')} (인)</div></div></div>
 </div></body></html>`;
 }
 
