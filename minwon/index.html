@@ -2100,6 +2100,8 @@ function addLog(id,type){
       const dc=b.parentNode.querySelector('.date-chip'); if(dc){ dc.classList.remove('active'); dc.querySelector('span').textContent='날짜 지정'; }
       $('#log-text').value = composeLog(type, sel);
     });
+    // 날짜 칸을 칩 어디를 눌러도 달력이 열리게 (삼성 인터넷 등에서 칸을 가린 입력칸이 안 열리는 경우 대비)
+    $('#log-modal').querySelectorAll('.date-chip').forEach(dc=>dc.addEventListener('click', e=>{ const di=dc.querySelector('.date-in'); if(!di || e.target===di) return; e.preventDefault(); try{ if(di.showPicker) di.showPicker(); else di.focus(), di.click(); }catch{ di.click(); } }));
     // 날짜 지정: 달력에서 고르면 "○월 ○일까지 조치 예정"으로 채움
     $('#log-modal').querySelectorAll('.date-in').forEach(di=>di.onchange=()=>{
       if(!di.value) return; const g=groups.find(x=>x.key===di.dataset.g);
