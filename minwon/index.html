@@ -444,24 +444,39 @@ mark{background:#fff1a8;box-shadow:none}
 .am-nav b{font-size:14.5px;min-width:92px;text-align:center;font-variant-numeric:tabular-nums}
 .am-nav button{width:32px;height:32px;border-radius:10px;border:1px solid var(--line2);background:#fff;font-size:18px;line-height:1;color:var(--ink);cursor:pointer}
 .am-nav button:disabled{opacity:.35;cursor:default}
-.am-total{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
-.am-total div{padding:10px 4px;text-align:center;border-left:1px solid var(--line)}
+.am-total{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.am-total div{padding:10px 2px;text-align:center;border-left:1px solid var(--line)}
 .am-total div:first-child{border-left:0}
 .am-total b{display:block;font-size:19px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
 .am-total span{font-size:11.5px;color:var(--mute)}
-.am-total .warn b,.am-stats .warn{color:var(--red)}
-.am-row{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.am-total .warn b{color:var(--red)}
+.am-total .dl{display:block;font-size:10.5px;font-weight:700;margin-top:1px}
+.dl.up{color:var(--green)}.dl.down{color:var(--red)}.dl.same{color:var(--mute)}
+.am-row{padding:12px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
 .am-row:last-child{border-bottom:0}
-.am-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
-.am-name b{font-size:15.5px;color:var(--navy)}
-.am-tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;background:#f1f0ec;color:var(--mute)}
+.am-top{display:flex;align-items:center;gap:10px}
+.am-name{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;min-width:0;flex:1}
+.am-name b{font-size:15.5px;color:var(--navy);cursor:pointer}
+.am-name b:active{opacity:.6}
+.am-tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:#f1f0ec;color:var(--mute);white-space:nowrap}
 .am-tag.ok{background:var(--accent-soft);color:var(--accent)}
-.am-stats{grid-column:1;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
-.am-stats em{font-style:normal;font-weight:400;color:var(--mute);font-size:12px;margin-right:4px}
-.am-stats i{font-style:normal;font-size:11.5px;color:var(--red);font-weight:600}
-.am-btn{grid-column:2;grid-row:1 / span 2;white-space:nowrap;background:#fff;border:1px solid var(--navy);color:var(--navy);font-weight:600}
-.am-btn:hover{background:var(--navy);color:#fff}
-@media (max-width:520px){.am-total b{font-size:17px}.am-btn{grid-column:1 / -1;grid-row:auto}}
+.am-rep{flex:none;border:0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;padding:7px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.am-rep:active{opacity:.7}
+.am-mid{display:flex;align-items:center;gap:10px}
+.am-bar{flex:1;height:8px;border-radius:99px;background:#eceef2;overflow:hidden}
+.am-bar i{display:block;height:100%;border-radius:99px;background:var(--lv)}
+.am-pct{min-width:40px;text-align:right;font-size:15px;font-weight:800;color:var(--lv);font-variant-numeric:tabular-nums}
+.am-mid .dl{min-width:44px;font-size:11.5px}
+.am-row.good{--lv:var(--green)}.am-row.mid{--lv:var(--amber)}.am-row.bad{--lv:var(--red)}.am-row.none{--lv:#b7bcc6}
+.am-bot{display:flex;align-items:center;flex-wrap:wrap;gap:5px 6px;font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.am-chip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.am-chip.open{background:var(--red-soft);color:var(--red)}
+.am-chip.urg{background:var(--red);color:#fff}
+.am-chip.clear{background:var(--green-soft);color:var(--green)}
+.am-chip.idle{background:#f1f2f4;color:var(--mute)}
+.am-bot .am-cnt{margin-left:4px}
+.am-bot .am-cnt b{color:var(--ink);font-weight:700}
+@media (max-width:520px){.am-total b{font-size:16px}.am-total span{font-size:10.5px}}
 .dlg-bg{position:fixed;inset:0;z-index:400;background:rgba(17,17,17,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:dlgFade .14s ease-out}
 .dlg{background:#fff;border-radius:18px;width:min(340px,100%);padding:22px 20px 16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);animation:dlgPop .16s ease-out}
 .dlg h3{margin:0 0 8px;font-size:17px;font-weight:700;color:var(--navy);letter-spacing:-.01em;line-height:1.4;word-break:keep-all}
@@ -1418,40 +1433,53 @@ function adminEnter(){
   adminHome(); armBackTrap();
 }
 async function adminLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'본사 관리 화면에서 나갑니다.', ok:'나가기'})) return; lsDel(K.auth); location.reload(); }
-let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null;
+let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null, admPrev = null;
 async function adminHome(){
   $('#adm-content').innerHTML = '<div class="empty"><b>불러오는 중…</b></div>';
-  const [o, s] = await Promise.all([
+  const [o, s, pv] = await Promise.all([
     rpc('mw_offices_list').catch(e=>{ console.warn(e); toast('사업소 목록을 불러오지 못했습니다'); return []; }),
-    rpc('mw_hq_summary',{p_ym:admYm}).catch(e=>{ console.warn(e); return null; })
+    rpc('mw_hq_summary',{p_ym:admYm}).catch(e=>{ console.warn(e); return null; }),
+    rpc('mw_hq_summary',{p_ym:prevYm(admYm)}).catch(()=>null)
   ]);
-  adminOffices = o || []; admSummary = s;
+  adminOffices = o || []; admSummary = s; admPrev = pv;
   renderAdminHome();
 }
 async function admMonth(d){
   const [y,m]=admYm.split('-').map(Number); const n=new Date(y,m-1+d,1);
   const next=`${n.getFullYear()}-${pad(n.getMonth()+1)}`; if(next>fmtDate(Date.now()).slice(0,7)) return;
-  admYm=next; admSummary=null; renderAdminHome();
-  try{ admSummary = await rpc('mw_hq_summary',{p_ym:admYm}); }catch(e){ console.warn(e); toast('현황을 불러오지 못했습니다'); }
+  admYm=next; admSummary=null; admPrev=null; renderAdminHome();
+  const [cur, pv] = await Promise.all([ rpc('mw_hq_summary',{p_ym:admYm}).catch(e=>{ console.warn(e); toast('현황을 불러오지 못했습니다'); return null; }), rpc('mw_hq_summary',{p_ym:prevYm(admYm)}).catch(()=>null) ]);
+  if(admYm!==next) return; admSummary=cur; admPrev=pv;
   renderAdminHome();
 }
 function renderAdminMonthly(){
   const [y,m]=admYm.split('-').map(Number); const isNow = admYm===fmtDate(Date.now()).slice(0,7);
-  const rows = admSummary || [];
-  const sum = k=>rows.reduce((a,r)=>a+(+r[k]||0),0);
+  const rows = (admSummary || []).slice();
+  const sum = (k,L=rows)=>L.reduce((a,r)=>a+(+r[k]||0),0);
   const pct = r=>r.recv?Math.round(r.recv_done/r.recv*100):null;
   const hrs = h=>h==null?'-':(h<24?`${h}시간`:`${Math.round(h/24*10)/10}일`);
-  const tot = {recv:sum('recv'), recv_done:sum('recv_done'), done:sum('done'), open:sum('open')};
+  const lv = p=>p==null?'none':p>=80?'good':p>=50?'mid':'bad';
+  // 지난달 대비 처리율 (%p)
+  const prevMap = new Map((admPrev||[]).map(r=>[r.id,r]));
+  const delta = (now,before)=>{ if(now==null||before==null) return ''; const d=now-before; return `<span class="dl ${d>0?'up':d<0?'down':'same'}">${d>0?'▲':d<0?'▼':'–'}${Math.abs(d)}%p</span>`; };
+  // 챙길 곳부터: 긴급 미완료 → 미완료 → 처리율 낮은 순
+  rows.sort((a,b)=>(+b.urgent||0)-(+a.urgent||0) || (+b.open||0)-(+a.open||0) || ((pct(a)??101)-(pct(b)??101)) || String(a.name).localeCompare(String(b.name),'ko'));
+  const tot = {recv:sum('recv'), recv_done:sum('recv_done'), done:sum('done'), open:sum('open'), urgent:sum('urgent')};
+  const totPct = tot.recv?Math.round(tot.recv_done/tot.recv*100):null;
+  const pvRows = admPrev||[]; const pvRecv=sum('recv',pvRows); const pvPct = pvRecv?Math.round(sum('recv_done',pvRows)/pvRecv*100):null;
   return `<div class="card adm-month">
     <div class="am-head"><h3>사업소별 월간 현황</h3>
       <div class="am-nav"><button onclick="admMonth(-1)" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button onclick="admMonth(1)" aria-label="다음 달" ${isNow?'disabled':''}>›</button></div></div>
     ${admSummary===null?'<div class="empty" style="padding:24px 0"><b>불러오는 중…</b></div>':`
-    <div class="am-total"><div><b>${rows.length}</b><span>사업소</span></div><div><b>${tot.recv}</b><span>접수</span></div><div><b>${tot.done}</b><span>완료</span></div><div><b>${tot.recv?Math.round(tot.recv_done/tot.recv*100):0}%</b><span>처리율</span></div><div class="${tot.open?'warn':''}"><b>${tot.open}</b><span>미완료</span></div></div>
-    ${rows.length?rows.map(r=>`<div class="am-row">
-      <div class="am-name"><b>${esc(r.name)}</b>${r.report?`<span class="am-tag ok">소장 작성 · ${fmtKo(new Date(r.report.updated_at).getTime())}</span>`:'<span class="am-tag">소장 미작성</span>'}</div>
-      <div class="am-stats"><span><em>접수</em>${r.recv}</span><span><em>완료</em>${r.done}</span><span><em>처리율</em>${pct(r)==null?'-':pct(r)+'%'}</span><span class="${r.open?'warn':''}"><em>미완료</em>${r.open}${r.urgent?` <i>긴급 ${r.urgent}</i>`:''}</span><span><em>평균 처리</em>${hrs(r.avg_h)}</span></div>
-      <button class="btn btn-sm am-btn" onclick="adminReport('${esc(r.id)}')">보고서 보기</button>
-    </div>`).join(''):'<div class="empty"><b>아직 사업소가 없습니다</b></div>'}`}
+    <div class="am-total"><div><b>${rows.length}</b><span>사업소</span></div><div><b>${tot.recv}</b><span>접수</span></div><div><b>${tot.done}</b><span>완료</span></div><div><b>${totPct==null?'-':totPct+'%'}</b><span>처리율</span>${delta(totPct,pvPct)}</div><div class="${tot.open?'warn':''}"><b>${tot.open}</b><span>미완료</span></div><div class="${tot.urgent?'warn':''}"><b>${tot.urgent}</b><span>긴급</span></div></div>
+    ${rows.length?rows.map(r=>{ const p=pct(r), pv=prevMap.get(r.id);
+      const chips = r.open ? `<span class="am-chip open">미완료 ${r.open}</span>${r.urgent?`<span class="am-chip urg">긴급 ${r.urgent}</span>`:''}` : (r.recv ? '<span class="am-chip clear">✓ 모두 완료</span>' : '<span class="am-chip idle">이달 민원 없음</span>');
+      return `<div class="am-row ${lv(p)}">
+      <div class="am-top"><div class="am-name"><b onclick="pickOfficeView('${esc(r.id)}')" title="소장 화면 열기">${esc(r.name)}</b>${r.report?`<span class="am-tag ok">소장 작성 · ${fmtKo(new Date(r.report.updated_at).getTime())}</span>`:'<span class="am-tag">소장 미작성</span>'}</div>
+        <button class="am-rep" onclick="adminReport('${esc(r.id)}')">보고서 ›</button></div>
+      <div class="am-mid"><div class="am-bar"><i style="width:${p||0}%"></i></div><span class="am-pct">${p==null?'-':p+'%'}</span>${delta(p, pv?pct(pv):null)||'<span class="dl"></span>'}</div>
+      <div class="am-bot">${chips}<span class="am-cnt">접수 <b>${r.recv}</b> · 완료 <b>${r.done}</b> · 평균 <b>${hrs(r.avg_h)}</b></span></div>
+    </div>`; }).join(''):'<div class="empty"><b>아직 사업소가 없습니다</b></div>'}`}
   </div>`;
 }
 // 본사: 사업소 월간보고서를 사업소에서 만든 것과 같은 모양으로 엶 (민원인 연락처는 받지 않음)
