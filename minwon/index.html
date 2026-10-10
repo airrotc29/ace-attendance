@@ -1390,7 +1390,9 @@ async function embedLogin(d){
 if(EMBED){
   window.addEventListener('message', async ev=>{
     if(ev.origin!==location.origin || ev.source!==window.parent) return;
-    const d=ev.data||{}; if(d.type!=='hqview-login') return;
+    const d=ev.data||{};
+    if(d.type==='hqview-back'){ handleBack(); return; }   // 본사 화면에서 누른 휴대폰 뒤로가기
+    if(d.type!=='hqview-login') return;
     try{ await embedLogin(d); parent.postMessage({type:'hqview-ok'}, location.origin); }
     catch(e){ parent.postMessage({type:'hqview-error', msg:String(e.message||'열지 못했습니다')}, location.origin); }
   });
@@ -1511,7 +1513,6 @@ function showOfficeView(t, creds){
   const v=document.createElement('div'); v.id='hq-view'; v.className='hqv';
   v.innerHTML=`<div class="hqv-bar"><button class="hqv-back" onclick="closeOfficeView()">‹ 본사로</button><b>${esc(t.name)}</b><small>소장 화면</small></div><iframe id="hqv-frame" title="${esc(t.name)} 소장 화면" src="${location.pathname}?hqview=1"></iframe>`;
   document.body.appendChild(v);
-  try{ history.pushState({hqv:1},''); }catch{}
   document.getElementById('hqv-frame').addEventListener('load', e=>{
     e.target.contentWindow.postMessage({type:'hqview-login', code:t.code, pw:creds.pw}, location.origin);
   }, {once:true});
@@ -1522,8 +1523,7 @@ function removeOfficeView(){
   Object.keys(localStorage).filter(k=>k.startsWith('hqv_')).forEach(k=>localStorage.removeItem(k));
   return true;
 }
-function closeOfficeView(){ if(removeOfficeView() && history.state && history.state.hqv) history.back(); }
-window.addEventListener('popstate',()=>{ removeOfficeView(); });
+function closeOfficeView(){ removeOfficeView(); }
 window.addEventListener('message', ev=>{
   if(ev.origin!==location.origin) return;
   const d=ev.data||{};
@@ -1716,7 +1716,7 @@ async function adminRoster(id){
 }
 function renderRoster(){
   $('#adm-content').innerHTML = `
-    <button class="btn btn-gray btn-sm" onclick="adminHome()" style="margin-bottom:14px">← 사업소 목록</button>
+    <button class="btn btn-gray btn-sm" data-back onclick="adminHome()" style="margin-bottom:14px">← 사업소 목록</button>
     <div class="sec-title">${esc(rosterOffice.name)} 명단 <small>${rosterDraft.length}명</small></div>
     <div class="card"><h3>붙여넣기로 한꺼번에 추가</h3>
       <p class="hint">한 줄에 한 명. 형식: 이름, 직급, 사번(선택)<br>예) 홍길동, 시설주임, 2024001</p>
@@ -3100,7 +3100,7 @@ function armCloseWatcher(){
   catch(e){ console.warn('closewatcher', e); }
 }
 function pushTrap(){ if(HAS_CW || !backTrap || exiting) return; if(history.state && history.state.mwTrap) return; try{ history.pushState({mwTrap:1},''); }catch{} }
-function armBackTrap(){ backTrap=true; exiting=false; if(HAS_CW) return armCloseWatcher(); if(navigator.userActivation && navigator.userActivation.isActive) pushTrap(); }
+function armBackTrap(){ if(EMBED) return; backTrap=true; exiting=false; if(HAS_CW) return armCloseWatcher(); if(navigator.userActivation && navigator.userActivation.isActive) pushTrap(); }
 ['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev, pushTrap, {capture:true, passive:true}));
 function exitApp(){
   exiting=true;
@@ -3117,11 +3117,17 @@ window.addEventListener('popstate',()=>{
 // 뒤로 버튼 한 번: 열린 창 → 사진 → 상세 창 → 다른 탭이면 민원 탭 → 민원 탭이면 종료 확인
 async function handleBack(){
   if(dlgClose){ dlgClose(null); return; }
+  // 본사에서 연 소장 화면: 그 안의 창부터 닫고, 닫을 게 없으면 소장 화면을 닫고 본사 목록으로
+  const hv=document.getElementById('hqv-frame');
+  if(hv){ try{ hv.contentWindow.postMessage({type:'hqview-back'}, location.origin); }catch{ closeOfficeView(); } return; }
   const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
   const mr=$('#modal-root');
   if(mr && mr.lastElementChild){ const top=mr.lastElementChild; if(top.id==='detail-modal') closeModal(); else top.remove(); return; }
   // 접수 · 채팅 · 통계 · 검색 탭에서는 앱을 나가지 않고 민원 탭으로
   if(me && !$('#app').classList.contains('hidden') && tab!=='list'){ go('list'); return; }
+  if(EMBED){ parent.postMessage({type:'hqview-close'}, location.origin); return; }
+  // 본사: 명단 화면 등에서는 사업소 목록으로
+  const ab=document.querySelector('#admin:not(.hidden) #adm-content [data-back]'); if(ab){ ab.click(); return; }
   if(await askConfirm({title:'앱을 종료할까요?', msg:'작성 중인 내용은 이 기기에 남아 있습니다.', ok:'종료'})) exitApp();
 }
 // 앱을 다시 보면 막기를 다시 걸어 둠 (종료 안내 뒤 돌아온 경우 등)
