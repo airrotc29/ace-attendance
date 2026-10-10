@@ -726,6 +726,15 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .ao-btn.hot{background:#1d47cc;color:#fff}.ao-btn.hot svg{color:#fff}
 .ao-btn.del{background:#fdf1f0;color:var(--red)}.ao-btn.del svg{color:var(--red)}
 .contact-box.in-log{margin:0 0 14px;background:#f6f8fc!important;box-shadow:none!important}
+/* 본사: 소장 화면 (사업소 화면을 덮어 펼침) */
+.hqv{position:fixed;inset:0;z-index:900;background:#f4f6fb;display:flex;flex-direction:column}
+.hqv-bar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;background:#fff;border-bottom:1px solid #e8ebf0}
+.hqv-back{border:0;background:#eef3ff;color:#1d47cc;font:inherit;font-weight:800;border-radius:10px;padding:8px 12px;cursor:pointer;flex:none}
+.hqv-bar > b{font-size:15px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hqv-bar > small{margin-left:auto;color:#6b7280;font-weight:600;font-size:12px;flex:none}
+#hqv-frame{flex:1;width:100%;border:0;background:#f4f6fb}
+.embed #tb-push,.embed .push-card,.embed .inst-card,.embed #lg-install{display:none!important}
+.ao-thumb,.ao-info > b{cursor:pointer}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -1000,8 +1009,13 @@ const dur = ms=>{ if(ms<=0)return '-'; const h=ms/3600000; if(h<1)return Math.ro
 const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const toast = (m,ms=2200)=>{ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms); };
 const STATUS = {open:'미지정',progress:'진행중',done:'완료'};   // open: 아무도 맡지 않음
-const lsGet = (k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch{ return d; } };
-const lsSet = (k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ console.warn('ls',e); } };
+// 본사가 사업소 소장 화면을 펼친 경우(iframe, ?hqview=1)에는 저장 키에 접두어를 붙여 본사 로그인과 섞이지 않게 함
+const EMBED = new URLSearchParams(location.search).has('hqview');
+document.documentElement.classList.toggle('embed', EMBED);
+const nsKey = k => EMBED ? 'hqv_' + k : k;
+const lsDel = k => { try{ lsDel(nsKey(k)); }catch{} };
+const lsGet = (k,d)=>{ try{ const v=localStorage.getItem(nsKey(k)); return v?JSON.parse(v):d; }catch{ return d; } };
+const lsSet = (k,v)=>{ try{ localStorage.setItem(nsKey(k),JSON.stringify(v)); }catch(e){ console.warn('ls',e); } };
 
 // 사진 압축 (최대 1000px, JPEG)
 function compressImage(file, max=1000, q=0.72){
@@ -1326,12 +1340,37 @@ function enter(empId, mgr){
 async function meMenu(){ if(!me) return;
   const v=await openSheet({title:`${me.name} · ${me.rank}`, html:`<p class="hint" style="margin-bottom:12px;text-align:center">${esc(me.officeName)} · ${esc(me.team)}</p>`, actions:[{value:'out',label:'나가기 (로그아웃)',danger:true}]});
   if(v==='out') logout(); }
-async function logout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'다음에 들어올 때 사업소 코드와 비밀번호를 다시 입력합니다.', ok:'나가기'})) return; await pushOff(true).catch(console.warn); localStorage.removeItem(K.me); localStorage.removeItem(K.auth); location.reload(); }
+// ── 소장 화면 모드 (본사 화면 안에서 열림) ──
+const waitUntil = (fn, ms=8000) => new Promise((res, rej) => { const t0=Date.now(); const id=setInterval(()=>{ if(fn()){ clearInterval(id); res(); } else if(Date.now()-t0>ms){ clearInterval(id); rej(new Error('timeout')); } }, 120); });
+async function embedLogin(d){
+  $('#lg-code').value = d.code; $('#lg-pw').value = d.pw;
+  await loginSubmit();
+  if(!auth) throw new Error('사업소 비밀번호가 맞지 않습니다');
+  await waitUntil(()=>!$('#lg-step2').classList.contains('hidden'));
+  const boss = EMPLOYEES.find(e=>isBoss(e));
+  if(!boss) throw new Error('소장으로 등록된 직원이 없습니다');
+  $('#lg-emp').value = boss.empId; $('#lg-emp').dispatchEvent(new Event('change'));
+  $('#lg-mgr').value = d.mgr;
+  await doLogin();
+  try{ await waitUntil(()=>!$('#app').classList.contains('hidden'), 6000); }
+  catch{ throw new Error($('#lg-err').textContent || '소장 비밀번호가 맞지 않습니다'); }
+}
+if(EMBED){
+  window.addEventListener('message', async ev=>{
+    if(ev.origin!==location.origin || ev.source!==window.parent) return;
+    const d=ev.data||{}; if(d.type!=='hqview-login') return;
+    try{ await embedLogin(d); parent.postMessage({type:'hqview-ok'}, location.origin); }
+    catch(e){ parent.postMessage({type:'hqview-error', msg:String(e.message||'열지 못했습니다')}, location.origin); }
+  });
+}
+
+async function logout(){ if(EMBED){ parent.postMessage({type:'hqview-close'}, location.origin); return; }
+  if(!await askConfirm({title:'나가시겠습니까?', msg:'다음에 들어올 때 사업소 코드와 비밀번호를 다시 입력합니다.', ok:'나가기'})) return; await pushOff(true).catch(console.warn); lsDel(K.me); lsDel(K.auth); location.reload(); }
 
 // 기기에 저장된 로그인 정보로 자동 입장
 async function boot(){
   try{ await loadSupabase(); }catch(e){ console.warn(e); showStep(1); setLoginErr('서버 라이브러리를 불러오지 못했습니다. 인터넷을 확인하세요'); return; }
-  const saved = lsGet(K.auth,null);
+  const saved = EMBED ? null : lsGet(K.auth,null);
   if(saved && saved.code && saved.pw){
     auth = {code:saved.code, pw:saved.pw};
     try{
@@ -1359,7 +1398,7 @@ function adminEnter(){
   $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
   adminHome(); armBackTrap();
 }
-async function adminLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'본사 관리 화면에서 나갑니다.', ok:'나가기'})) return; localStorage.removeItem(K.auth); location.reload(); }
+async function adminLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'본사 관리 화면에서 나갑니다.', ok:'나가기'})) return; lsDel(K.auth); location.reload(); }
 let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null;
 async function adminHome(){
   $('#adm-content').innerHTML = '<div class="empty"><b>불러오는 중…</b></div>';
@@ -1430,6 +1469,53 @@ const AO_IC={
   img:AO_SV('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>'),
   trash:AO_SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>')
 };
+// ── 본사: 사업소 소장 화면 열기 (두 비밀번호를 매번 입력 · 본사는 저장하지 않음) ──
+let hvTarget=null;
+function pickOfficeView(id){
+  const o=adminOffices.find(x=>x.id===id); if(!o) return;
+  hvTarget={code:o.code, name:o.name};
+  closeById('hqview-ask');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="hqview-ask" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:420px">
+    <div class="modal-head"><h2>${esc(o.name)} · 소장 화면</h2><button class="modal-close" onclick="closeById('hqview-ask')">✕</button></div>
+    <p class="hint" style="margin-bottom:12px">사업소 화면을 소장과 똑같이 엽니다. 두 비밀번호를 넣어야 열리고, 본사 기기에는 저장되지 않습니다.</p>
+    <div class="form-row"><label>사업소 비밀번호 (직원 공통)</label><input id="hv-pw" type="password" autocomplete="off"></div>
+    <div class="form-row"><label>소장 비밀번호</label><input id="hv-mgr" type="password" autocomplete="off"></div>
+    <div class="lg-err hidden" id="hv-err" style="margin:0 0 10px"></div>
+    <button class="btn btn-primary btn-block" onclick="startOfficeView()">소장 화면 열기</button>
+  </div></div>`);
+  setTimeout(()=>{ const i=document.getElementById('hv-pw'); if(i) i.focus(); },50);
+}
+function startOfficeView(){
+  const pw=$('#hv-pw').value, mgr=$('#hv-mgr').value, err=$('#hv-err');
+  if(!pw || !mgr){ err.textContent='두 비밀번호를 모두 입력하세요'; err.classList.remove('hidden'); return; }
+  closeById('hqview-ask');
+  showOfficeView(hvTarget, {pw, mgr});
+}
+function showOfficeView(t, creds){
+  removeOfficeView();
+  const v=document.createElement('div'); v.id='hq-view'; v.className='hqv';
+  v.innerHTML=`<div class="hqv-bar"><button class="hqv-back" onclick="closeOfficeView()">‹ 본사로</button><b>${esc(t.name)}</b><small>소장 화면</small></div><iframe id="hqv-frame" title="${esc(t.name)} 소장 화면" src="${location.pathname}?hqview=1"></iframe>`;
+  document.body.appendChild(v);
+  try{ history.pushState({hqv:1},''); }catch{}
+  document.getElementById('hqv-frame').addEventListener('load', e=>{
+    e.target.contentWindow.postMessage({type:'hqview-login', code:t.code, pw:creds.pw, mgr:creds.mgr}, location.origin);
+  }, {once:true});
+}
+function removeOfficeView(){
+  const v=document.getElementById('hq-view'); if(!v) return false;
+  v.remove();
+  Object.keys(localStorage).filter(k=>k.startsWith('hqv_')).forEach(k=>localStorage.removeItem(k));
+  return true;
+}
+function closeOfficeView(){ if(removeOfficeView() && history.state && history.state.hqv) history.back(); }
+window.addEventListener('popstate',()=>{ removeOfficeView(); });
+window.addEventListener('message', ev=>{
+  if(ev.origin!==location.origin) return;
+  const d=ev.data||{};
+  if(d.type==='hqview-close'){ closeOfficeView(); return; }
+  if(d.type==='hqview-error'){ closeOfficeView(); toast(d.msg||'소장 화면을 열지 못했습니다', 3500); }
+});
+
 function renderAdminHome(){
   $('#adm-content').innerHTML = `
     <div class="sec-title">월간 현황 <small>사업소별 민원 처리 · 월간보고서</small></div>
@@ -1449,8 +1535,8 @@ function renderAdminHome(){
       ${adminOffices.length ? adminOffices.map(o=>`
         <div class="adm-item ao">
           <div class="ao-head">
-            <div class="ao-thumb">${o.cover?`<img src="${esc(o.cover)}" alt="">`:AO_IC.bldg}</div>
-            <div class="ao-info"><b>${esc(o.name)}</b>
+            <div class="ao-thumb" onclick="pickOfficeView('${esc(o.id)}')">${o.cover?`<img src="${esc(o.cover)}" alt="">`:AO_IC.bldg}</div>
+            <div class="ao-info"><b onclick="pickOfficeView('${esc(o.id)}')">${esc(o.name)}</b>
               <div class="ao-meta"><span class="ao-code">${esc(o.code)}</span><span>직원 ${o.count}명</span></div>
               <div class="ao-st ${o.has_mgr?'ok':'bad'}"><i></i>${o.has_mgr?'소장 로그인 설정됨':'소장 로그인 미설정 · 소장 입장 불가'}</div>
             </div>
@@ -1837,14 +1923,14 @@ function startContact(id, kind, text, url){
 let askingContact=false;
 async function askContactDone(){
   const pc=lsGet(PEND_KEY,null); if(!pc || askingContact) return;
-  if(!me || pc.office!==me.officeId || pc.emp!==me.empId || Date.now()-pc.at>3*3600e3){ localStorage.removeItem(PEND_KEY); return; }
-  const it=issues[pc.id]; if(!it){ localStorage.removeItem(PEND_KEY); return; }
+  if(!me || pc.office!==me.officeId || pc.emp!==me.empId || Date.now()-pc.at>3*3600e3){ lsDel(PEND_KEY); return; }
+  const it=issues[pc.id]; if(!it){ lsDel(PEND_KEY); return; }
   askingContact=true; clearTimeout(pendTimer);
   const call = pc.kind==='call';
   const yes = await askConfirm({ title: call?'민원인과 통화하셨나요?':'문자를 보내셨나요?',
     msg: `${it.contact?.name||'민원인'} · ${it.title}\n${call?'통화한':'보낸'} 경우에만 처리 과정에 기록됩니다.`,
     ok: call?'통화했어요':'보냈어요', cancel: call?'안 했어요':'안 보냈어요' });
-  localStorage.removeItem(PEND_KEY); askingContact=false;
+  lsDel(PEND_KEY); askingContact=false;
   if(yes){ const cur=issues[pc.id]; if(cur){ logContact(cur, pc.text); toast('연락 기록을 남겼습니다'); } }
 }
 document.addEventListener('visibilitychange',()=>{
@@ -3001,7 +3087,7 @@ async function pushOff(quiet){
       if(sub) await sub.unsubscribe();
     }
   }finally{
-    localStorage.removeItem(K.push); refreshPushUI();
+    lsDel(K.push); refreshPushUI();
     if(!quiet) toast('이 기기의 휴대폰 알림을 껐습니다');
   }
 }
@@ -3106,7 +3192,7 @@ function showInstallGuide(){
     <details class="ig-more"><summary>다른 기기에서 설치하는 법</summary>${order.slice(1).map(k=>block(k,false)).join('')}</details>
   </div></div>`);
 }
-if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+if('serviceWorker' in navigator && !EMBED && /^https?:$/.test(location.protocol)){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw', e)); });
 }
 refreshInstallUI();
