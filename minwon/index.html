@@ -1391,6 +1391,7 @@ if(EMBED){
   window.addEventListener('message', async ev=>{
     if(ev.origin!==location.origin || ev.source!==window.parent) return;
     const d=ev.data||{};
+    if(d.type==='hqview-back'){ handleBack(); return; }   // 본사 화면이 받은 휴대폰 뒤로가기: 열린 창 → 민원 탭 → (없으면) 본사로
     if(d.type!=='hqview-login') return;
     try{ await embedLogin(d); parent.postMessage({type:'hqview-ok'}, location.origin); }
     catch(e){ parent.postMessage({type:'hqview-error', msg:String(e.message||'열지 못했습니다')}, location.origin); }
@@ -1522,6 +1523,10 @@ function removeOfficeView(){
   v.remove();
   Object.keys(localStorage).filter(k=>k.startsWith('hqv_')).forEach(k=>localStorage.removeItem(k));
   return true;
+}
+function backToOfficeView(){
+  const f=document.getElementById('hqv-frame');
+  try{ f.contentWindow.postMessage({type:'hqview-back'}, location.origin); }catch{ closeOfficeView(); }
 }
 let hqvPopSelf=false;   // closeOfficeView 가 직접 되돌린 기록 (뒤로가기로 치지 않음)
 function closeOfficeView(){ if(removeOfficeView() && history.state && history.state.hqv){ hqvPopSelf=true; history.back(); } }
@@ -3112,7 +3117,7 @@ function exitApp(){
 }
 window.addEventListener('popstate',()=>{
   if(hqvPopSelf){ hqvPopSelf=false; return; }
-  if(removeOfficeView()) return;   // 소장 화면에서 뒤로가기 → 본사 목록
+  if(document.getElementById('hq-view')){ try{ history.pushState({hqv:1},''); }catch{} backToOfficeView(); return; }   // 소장 화면 기록을 다시 걸어 두고 안쪽부터 닫음
   if(HAS_CW || !backTrap || exiting) return;
   try{ history.pushState({mwTrap:1},''); }catch{}   // 다시 막아 둠 (화면을 누를 때도 한 번 더 걸어 둠)
   handleBack();
@@ -3120,8 +3125,8 @@ window.addEventListener('popstate',()=>{
 // 뒤로 버튼 한 번: 열린 창 → 사진 → 상세 창 → 다른 탭이면 민원 탭 → 민원 탭이면 종료 확인
 async function handleBack(){
   if(dlgClose){ dlgClose(null); return; }
-  // 본사에서 연 소장 화면: 뒤로가기 한 번이면 바로 본사 목록으로
-  if(document.getElementById('hq-view')){ closeOfficeView(); return; }
+  // 본사에서 연 소장 화면: 그 안의 열린 창 → 민원 탭 순서로 닫고, 사업소 첫 화면이면 본사 메인으로
+  if(document.getElementById('hq-view')){ backToOfficeView(); return; }
   const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
   const mr=$('#modal-root');
   if(mr && mr.lastElementChild){ const top=mr.lastElementChild; if(top.id==='detail-modal') closeModal(); else top.remove(); return; }
