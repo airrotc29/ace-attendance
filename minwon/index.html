@@ -414,7 +414,8 @@ mark{background:#fff1a8;box-shadow:none}
 .qpick{margin-bottom:12px}
 .qpick .qp-l{font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:7px}
 .qpick .qp-l span{font-weight:400;color:var(--mute);margin-left:2px}
-.qpick .chips{gap:7px}
+.qpick .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.qpick .chip{white-space:nowrap;text-align:center;padding-left:6px!important;padding-right:6px!important}
 .qpick .chip{font-size:14px;padding:9px 14px;font-weight:600;cursor:pointer}
 .qpick .chip.active{background:var(--navy);border-color:var(--navy);color:#fff}
 .contact-in{border:1px solid var(--line);border-radius:12px;padding:12px 14px 4px;margin-bottom:14px;background:#fafaf8}
@@ -2059,7 +2060,7 @@ async function assign(id,v,confirmed){
 // 진행 보고 · 완료 처리에서 골라 쓰는 답변 (고르면 문장이 자동으로 만들어지고, 직접 고쳐 쓸 수도 있음)
 const LOG_PICKS = {
   progress:[
-    {key:'s', label:'지금 상황', opts:[['현장 확인','현장 확인했습니다.'],['출동 중','현장으로 가는 중입니다.'],['조치 중','조치 중입니다.'],['부품 주문','부품을 주문했습니다.'],['업체 요청','외부 업체에 수리를 요청했습니다.'],['민원인 부재','민원인 부재로 다시 방문하겠습니다.']], def:'현장 확인'},
+    {key:'s', label:'지금 상황', opts:[['출동 중','현장으로 가는 중입니다.'],['현장 확인','현장 확인했습니다.'],['조치 중','조치 중입니다.'],['부품 주문','부품을 주문했습니다.'],['업체 요청','외부 업체에 수리를 요청했습니다.'],['민원인 부재','민원인 부재로 다시 방문하겠습니다.']], def:'현장 확인'},
     {key:'t', label:'조치 예정', opts:[['30분 후','30분 후 조치 예정'],['1시간 후','1시간 후 조치 예정'],['오늘 중','오늘 중 조치 예정'],['내일','내일 조치 예정'],['부품 도착 후','부품 도착 후 조치 예정']], def:'1시간 후', optional:true}
   ],
   done:[
