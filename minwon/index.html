@@ -444,20 +444,37 @@ mark{background:#fff1a8;box-shadow:none}
 .am-nav b{font-size:14.5px;min-width:92px;text-align:center;font-variant-numeric:tabular-nums}
 .am-nav button{width:32px;height:32px;border-radius:10px;border:1px solid var(--line2);background:#fff;font-size:18px;line-height:1;color:var(--ink);cursor:pointer}
 .am-nav button:disabled{opacity:.35;cursor:default}
-.am-sum{display:flex;align-items:baseline;gap:12px;padding:2px 0 12px;border-bottom:1px solid var(--line)}
-.am-sum b{font-size:28px;font-weight:800;color:var(--navy);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.am-sum span{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
-.am-sum span em{font-style:normal;color:var(--red);font-weight:700}
-.am-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
-.am-row:last-child{border-bottom:0}
-.am-l{flex:1;min-width:0}
-.am-l b{display:block;font-size:15px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-.am-l small{display:block;margin-top:3px;font-size:12.5px;color:var(--mute)}
-.am-l small .r{color:var(--red);font-weight:600}.am-l small .g{color:var(--green);font-weight:600}
-.am-r{flex:none;text-align:right}
-.am-r b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--lv)}
-.am-r button{border:0;background:none;padding:2px 0 0;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer}
-.am-row.good{--lv:var(--green)}.am-row.mid{--lv:var(--amber)}.am-row.bad{--lv:var(--red)}.am-row.none{--lv:#b7bcc6}
+/* 본사 홈: 처리율 원 그래프 + 사업소 한 줄 목록 */
+.lv-good{--lv:var(--green)}.lv-mid{--lv:var(--amber)}.lv-bad{--lv:var(--red)}.lv-none{--lv:#c3c8d1}
+.ring{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring .rt{position:relative;text-align:center;line-height:1;font-variant-numeric:tabular-nums;color:var(--lv);font-weight:800}
+.ring .rt small{display:block;font-size:11px;font-weight:600;color:var(--mute);margin-top:5px}
+.hq-hero{padding:16px 18px 18px!important}
+.hq-mon{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px}
+.hq-mon b{font-size:15px;min-width:100px;text-align:center;color:var(--navy);font-variant-numeric:tabular-nums}
+.hq-mon button{width:30px;height:30px;border-radius:50%;border:0;background:#f1f3f6;color:var(--ink);font-size:17px;line-height:1;cursor:pointer}
+.hq-mon button:disabled{opacity:.3;cursor:default}
+.hq-hero-b{display:flex;align-items:center;gap:22px;justify-content:center}
+.hq-kpi{display:grid;grid-template-columns:auto auto;gap:12px 22px}
+.hq-kpi div{display:flex;flex-direction:column}
+.hq-kpi b{font-size:22px;font-weight:800;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+.hq-kpi span{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:5px;margin-top:2px}
+.hq-kpi span i{width:8px;height:8px;border-radius:50%;background:#c3c8d1}
+.hq-kpi .g i{background:var(--green)}.hq-kpi .r b{color:var(--red)}.hq-kpi .r i{background:var(--red)}.hq-kpi .z b{color:#c3c8d1}
+.hq-lh{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.hq-lh h3{margin:0}.hq-lh h3 small{font-weight:400;color:var(--mute);font-size:13px;margin-left:4px}
+.hq-add{border:0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;padding:8px 13px;border-radius:999px;cursor:pointer}
+.adm-item.hq-row{display:flex;align-items:center;gap:12px;padding:12px 0}
+.hq-th{width:44px;height:44px;border-radius:13px;flex:none;overflow:hidden;background:linear-gradient(145deg,#1d47cc,#0f2a7a);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.hq-th img{width:100%;height:100%;object-fit:cover}.hq-th svg{width:22px;height:22px}
+.hq-tx{flex:1;min-width:0;cursor:pointer}
+.hq-tx b{display:block;font-size:15px!important;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hq-tx small{display:block;margin-top:3px!important;font-size:12.5px!important;color:var(--mute)}
+.hq-tx small .r{color:var(--red);font-weight:600}.hq-tx small .g{color:var(--green);font-weight:600}
+.hq-more{flex:none;width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:#9aa1ad;font-size:20px;line-height:1;cursor:pointer;letter-spacing:1px}
+.hq-more:active{background:#f1f3f6}
+.hq-sh-meta{font-size:13px;color:var(--mute);margin:-6px 0 12px;text-align:center}
 .dlg-bg{position:fixed;inset:0;z-index:400;background:rgba(17,17,17,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:dlgFade .14s ease-out}
 .dlg{background:#fff;border-radius:18px;width:min(340px,100%);padding:22px 20px 16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);animation:dlgPop .16s ease-out}
 .dlg h3{margin:0 0 8px;font-size:17px;font-weight:700;color:var(--navy);letter-spacing:-.01em;line-height:1.4;word-break:keep-all}
@@ -960,7 +977,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 <!-- ══ 본사 관리 ══ -->
 <div id="admin" class="hidden">
   <div class="topbar">
-    <div class="tb-title">본사 관리<small>월간 현황 · 사업소 · 명단</small></div>
+    <div class="tb-title">본사 관리</div>
     <button class="tb-btn tb-two tb-inst hidden" id="adm-install" onclick="installApp()" aria-label="앱으로 다운받기" title="앱으로 다운받기">앱으로<br>다운받기</button>
   </div>
   <div class="content" id="adm-content"></div>
@@ -1432,28 +1449,14 @@ async function admMonth(d){
   if(admYm!==next) return; admSummary=cur;
   renderAdminHome();
 }
-function renderAdminMonthly(){
-  const [y,m]=admYm.split('-').map(Number); const isNow = admYm===fmtDate(Date.now()).slice(0,7);
-  const rows = (admSummary || []).slice();
-  const sum = k=>rows.reduce((a,r)=>a+(+r[k]||0),0);
-  const pct = r=>r.recv?Math.round(r.recv_done/r.recv*100):null;
-  const lv = p=>p==null?'none':p>=80?'good':p>=50?'mid':'bad';
-  // 챙길 곳부터: 긴급 미완료 → 미완료 → 처리율 낮은 순
-  rows.sort((a,b)=>(+b.urgent||0)-(+a.urgent||0) || (+b.open||0)-(+a.open||0) || ((pct(a)??101)-(pct(b)??101)) || String(a.name).localeCompare(String(b.name),'ko'));
-  const tot = {recv:sum('recv'), recv_done:sum('recv_done'), done:sum('done'), open:sum('open'), urgent:sum('urgent')};
-  const totPct = tot.recv?Math.round(tot.recv_done/tot.recv*100):null;
-  const sub = r=>[ r.open ? `<span class="r">미완료 ${r.open}</span>` : (r.recv ? '<span class="g">모두 완료</span>' : '민원 없음'),
-    r.urgent ? `<span class="r">긴급 ${r.urgent}</span>` : '', r.report ? '' : '보고서 미작성' ].filter(Boolean).join(' · ');
-  return `<div class="card adm-month">
-    <div class="am-head"><h3>사업소별 월간 현황</h3>
-      <div class="am-nav"><button onclick="admMonth(-1)" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button onclick="admMonth(1)" aria-label="다음 달" ${isNow?'disabled':''}>›</button></div></div>
-    ${admSummary===null?'<div class="empty" style="padding:24px 0"><b>불러오는 중…</b></div>':`
-    <div class="am-sum"><b>${totPct==null?'-':totPct+'%'}</b><span>처리율 · 접수 ${tot.recv} · 완료 ${tot.done}${tot.open?` · <em>미완료 ${tot.open}</em>`:''}${tot.urgent?` · <em>긴급 ${tot.urgent}</em>`:''}</span></div>
-    ${rows.length?rows.map(r=>{ const p=pct(r); return `<div class="am-row ${lv(p)}">
-      <div class="am-l"><b onclick="pickOfficeView('${esc(r.id)}')" title="소장 화면 열기">${esc(r.name)}</b><small>${sub(r)}</small></div>
-      <div class="am-r"><b>${p==null?'-':p+'%'}</b><button onclick="adminReport('${esc(r.id)}')">보고서 ›</button></div>
-    </div>`; }).join(''):'<div class="empty"><b>아직 사업소가 없습니다</b></div>'}`}
-  </div>`;
+// 처리율 원 그래프 (p: 0~100 또는 null)
+const lvOf = p=>p==null?'lv-none':p>=80?'lv-good':p>=50?'lv-mid':'lv-bad';
+function ringSvg(p, size, sw, fs, label){
+  const r=(size-sw)/2, c=2*Math.PI*r, f=p==null?0:Math.max(0,Math.min(100,p))/100;
+  return `<div class="ring ${lvOf(p)}" style="width:${size}px;height:${size}px"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#eceef2" stroke-width="${sw}"/>
+    ${f?`<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--lv)" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}"/>`:''}</svg>
+    <div class="rt" style="font-size:${fs}px">${p==null?'-':p+'%'}${label?`<small>${label}</small>`:''}</div></div>`;
 }
 // 본사: 사업소 월간보고서를 사업소에서 만든 것과 같은 모양으로 엶 (민원인 연락처는 받지 않음)
 async function adminReport(id){
@@ -1529,41 +1532,68 @@ window.addEventListener('message', ev=>{
 });
 
 function renderAdminHome(){
+  const [y,m]=admYm.split('-').map(Number); const isNow = admYm===fmtDate(Date.now()).slice(0,7);
+  const sm = new Map((admSummary||[]).map(r=>[r.id,r]));
+  const pct = r=>r&&r.recv?Math.round(r.recv_done/r.recv*100):null;
+  const rows = adminOffices.map(o=>({o, r:sm.get(o.id)||{recv:0,recv_done:0,done:0,open:0,urgent:0}}));
+  // 챙길 곳부터: 긴급 → 미완료 → 처리율 낮은 순
+  rows.sort((a,b)=>(+b.r.urgent||0)-(+a.r.urgent||0) || (+b.r.open||0)-(+a.r.open||0) || ((pct(a.r)??101)-(pct(b.r)??101)) || String(a.o.name).localeCompare(String(b.o.name),'ko'));
+  const sum = k=>rows.reduce((a,x)=>a+(+x.r[k]||0),0);
+  const tot = {recv:sum('recv'), recv_done:sum('recv_done'), done:sum('done'), open:sum('open'), urgent:sum('urgent')};
+  const totPct = tot.recv?Math.round(tot.recv_done/tot.recv*100):null;
+  const sub = (o,r)=>[ !o.has_mgr ? '<span class="r">소장 미설정</span>' : '',
+    r.open ? `<span class="r">미완료 ${r.open}${r.urgent?` · 긴급 ${r.urgent}`:''}</span>` : (r.recv ? '<span class="g">모두 완료</span>' : '이달 민원 없음') ].filter(Boolean).join(' · ');
+  const loading = admSummary===null;
   $('#adm-content').innerHTML = `
-    <div class="sec-title">월간 현황 <small>사업소별 민원 처리 · 월간보고서</small></div>
-    ${renderAdminMonthly()}
-    <div class="sec-title">사업소 관리 <small>사업소 생성 · 명단 입력 · 비밀번호</small></div>
-    <div class="card"><h3>새 사업소 만들기</h3>
-      <div class="form-row"><label>사업소 이름</label><input id="ad-name" placeholder="예) 강남타워"></div>
-      <div class="form-grid">
-        <div class="form-row"><label>사업소 코드 (로그인용)</label><input id="ad-code" placeholder="예) GANGNAM" autocapitalize="characters"></div>
-        <div class="form-row"><label>비밀번호 (6자 이상)</label><input id="ad-pw" type="text"></div>
+    <div class="card hq-hero">
+      <div class="hq-mon"><button onclick="admMonth(-1)" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button onclick="admMonth(1)" aria-label="다음 달" ${isNow?'disabled':''}>›</button></div>
+      <div class="hq-hero-b">
+        ${ringSvg(loading?null:totPct, 124, 13, 30, '처리율')}
+        <div class="hq-kpi">
+          <div><b>${loading?'…':tot.recv}</b><span><i></i>접수</span></div>
+          <div class="g"><b>${loading?'…':tot.done}</b><span><i></i>완료</span></div>
+          <div class="${tot.open?'r':'z'}"><b>${loading?'…':tot.open}</b><span><i></i>미완료</span></div>
+          <div class="${tot.urgent?'r':'z'}"><b>${loading?'…':tot.urgent}</b><span><i></i>긴급</span></div>
+        </div>
       </div>
-      <div class="form-row"><label>소장 로그인 비밀번호 (사업소 비밀번호와 다르게 · 4자 이상)</label>
-        <div style="display:flex;gap:8px"><input id="ad-mgr" type="text" style="flex:1" placeholder="소장에게만 알려 줄 번호"><button class="btn btn-gray" type="button" onclick="$('#ad-mgr').value=genMgrPw($('#ad-pw').value)">자동 만들기</button></div></div>
-      <button class="btn btn-primary btn-block" onclick="adminCreate()">사업소 만들기</button>
     </div>
-    <div class="card"><h3>사업소 목록 <small style="font-weight:400;color:var(--mute)">${adminOffices.length}곳</small></h3>
-      ${adminOffices.length ? adminOffices.map(o=>`
-        <div class="adm-item ao">
-          <div class="ao-head">
-            <div class="ao-thumb" onclick="pickOfficeView('${esc(o.id)}')">${o.cover?`<img src="${esc(o.cover)}" alt="">`:AO_IC.bldg}</div>
-            <div class="ao-info"><div class="ao-name"><b onclick="pickOfficeView('${esc(o.id)}')">${esc(o.name)}</b><button type="button" class="ao-rn" onclick="renameOffice('${esc(o.id)}')" aria-label="사업소 이름 바꾸기" title="이름 바꾸기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div>
-              <div class="ao-meta"><span class="ao-code">${esc(o.code)}</span><span>직원 ${o.count}명</span></div>
-              <div class="ao-st ${o.has_mgr?'ok':'bad'}"><i></i>${o.has_mgr?'소장 로그인 설정됨':'소장 로그인 미설정 · 소장 입장 불가'}</div>
-            </div>
-          </div>
-          <div class="adm-acts ao-acts">
-            <button class="ao-btn" onclick="adminRoster('${esc(o.id)}')">${AO_IC.users}<span>명단</span></button>
-            <button class="ao-btn" onclick="adminPw('${esc(o.id)}','${esc(o.name)}')">${AO_IC.key}<span>직원 비밀번호</span></button>
-            <button class="ao-btn ${o.has_mgr?'':'hot'}" onclick="adminMgrPw('${esc(o.id)}','${esc(o.name)}','${esc(o.code)}')">${AO_IC.shield}<span>소장 비밀번호</span></button>
-            <button class="ao-btn" onclick="adminBrand('${esc(o.id)}')">${AO_IC.tag}<span>관리단 표시</span></button>
-            <button class="ao-btn" onclick="adminCover('${esc(o.id)}')">${AO_IC.img}<span>건물 사진</span></button>
-            <button class="ao-btn del" onclick="adminDelete('${esc(o.id)}','${esc(o.name)}')">${AO_IC.trash}<span>삭제</span></button>
-          </div>
-        </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>위에서 사업소를 만들어 주세요</div>'}
+    <div class="card">
+      <div class="hq-lh"><h3>사업소<small>${adminOffices.length}곳</small></h3><button class="hq-add" onclick="openNewOffice()">+ 추가</button></div>
+      ${rows.length ? rows.map(({o,r})=>`
+        <div class="adm-item hq-row">
+          <div class="hq-th" onclick="pickOfficeView('${esc(o.id)}')">${o.cover?`<img src="${esc(o.cover)}" alt="">`:AO_IC.bldg}</div>
+          <div class="hq-tx" onclick="pickOfficeView('${esc(o.id)}')"><b>${esc(o.name)}</b><small>${loading?'불러오는 중…':sub(o,r)}</small></div>
+          ${ringSvg(loading?null:pct(r), 46, 5, pct(r)===100?10.5:12)}
+          <button class="hq-more" onclick="officeMenu('${esc(o.id)}')" aria-label="${esc(o.name)} 관리">⋯</button>
+        </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>오른쪽 위 + 추가를 눌러 만들어 주세요</div>'}
     </div>
     <button class="btn btn-gray btn-block no-print" onclick="adminLogout()">나가기</button>`;
+}
+// 사업소 관리 메뉴 (⋯)
+async function officeMenu(id){
+  const o=adminOffices.find(x=>x.id===id); if(!o) return;
+  const v=await openSheet({title:o.name, html:`<div class="hq-sh-meta">코드 ${esc(o.code)} · 직원 ${o.count}명${o.has_mgr?'':' · <b style="color:var(--red)">소장 로그인 미설정</b>'}</div>`, actions:[
+    {value:'report', label:'월간보고서 보기'}, {value:'roster', label:'직원 명단'}, {value:'rename', label:'이름 바꾸기'},
+    {value:'pw', label:'직원 비밀번호'}, {value:'mgr', label:o.has_mgr?'소장 비밀번호':'소장 비밀번호 정하기 (필요)'},
+    {value:'brand', label:'관리단 표시'}, {value:'cover', label:'건물 사진'}, {value:'del', label:'사업소 삭제', danger:true} ]});
+  if(v==='report') adminReport(id); else if(v==='roster') adminRoster(id); else if(v==='rename') renameOffice(id);
+  else if(v==='pw') adminPw(id,o.name); else if(v==='mgr') adminMgrPw(id,o.name,o.code); else if(v==='brand') adminBrand(id);
+  else if(v==='cover') adminCover(id); else if(v==='del') adminDelete(id,o.name);
+}
+function openNewOffice(){
+  closeById('new-office-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="new-office-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:480px">
+    <div class="modal-head"><h2>새 사업소</h2><button class="modal-close" onclick="closeById('new-office-modal')">✕</button></div>
+    <div class="form-row"><label>사업소 이름</label><input id="ad-name" placeholder="예) 강남타워"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>사업소 코드 (로그인용)</label><input id="ad-code" placeholder="예) GANGNAM" autocapitalize="characters"></div>
+      <div class="form-row"><label>비밀번호 (6자 이상)</label><input id="ad-pw" type="text"></div>
+    </div>
+    <div class="form-row"><label>소장 로그인 비밀번호 (사업소 비밀번호와 다르게 · 4자 이상)</label>
+      <div style="display:flex;gap:8px"><input id="ad-mgr" type="text" style="flex:1" placeholder="소장에게만 알려 줄 번호"><button class="btn btn-gray" type="button" onclick="$('#ad-mgr').value=genMgrPw($('#ad-pw').value)">자동 만들기</button></div></div>
+    <button class="btn btn-primary btn-block" onclick="adminCreate()">사업소 만들기</button>
+  </div></div>`);
+  setTimeout(()=>{ const i=$('#ad-name'); if(i) i.focus(); },50);
 }
 async function adminCreate(){
   const name=$('#ad-name').value.trim(), code=$('#ad-code').value.trim().toUpperCase(), pw=$('#ad-pw').value;
@@ -1574,7 +1604,7 @@ async function adminCreate(){
   try{
     const nid = await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
     await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
-    knownOfficePw[code]=pw; await adminHome(); showMgrHandoff(name, code, mg, pw);
+    knownOfficePw[code]=pw; closeById('new-office-modal'); await adminHome(); showMgrHandoff(name, code, mg, pw);
   }catch(e){
     const dup = /duplicate|unique/i.test(e.message||'');
     toast(dup ? '이미 있는 사업소 코드입니다' : '만들지 못했습니다');
