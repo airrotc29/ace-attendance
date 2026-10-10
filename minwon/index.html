@@ -2063,7 +2063,7 @@ async function assign(id,v,confirmed){
 const LOG_PICKS = {
   progress:[
     {key:'s', label:'지금 상황', opts:[['출동 중','현장으로 가는 중입니다.'],['현장 확인','현장 확인했습니다.'],['조치 중','조치 중입니다.'],['부품 주문','부품을 주문했습니다.'],['업체 요청','외부 업체에 수리를 요청했습니다.'],['민원인 부재','민원인 부재로 다시 방문하겠습니다.']], def:'현장 확인'},
-    {key:'t', label:'조치 예정', opts:[['30분 후','30분 후 조치 예정'],['1시간 후','1시간 후 조치 예정'],['오늘 중','오늘 중 조치 예정'],['내일','내일 조치 예정'],['부품 도착 후','부품 도착 후 조치 예정']], def:'1시간 후', optional:true}
+    {key:'t', label:'조치 예정', opts:[['30분 이내','30분 이내 조치 예정'],['1시간 이내','1시간 이내 조치 예정'],['오늘 중','오늘 중 조치 예정'],['내일','내일 조치 예정'],['부품 도착 후','부품 도착 후 조치 예정']], def:'1시간 후', optional:true}
   ],
   done:[
     {key:'s', label:'처리 내용', opts:[['조치 완료','조치 완료했습니다.'],['부품 교체','부품 교체 완료했습니다.'],['수리 완료','수리 완료했습니다.'],['청소 완료','청소 완료했습니다.'],['업체 수리','업체 수리 완료했습니다.'],['이상 없음','점검 결과 이상 없습니다.']], def:'조치 완료'},
@@ -2093,7 +2093,7 @@ function addLog(id,type){
     <div class="form-row"><label>${type==='done'?'완료 사진 (권장)':'사진'}</label><div class="photo-add" id="log-photos">${photos.map((p,i)=>`<img class="thumb" src="${p}">`).join('')}<div class="photo-btn" id="log-photo-btn"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</div></div></div>
     <button class="btn ${type==='done'?'btn-green':type==='progress'?'btn-amber':'btn-primary'} btn-block" id="log-submit">${type==='done'?'완료로 처리':'등록'}</button>
   </div></div>`);
-    $('#log-modal').querySelectorAll('.qpick .chip').forEach(b=>b.onclick=()=>{
+    $('#log-modal').querySelectorAll('.qpick .chip[data-k]').forEach(b=>b.onclick=()=>{
       const g=groups.find(x=>x.key===b.dataset.g), k=b.dataset.k;
       sel[g.key] = (sel[g.key]===k && g.optional) ? null : k;   // '선택' 항목은 한 번 더 누르면 해제
       b.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.k===sel[g.key]));
