@@ -736,8 +736,18 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 #hqv-frame{flex:1;width:100%;border:0;background:#f4f6fb}
 .embed #tb-push,.embed .push-card,.embed .inst-card,.embed #lg-install{display:none!important}
 .ao-thumb,.ao-info > b{cursor:pointer}
-.qpick .date-chip{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.qpick .date-in{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;font-size:16px;cursor:pointer}
+.qpick .date-chip{display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cal{margin-top:10px;background:#fff;border:1px solid var(--e-line);border-radius:14px;padding:10px 10px 12px;box-shadow:0 8px 20px -14px rgba(17,24,39,.35)}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-h b{font-size:15px;font-weight:800;color:#111827}
+.cal-nav{width:36px;height:36px;border:0;border-radius:10px;background:#f3f5f9;font-size:20px;font-weight:700;color:#374151;cursor:pointer}
+.cal-w,.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-w span{font-size:12px;font-weight:700;color:#6b7280;padding:4px 0}
+.cal-g > span{height:40px}
+.cal-d{height:40px;border:0;border-radius:10px;background:transparent;font:inherit;font-size:14px;font-weight:600;color:#111827;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cal-d:disabled{color:#c4c9d4;cursor:default}
+.cal-d.today{box-shadow:inset 0 0 0 1.5px #1d47cc;color:#1d47cc}
+.cal-d.on{background:#1d47cc;color:#fff;box-shadow:none}
 /* 버튼: 파란 포인트 · 평평한 색 + 부드러운 그림자 */
 .btn-primary,.btn-login,.dlg-o:not(.danger),.pc-go,.cb-btn.pri,.chat-row .ic-btn.send{background:var(--e-blue)!important;border-color:var(--e-blue)!important;color:#fff!important}
 .btn-primary,.btn-green,.btn.btn-amber,.btn-login,.wb-end,.pc-go,.cb-btn.pri,.chat-row .ic-btn.send,.dlg-o{background-image:none!important;box-shadow:0 8px 16px -10px rgba(29,71,204,.75)!important}
@@ -2088,7 +2098,7 @@ function addLog(id,type){
   const draw=()=>{ $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="log-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-height:86vh">
     <div class="modal-head"><h2>${title}</h2><button class="modal-close" onclick="document.getElementById('log-modal').remove()">✕</button></div>
     ${(type==='done'||type==='progress')?contactBox(it).replace('class="contact-box"','class="contact-box in-log"'):''}
-    ${groups.map(g=>`<div class="qpick"><div class="qp-l">${g.label}${g.optional?' <span>선택</span>':''}</div><div class="chips">${g.opts.map(([k])=>`<button type="button" class="chip ${sel[g.key]===k?'active':''}" data-g="${g.key}" data-k="${esc(k)}">${esc(k)}</button>`).join('')}${(type==='progress'&&g.key==='t')?`<label class="chip date-chip ${String(sel[g.key]||'').startsWith('D:')?'active':''}"><span>${String(sel[g.key]||'').startsWith('D:')?dateLabel(sel[g.key].slice(2)):'날짜 지정'}</span><input type="date" class="date-in" data-g="${g.key}" min="${todayIso()}"></label>`:''}</div></div>`).join('')}
+    ${groups.map(g=>`<div class="qpick"><div class="qp-l">${g.label}${g.optional?' <span>선택</span>':''}</div><div class="chips">${g.opts.map(([k])=>`<button type="button" class="chip ${sel[g.key]===k?'active':''}" data-g="${g.key}" data-k="${esc(k)}">${esc(k)}</button>`).join('')}${(type==='progress'&&g.key==='t')?`<button type="button" class="chip date-chip ${String(sel[g.key]||'').startsWith('D:')?'active':''}" id="log-date-btn"><span>${String(sel[g.key]||'').startsWith('D:')?dateLabel(sel[g.key].slice(2)):'날짜 지정'}</span></button>`:''}</div>${(type==='progress'&&g.key==='t')?'<div class="cal hidden" id="log-cal"></div>':''}</div>`).join('')}
     <div class="form-row">${groups.length?'<label>보낼 내용 <span style="font-weight:400;color:var(--mute)">· 직접 고쳐 쓸 수 있습니다</span></label>':''}<textarea id="log-text" placeholder="${ph}" style="min-height:${groups.length?64:80}px">${esc(logDraftText)}</textarea></div>
     <div class="form-row"><label>${type==='done'?'완료 사진 (권장)':'사진'}</label><div class="photo-add" id="log-photos">${photos.map((p,i)=>`<img class="thumb" src="${p}">`).join('')}<div class="photo-btn" id="log-photo-btn"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</div></div></div>
     <button class="btn ${type==='done'?'btn-green':type==='progress'?'btn-amber':'btn-primary'} btn-block" id="log-submit">${type==='done'?'완료로 처리':'등록'}</button>
@@ -2097,19 +2107,25 @@ function addLog(id,type){
       const g=groups.find(x=>x.key===b.dataset.g), k=b.dataset.k;
       sel[g.key] = (sel[g.key]===k && g.optional) ? null : k;   // '선택' 항목은 한 번 더 누르면 해제
       b.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.k===sel[g.key]));
-      const dc=b.parentNode.querySelector('.date-chip'); if(dc){ dc.classList.remove('active'); dc.querySelector('span').textContent='날짜 지정'; }
+      const dc=document.getElementById('log-date-btn'); if(dc){ dc.classList.remove('active'); dc.querySelector('span').textContent='날짜 지정'; }
+      const cal=document.getElementById('log-cal'); if(cal) cal.classList.add('hidden');
       $('#log-text').value = composeLog(type, sel);
     });
-    // 날짜 칸을 칩 어디를 눌러도 달력이 열리게 (삼성 인터넷 등에서 칸을 가린 입력칸이 안 열리는 경우 대비)
-    $('#log-modal').querySelectorAll('.date-chip').forEach(dc=>dc.addEventListener('click', e=>{ const di=dc.querySelector('.date-in'); if(!di || e.target===di) return; e.preventDefault(); try{ if(di.showPicker) di.showPicker(); else di.focus(), di.click(); }catch{ di.click(); } }));
-    // 날짜 지정: 달력에서 고르면 "○월 ○일까지 조치 예정"으로 채움
-    $('#log-modal').querySelectorAll('.date-in').forEach(di=>di.onchange=()=>{
-      if(!di.value) return; const g=groups.find(x=>x.key===di.dataset.g);
-      sel[g.key]='D:'+di.value;
-      const chips=di.closest('.chips'); chips.querySelectorAll('.chip[data-k]').forEach(c=>c.classList.remove('active'));
-      const dc=di.closest('.date-chip'); dc.classList.add('active'); dc.querySelector('span').textContent=dateLabel(di.value);
-      $('#log-text').value = composeLog(type, sel);
-    });
+    // 날짜 지정: 앱 안의 달력에서 고르면 "○월 ○일까지 조치 예정"으로 채움 (기기 달력에 기대지 않음)
+    let calYm=null;
+    const calEl=()=>document.getElementById('log-cal');
+    const drawCal=()=>{ const el=calEl(); if(!el||!calYm) return; const [y,m]=calYm; const first=new Date(y,m-1,1).getDay(); const last=new Date(y,m,0).getDate(); const t=todayIso(); const cur=String(sel.t||'').startsWith('D:')?sel.t.slice(2):'';
+      let cells=''; for(let i=0;i<first;i++) cells+='<span></span>';
+      for(let d=1; d<=last; d++){ const iso=`${y}-${pad(m)}-${pad(d)}`; cells+=`<button type="button" class="cal-d${iso===t?' today':''}${iso===cur?' on':''}" data-d="${iso}"${iso<t?' disabled':''}>${d}</button>`; }
+      el.innerHTML=`<div class="cal-h"><button type="button" class="cal-nav" data-nav="-1" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button type="button" class="cal-nav" data-nav="1" aria-label="다음 달">›</button></div><div class="cal-w">${['일','월','화','수','목','금','토'].map(w=>`<span>${w}</span>`).join('')}</div><div class="cal-g">${cells}</div>`; };
+    const setProgressDate=iso=>{ sel.t='D:'+iso; $('#log-modal').querySelectorAll('.qpick .chip[data-k]').forEach(c=>c.classList.remove('active'));
+      const dc=document.getElementById('log-date-btn'); dc.classList.add('active'); dc.querySelector('span').textContent=dateLabel(iso);
+      calEl().classList.add('hidden'); $('#log-text').value=composeLog(type, sel); };
+    const dBtn=document.getElementById('log-date-btn');
+    if(dBtn) dBtn.onclick=()=>{ const el=calEl(); if(!el) return; if(!el.classList.contains('hidden')){ el.classList.add('hidden'); return; }
+      const src=String(sel.t||'').startsWith('D:')?sel.t.slice(2):todayIso(); calYm=[+src.slice(0,4), +src.slice(5,7)]; drawCal(); el.classList.remove('hidden'); };
+    if(calEl()) calEl().onclick=e=>{ const n=e.target.closest('[data-nav]'); if(n){ let [y,m]=calYm; m+=+n.dataset.nav; if(m<1){ m=12; y--; } if(m>12){ m=1; y++; } calYm=[y,m]; drawCal(); return; }
+      const d=e.target.closest('[data-d]'); if(d && !d.disabled) setProgressDate(d.dataset.d); };
     $('#log-photo-btn').onclick=()=>{ logDraftText=$('#log-text').value; pickPhotos(ps=>{photos.push(...ps); $('#log-modal').remove(); draw();}); };
     $('#log-submit').onclick=async()=>{
       const text=$('#log-text').value.trim();
