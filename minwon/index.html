@@ -1010,6 +1010,16 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pts-kpi span small{display:block;font-size:10.5px;color:var(--mute)}
 .pts-hax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mute);margin-top:3px}
 .pts-bar .nm small{display:block;font-size:10.5px;color:var(--mute);font-weight:400}
+.ptm{margin:2px 0 4px}
+.ptm-r{display:flex;align-items:center;gap:8px;padding:4px 0}
+.ptm-r .nm{width:66px;flex:none;font-size:13px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptm-r .v{width:44px;flex:none;text-align:right;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}.ptm-r .v small{font-size:10.5px;font-weight:600;color:var(--mute)}
+.ptm-c{flex:1;min-width:0;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:2px;position:relative}
+.ptm-c i{height:18px;border-radius:3px;background:#eef0f4}.ptm-c i.y{background:#1f8a55}.ptm-c i.n{background:#f4b9b2}
+.ptm-c i.t{box-shadow:0 0 0 1.5px #1d47cc}
+.ptm-r.gone .nm{color:var(--mute);text-decoration:line-through}.ptm-r.gone .ptm-c i.y{background:#9fcfb5}
+.ptm-ax{padding:0}.ptm-ax .ptm-c{display:block;height:14px}.ptm-ax em{position:absolute;top:1px;transform:translateX(-50%);font-style:normal;font-size:10px;color:var(--mute);font-variant-numeric:tabular-nums}
+.ptm-lg{display:flex;gap:12px;justify-content:flex-end;font-size:11px;color:var(--mute);margin-top:4px}.ptm-lg span{display:flex;align-items:center;gap:4px}.ptm-lg i{width:10px;height:10px;border-radius:2px;background:#eef0f4}.ptm-lg i.y{background:#1f8a55}.ptm-lg i.n{background:#f4b9b2}
 .pts-miss{font-size:12px;color:#7a4b45;background:#fff4f2;border-radius:10px;padding:7px 10px;margin:2px 0 4px;line-height:1.5}.pts-miss b{color:var(--red)}
 .pts-bad{font-size:13px;color:#4b5563;padding:7px 10px;border-radius:10px;background:#fff7ea;margin-bottom:5px}.pts-bad b{color:#a8640a;margin-right:4px}.pts-bad small{color:var(--mute)}
 /* 순찰 지점별 한 줄 (상태 · 이름 · 시간 막대 · 마지막 시각) */
@@ -3295,7 +3305,9 @@ function patrolAnalyze(d, ym){
   const startDay=p=>{ const c=new Date(p.created); return c.getTime()>=s ? c.getDate() : 1; };
   const per=pts.map(p=>{ const L=logs.filter(l=>l.point_id===p.id); const days=new Set(L.map(l=>l.t.getDate()));
     const avail=p.active ? Math.max(0, elapsed-startDay(p)+1) : 0;
-    return {id:p.id, name:p.name, active:p.active, count:L.length, days:days.size, avail, pct:avail?Math.min(100,Math.round(days.size/avail*100)):null, bad:L.filter(bad).length}; });
+    const sd=startDay(p), cells=[];   // 날짜별 칸: 1 순찰 · 0 빠짐 · -1 등록 전/남은 날 (뺀 지점은 순찰한 날만)
+    for(let dd=1; dd<=lastDay; dd++) cells.push(days.has(dd)?1:(!p.active||dd>elapsed||dd<sd)?-1:0);
+    return {id:p.id, name:p.name, active:p.active, count:L.length, days:days.size, avail, cells, pct:avail?Math.min(100,Math.round(days.size/avail*100)):null, bad:L.filter(bad).length}; });
   const act=per.filter(p=>p.active), sumAvail=act.reduce((a,p)=>a+p.avail,0), sumDays=act.reduce((a,p)=>a+Math.min(p.days,p.avail),0);
   const daily=[]; for(let dd=1; dd<=lastDay; dd++){
     if(dd>elapsed){ daily.push(null); continue; }
@@ -3320,6 +3332,8 @@ function patrolAnalyze(d, ym){
     hours, daily, badList:logs.filter(bad).map(l=>({t:l.t, point:name[l.point_id]||'', emp:l.emp_name||'', note:l.note, photo:l.photo||null})).reverse(),
     byEmp:Object.entries(byEmp).sort((a,b)=>b[1]-a[1]), fullDays:daily.filter(v=>v===100).length, missDays:daily.filter(v=>v===0).length };
 }
+// 지점 × 날짜 칸 아래 날짜 눈금 (1 · 10 · 20 · 말일)
+const p_ax=n=>[1,10,20,n].map(d=>`<em style="left:${((d-.5)/n*100).toFixed(2)}%">${d}</em>`).join('');
 // 통계 탭 카드 (소장 · 본사 화면에서만, 불러오면 다시 그림)
 function patrolStatsCard(){
   if(!ptCanView()) return '';
@@ -3338,8 +3352,11 @@ function patrolStatsCard(){
       <div class="pts-kpi"><div><b>${a.total}</b><span>코스 완주 <small>QR ${a.scans}번</small></span></div><div><b>${a.perDay}</b><span>하루 평균 완주</span></div><div class="w"><b>${a.badList.length}</b><span>특이사항</span></div><div><b>${a.night}</b><span>야간 완주 22~06시</span></div></div></div>
     <div class="pts-sub">날짜별 이행 <span>진할수록 모든 지점 순찰 · 빨강 = 미순찰</span></div>
     <div class="pts-days">${a.daily.map((v,i)=>`<i style="background:${col(v)}" title="${+mm}/${i+1} ${v==null?'-':v+'%'}">${i+1}</i>`).join('')}</div>
-    <div class="pts-sub">지점별 이행률 <span>순찰한 날 / 지난 날</span></div>
-    ${a.points.map(p=>`<div class="pts-bar ${p.active?'':'gone'}"><span class="nm">${esc(p.name)}</span><div class="bg"><div style="width:${p.pct||0}%;background:${p.pct==null?'#c3c8d1':p.pct>=80?'var(--green)':p.pct>=50?'#e08a12':'var(--red)'}"></div></div><span class="v">${p.active?`${p.pct==null?'-':p.pct+'%'}<small>${p.days}/${p.avail}일</small>`:`<small>뺀 지점 · ${p.count}회</small>`}</span></div>`).join('')}
+    <div class="pts-sub">지점별 이행 <span>한 칸 = 하루 · 오른쪽 % = 순찰한 날 / 지난 날</span></div>
+    <div class="ptm" style="--n:${a.lastDay}">${a.points.map(p=>{ const c=p.pct==null?'#9aa1ad':p.pct>=80?'var(--green)':p.pct>=50?'#c77d0a':'var(--red)';
+      return `<div class="ptm-r ${p.active?'':'gone'}"><span class="nm">${esc(p.name)}</span><div class="ptm-c">${p.cells.map((v,i)=>`<i class="${v===1?'y':v===0?'n':''}${i+1===a.elapsed&&a.elapsed<a.lastDay?' t':''}" title="${+mm}/${i+1} ${v===1?'순찰':v===0?'빠짐':''}"></i>`).join('')}</div><b class="v" style="color:${c}">${p.active?(p.pct==null?'-':p.pct+'%'):'<small>뺀 지점</small>'}</b></div>`; }).join('')}
+      <div class="ptm-r ptm-ax"><span class="nm"></span><div class="ptm-c">${p_ax(a.lastDay)}</div><b class="v"></b></div>
+      <div class="ptm-lg"><span><i class="y"></i>순찰</span><span><i class="n"></i>빠짐</span><span><i></i>등록 전 · 남은 날</span></div></div>
     ${a.rounds&&!a.rounds.req?`<div class="pts-sub">정한 순찰 시간 <span>${a.rounds.per.map(r=>`${esc(r.name)} ${r.label}`).join(' · ')}</span></div><div class="pts-miss" style="background:#f4f6fa;color:var(--mute)">지점을 등록한 뒤 끝난 회차가 아직 없습니다. 다음 회차가 끝나면 여기에 집계됩니다.</div>`:''}
     ${a.rounds&&a.rounds.req?`<div class="pts-sub">정한 순찰 시간 <span>지킨 회차 ${a.rounds.hit}/${a.rounds.req} · ${a.rounds.pct==null?'-':a.rounds.pct+'%'}</span></div>
     ${a.rounds.per.map(r=>`<div class="pts-bar"><span class="nm">${esc(r.name)}<small>${r.label}</small></span><div class="bg"><div style="width:${r.pct||0}%;background:${r.pct==null?'#c3c8d1':r.pct>=80?'var(--green)':r.pct>=50?'#e08a12':'var(--red)'}"></div></div><span class="v">${r.pct==null?'-':r.pct+'%'}<small>${r.hit}/${r.req}</small></span></div>`).join('')}
