@@ -1016,9 +1016,6 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .ptn-ok:active{border-color:#2f8f5b;box-shadow:0 0 0 4px rgba(47,143,91,.12)}
 .ptn-bad.on{border-color:#e08a12;box-shadow:0 0 0 4px rgba(224,138,18,.13);background:#fffaf2}
 .ptn-ok.dim{opacity:.5}
-.ptn-words{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
-.ptn-words button{border:0;background:#f2f4f7;color:#374151;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
-.ptn-words button.on{background:#fff1dc;color:#a8640a}
 .ptn-ta{position:relative;margin:0 0 12px}
 .ptn-ta textarea{width:100%;box-sizing:border-box;font:inherit;font-size:15px;line-height:1.5;border:1.5px solid #e6e9ef;border-radius:16px;padding:12px 14px 50px;resize:none;background:#fbfcfd;min-height:118px}
 .ptn-ta textarea:focus{outline:none;border-color:#1d47cc;background:#fff;box-shadow:0 0 0 4px rgba(29,71,204,.1)}
@@ -2252,8 +2249,7 @@ async function patrolCheck(id,k){
     await patrolLoad(true); if(document.getElementById('patrol-modal') && ptDay===todayIso()){ ptLogs=patrol.logs; drawPatrol(); }
   }catch(e){ fail(e); }
 }
-// 순찰 결과 입력: 이상 없음 한 번에, 특이사항은 글 · 빠른 단어 · 음성으로 (원하면 민원으로도 접수)
-const PT_WORDS=['누수','물 고임','악취','소음','파손','조명 고장','문 열림','쓰레기','결로','경보'];
+// 순찰 결과 입력: 이상 없음 한 번에, 특이사항은 글 · 음성으로 (원하면 민원으로도 접수)
 const PT_OK='이상 없음';
 function patrolNoteSheet(point){
   return new Promise(res=>{
@@ -2268,7 +2264,6 @@ function patrolNoteSheet(point){
         <button class="ptn-bad"><span class="ic">!</span><b>특이사항</b><small>내용 남기기</small></button>
       </div>
       <div class="ptn-more hidden">
-        <div class="ptn-words">${PT_WORDS.map(w=>`<button type="button">${w}</button>`).join('')}</div>
         <div class="ptn-ta"><textarea maxlength="200" rows="3" placeholder="무엇이 이상한지 적거나 말로 입력하세요"></textarea>
           <button type="button" class="ptn-mic" aria-label="말로 입력"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>말로 입력</span></button></div>
         <label class="ptn-iss"><span><b>민원으로도 접수</b><small>담당 미지정 · 접수 경로 '순찰 발견'</small></span><input type="checkbox" checked><i class="sw"></i></label>
@@ -2281,7 +2276,6 @@ function patrolNoteSheet(point){
     root.querySelector('.ptn-x').onclick=close;
     root.querySelector('.ptn-ok').onclick=()=>done({ok:true, note:PT_OK, issue:false});
     root.querySelector('.ptn-bad').onclick=()=>{ root.querySelector('.ptn-more').classList.remove('hidden'); root.querySelector('.ptn-bad').classList.add('on'); root.querySelector('.ptn-ok').classList.add('dim'); setTimeout(()=>ta.focus(),50); };
-    root.querySelectorAll('.ptn-words button').forEach(b=>b.onclick=()=>{ b.classList.add('on'); ta.value=(ta.value.trim()?ta.value.trim()+', ':'')+b.textContent; ta.focus(); });
     root.querySelector('.ptn-mic').onclick=e=>startVoice(e.currentTarget, ta);
     root.querySelector('.ptn-save').onclick=()=>{ const v=ta.value.trim(); if(!v){ toast('특이사항을 적거나 말해 주세요'); ta.focus(); return; } done({ok:false, note:v, issue:root.querySelector('.ptn-iss input').checked}); };
   });
