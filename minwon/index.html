@@ -922,6 +922,14 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .viewer .vw-slide{flex:0 0 100%;height:100%;display:flex;align-items:center;justify-content:center}
 .viewer .vw-slide img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
 .viewer.zoomed .vw-nav,.viewer.zoomed .vw-count{opacity:0;pointer-events:none}
+/* 사용설명서 바로 보기 */
+.gview{position:fixed;inset:0;z-index:190;background:#e6e8ec;display:flex;flex-direction:column}
+.gv-bar{flex:none;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;background:#fff;box-shadow:0 2px 10px -6px rgba(16,24,40,.35)}
+.gv-bar b{flex:1;font-size:15px;color:var(--navy);text-align:center}
+.gv-x{width:38px;height:38px;border:0;border-radius:50%;background:#f1f3f6;font-size:17px;color:var(--ink);cursor:pointer}
+.gv-dl{border:0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;padding:9px 12px;border-radius:999px;cursor:pointer}
+.gv-pages{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 10px calc(16px + env(safe-area-inset-bottom));overscroll-behavior:contain}
+.gv-pages img{display:block;width:100%;max-width:820px;height:auto;margin:0 auto 12px;background:#fff;border-radius:4px;box-shadow:0 4px 14px -8px rgba(16,24,40,.45)}
 .viewer .vw-count{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:14px;font-weight:700;padding:5px 12px;border-radius:999px}
 .viewer .vw-close{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:20px}
 .viewer .vw-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;border-radius:12px;background:rgba(0,0,0,.35);color:#fff;font-size:34px;line-height:1}
@@ -999,7 +1007,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
     <button data-tab="chat" onclick="go('chat')"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>채팅<span class="nbadge hidden" id="nb-chat"></span></button>
     <button data-tab="stats" onclick="go('stats')"><svg viewBox="0 0 24 24"><path d="M5 20v-8M11 20V5M17 20v-5M3 20h18"/></svg>통계</button>
     <button data-tab="search" onclick="go('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>검색</button>
-    <button class="nav-guide" onclick="downloadGuide()" aria-label="사용설명서 내려받기"><svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 1 4 17z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>설명서</button>
+    <button class="nav-guide" onclick="openGuideMenu()" aria-label="사용설명서"><svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 1 4 17z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>설명서</button>
   </div>
 </div>
 
@@ -1763,9 +1771,26 @@ async function rosterSave(){
 // 라우팅 / 렌더
 // ══════════════════════════════════════════════
 function go(t){ tab=t; try{ sessionStorage.setItem('mw_tab',t); }catch{} document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); if(t==='chat') lsSet(K.seenChat(), Date.now()); if(t==='list') lsSet(K.seenIssue(), Date.now()); render(); window.scrollTo(0,0); }
-// 하단 '설명서': 직원은 직원용, 소장은 소장용 사용설명서(PDF)를 내려받음
+// 하단 '설명서': 직원은 직원용, 소장은 소장용 · 바로 보기(앱 안에서 쪽 그림으로) 또는 PDF 내려받기
+const guideWho = ()=> me && me.boss ? {key:'boss', name:'소장용'} : {key:'staff', name:'직원용'};
+async function openGuideMenu(){
+  const g=guideWho();
+  const v=await openSheet({title:`사용설명서 · ${g.name}`, actions:[{value:'view',label:'바로 보기'},{value:'down',label:'내려받기 (PDF)'}]});
+  if(v==='view') viewGuide(); else if(v==='down') downloadGuide();
+}
+async function viewGuide(){
+  const g=guideWho(); let info=null;
+  try{ info=await (await fetch('guide/index.json',{cache:'no-cache'})).json(); }catch(e){ console.warn(e); }
+  const n=info&&info[g.key];
+  if(!n){ toast('설명서를 불러오지 못했습니다. 내려받기를 이용해 주세요', 3500); return; }
+  closeById('guide-view');
+  const v=document.createElement('div'); v.id='guide-view'; v.className='gview';
+  v.innerHTML=`<div class="gv-bar"><button class="gv-x" onclick="closeById('guide-view')" aria-label="닫기">✕</button><b>사용설명서 · ${g.name}</b><button class="gv-dl" onclick="downloadGuide()">내려받기</button></div>
+    <div class="gv-pages">${Array.from({length:n},(_,i)=>`<img ${i>1?'loading="lazy" ':''}src="guide/${g.key}/${String(i+1).padStart(2,'0')}.jpg?v=${encodeURIComponent(info.v||'')}" width="1075" height="1521" alt="${i+1}쪽">`).join('')}</div>`;
+  document.body.appendChild(v);
+}
 function downloadGuide(){
-  const who = me && me.boss ? '소장용' : '직원용';
+  const who = guideWho().name;
   const a=document.createElement('a'); a.href=encodeURI(`사용설명서_${who}.pdf`); a.download=`민원처리시스템_사용설명서_${who}.pdf`;
   document.body.appendChild(a); a.click(); a.remove();
   toast(`사용설명서(${who})를 내려받습니다`);
@@ -3137,6 +3162,7 @@ async function handleBack(){
   // 본사에서 연 소장 화면: 그 안의 열린 창 → 민원 탭 순서로 닫고, 사업소 첫 화면이면 본사 메인으로
   if(document.getElementById('hq-view')){ backToOfficeView(); return; }
   const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
+  const gv=document.getElementById('guide-view'); if(gv){ gv.remove(); return; }
   const mr=$('#modal-root');
   if(mr && mr.lastElementChild){ const top=mr.lastElementChild; if(top.id==='detail-modal') closeModal(); else top.remove(); return; }
   // 접수 · 채팅 · 통계 · 검색 탭에서는 앱을 나가지 않고 민원 탭으로
