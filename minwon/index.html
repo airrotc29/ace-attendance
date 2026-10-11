@@ -962,6 +962,43 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .viewer .vw-slide{flex:0 0 100%;height:100%;display:flex;align-items:center;justify-content:center}
 .viewer .vw-slide img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
 .viewer.zoomed .vw-nav,.viewer.zoomed .vw-count{opacity:0;pointer-events:none}
+/* QR 순찰 */
+.pt-band{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 14px;padding:12px 14px;border:0;border-radius:16px;background:#fff;box-shadow:var(--lift1,0 1px 2px rgba(16,24,40,.06));cursor:pointer;text-align:left;font:inherit}
+.pt-band .pt-ic{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;background:#eef3ff;color:#1d47cc}
+.pt-band .pt-ic svg{width:21px;height:21px}
+.pt-band.all .pt-ic{background:var(--green-soft);color:var(--green)}
+.pt-band.set .pt-ic{background:#f1f2f4;color:var(--mute)}
+.pt-band .pt-tx{flex:1;min-width:0}
+.pt-band .pt-tx b{display:block;font-size:15px;color:var(--navy)}.pt-band .pt-tx b em{font-style:normal;color:#1d47cc}
+.pt-band.all .pt-tx b em{color:var(--green)}
+.pt-band .pt-tx small{display:block;margin-top:2px;font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-band > i{font-style:normal;color:#c2c7cf;font-size:20px}
+.pt-bar{display:block;height:5px;border-radius:9px;background:#eceef2;margin-top:7px;overflow:hidden}
+.pt-bar i{display:block;height:100%;border-radius:9px;background:#1d47cc}
+.pt-band.all .pt-bar i{background:var(--green)}
+.pt-day{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 10px}
+.pt-day b{min-width:120px;text-align:center;font-size:15px;color:var(--navy)}
+.pt-day button{width:32px;height:32px;border-radius:50%;border:0;background:#f1f3f6;font-size:17px;cursor:pointer}.pt-day button:disabled{opacity:.3}
+.pt-sum{font-size:13px;color:var(--mute);margin:0 0 10px}.pt-sum b{font-size:22px;color:var(--navy);margin-right:2px}
+.pt-bar.big{height:8px;margin-top:6px}
+.pt-scan-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}.pt-scan-btn svg{width:20px;height:20px}
+.pt-list{border-top:1px solid var(--line)}
+.pt-row{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.pt-dot{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:800;font-size:14px}
+.pt-row.ok .pt-dot{background:var(--green-soft);color:var(--green)}.pt-row.miss .pt-dot{background:var(--red-soft);color:var(--red)}
+.pt-nm{flex:1;min-width:0}.pt-nm b{display:block;font-size:15px;color:var(--navy)}.pt-nm small{display:block;margin-top:2px;font-size:12.5px;color:var(--mute)}
+.pt-row.miss .pt-nm small{color:var(--red)}.pt-row.gone{opacity:.6}
+.pt-cnt{font-size:12px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:999px;padding:2px 8px}
+.pt-mgr{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pt-ed{display:flex;flex-direction:column;gap:6px}
+.pt-ed-row{display:flex;align-items:center;gap:6px}.pt-ed-row span{width:20px;text-align:center;color:var(--mute);font-size:13px}
+.pt-ed-row input{flex:1;min-width:0}
+.pt-ed-row button{width:36px;height:40px;border:1px solid var(--line2);background:#fff;border-radius:10px;cursor:pointer;flex:none}.pt-ed-row button:disabled{opacity:.3}
+.pt-scan{position:fixed;inset:0;z-index:300;background:#000;display:flex;align-items:center;justify-content:center}
+.pt-scan video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pt-scan .pt-frame{position:relative;width:64vw;max-width:300px;aspect-ratio:1;border-radius:22px;box-shadow:0 0 0 2000px rgba(0,0,0,.45);border:3px solid #fff}
+.pt-scan p{position:absolute;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#fff;font-size:15px;font-weight:600}
+.pt-scan .pt-x{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;font-size:20px}
 /* 사용설명서 바로 보기 */
 .gview{position:fixed;inset:0;z-index:190;background:#e6e8ec;display:flex;flex-direction:column}
 .gv-bar{flex:none;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;background:#fff;box-shadow:0 2px 10px -6px rgba(16,24,40,.35)}
@@ -1431,6 +1468,7 @@ function enter(empId, mgr){
   refreshPushUI(); syncPushSub(false);
   armBackTrap();
   if(!EMBED) accessLog('login', null, me.boss?'소장 입장':'직원 입장');
+  patrol={points:null, logs:[], at:0}; setTimeout(()=>{ patrolLoad(true); patrolPending(); }, 600);
   setTimeout(askContactDone, 1500);   // 전화 · 문자 중 앱이 닫혔다 다시 열린 경우
 }
 // 나가기는 상단에서 숨기고, 오른쪽 위 내 이름을 누르면 나옴
@@ -2032,8 +2070,161 @@ function renderList(){
       ${[['none','red',all.filter(isUnassigned).length,'미지정'],['progress','amber',n('progress'),'진행중'],['today','green',all.filter(doneThisMonth).length,'완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
         .map(([k,c,v,l])=>`<button type="button" class="stat-tile ${c} ${listFilter===k?'on':''}" aria-pressed="${listFilter===k}" onclick="tileFilter('${k}')"><div class="n">${v}</div><div class="l">${l}</div></button>`).join('')}
     </div>
+    ${patrolBand()}
     ${listFilter!=='active'?`<div class="list-note"><span><b>${({progress:'진행중',none:'미지정',today:`${new Date().getMonth()+1}월 완료`,mine:'내 담당'})[listFilter]||''}</b> 민원 ${list.length}건</span><button onclick="tileFilter('${listFilter}')">전체 보기</button></div>`:''}
     ${list.length?list.map(issueCard).join(''):`<div class="empty"><b>${listFilter==='today'?'이번 달 완료한 민원이 없습니다':'처리할 민원이 없습니다'}</b>접수 탭에서 새 민원을 올릴 수 있습니다</div>`}`;
+}
+
+// ══════════════════════════════════════════════
+// QR 순찰: 소장이 순찰 지점을 등록 · QR 인쇄 → 직원이 QR을 찍으면 순찰 시각이 남음
+// ══════════════════════════════════════════════
+const PT_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg>';
+const QR_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></svg>';
+let patrol={points:null, logs:[], at:0}, ptDay=null, ptLogs=null;
+const dayRange = iso=>{ const [y,m,d]=iso.split('-').map(Number); return [new Date(y,m-1,d), new Date(y,m-1,d+1)]; };
+async function patrolLoad(force){
+  if(!me || !sb || (!force && Date.now()-patrol.at<60e3)) return;
+  patrol.at=Date.now();
+  try{
+    const [a,b]=dayRange(todayIso());
+    const [pts, logs]=await Promise.all([ rpc('mw_patrol_points',{p_mgr_pw:me.boss?mgrPw:null}), rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString()}) ]);
+    const changed = JSON.stringify([patrol.points,patrol.logs])!==JSON.stringify([pts||[],logs||[]]);
+    patrol.points=pts||[]; patrol.logs=logs||[];
+    if(changed && tab==='list') render();
+  }catch(e){ console.warn('patrol', e); patrol.at=0; }
+}
+function patrolBand(){
+  setTimeout(()=>patrolLoad(false), 0);
+  const pts=patrol.points; if(!pts) return '';
+  if(!pts.length) return me&&me.boss ? `<button class="pt-band set" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span><span class="pt-tx"><b>QR 순찰 시작하기</b><small>순찰 지점을 등록하고 QR을 붙이면 순찰 시각이 자동으로 남습니다</small></span><i>›</i></button>` : '';
+  const done=new Set(patrol.logs.map(l=>l.point_id)); const n=pts.filter(p=>done.has(p.id)).length, last=patrol.logs[0];
+  return `<button class="pt-band ${n===pts.length?'all':''}" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span>
+    <span class="pt-tx"><b>오늘 순찰 <em>${n}</em>/${pts.length}곳</b><small>${last?`마지막 ${fmtTime(new Date(last.ts).getTime())} · ${esc(last.point_name)} · ${esc(last.emp_name||'')}`:'아직 순찰 기록이 없습니다'}</small>
+    <span class="pt-bar"><i style="width:${Math.round(n/pts.length*100)}%"></i></span></span><i>›</i></button>`;
+}
+async function openPatrol(){
+  ptDay=todayIso(); ptLogs=patrol.logs; drawPatrol();
+  await patrolLoad(true); await patrolLoadDay();
+}
+async function patrolLoadDay(){
+  const day=ptDay, [a,b]=dayRange(day);
+  try{ const logs=await rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString()}) || []; if(day!==ptDay) return; ptLogs=logs; if(day===todayIso()) patrol.logs=logs; }
+  catch(e){ console.warn(e); toast('순찰 기록을 불러오지 못했습니다'); }
+  if(document.getElementById('patrol-modal')) drawPatrol();
+}
+function patrolDay(d){
+  const [y,m,dd]=ptDay.split('-').map(Number); const t=new Date(y,m-1,dd+d); const iso=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
+  if(iso>todayIso()) return; ptDay=iso; ptLogs=null; drawPatrol(); patrolLoadDay();
+}
+function drawPatrol(){
+  const pts=patrol.points||[], logs=ptLogs, isToday=ptDay===todayIso();
+  const by={}; (logs||[]).forEach(l=>(by[l.point_id]=by[l.point_id]||[]).push(l));
+  Object.values(by).forEach(a=>a.sort((x,y)=>new Date(x.ts)-new Date(y.ts)));
+  const extra=Object.keys(by).filter(id=>!pts.some(p=>p.id===id));   // 지금은 뺀 지점의 기록
+  const n=pts.filter(p=>by[p.id]).length, [y,m,d]=ptDay.split('-').map(Number);
+  const row=(id,name,gone)=>{ const c=by[id]||[]; return `<div class="pt-row ${c.length?'ok':'miss'} ${gone?'gone':''}"><span class="pt-dot">${c.length?'✓':'!'}</span>
+    <div class="pt-nm"><b>${esc(name)}</b><small>${c.length?c.map(l=>`${fmtTime(new Date(l.ts).getTime())} ${esc(l.emp_name||'')}`).join(' · '):(isToday?'아직 안 돌았습니다':'순찰 기록 없음')}</small></div>
+    ${c.length>1?`<span class="pt-cnt">${c.length}회</span>`:''}</div>`; };
+  // 위에 지점 관리 창이 떠 있어도 그 아래 제자리에서 다시 그림
+  const old=document.getElementById('patrol-modal'), sc=old?old.querySelector('.modal').scrollTop:0;
+  const html=`<div class="modal-bg" id="patrol-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:520px">
+    <div class="modal-head"><h2>QR 순찰</h2><button class="modal-close" onclick="closeById('patrol-modal')">✕</button></div>
+    <div class="pt-day"><button onclick="patrolDay(-1)" aria-label="전날">‹</button><b>${m}월 ${d}일${isToday?' · 오늘':''}</b><button onclick="patrolDay(1)" aria-label="다음 날" ${isToday?'disabled':''}>›</button></div>
+    ${pts.length?`<div class="pt-sum"><b>${n}</b>/${pts.length}곳 순찰<span class="pt-bar big"><i style="width:${pts.length?Math.round(n/pts.length*100):0}%"></i></span></div>`:''}
+    ${isToday&&pts.length&&!EMBED?`<button class="btn btn-primary btn-block pt-scan-btn" onclick="scanPatrol()">${QR_IC}QR 찍어서 순찰 체크</button>`:''}
+    <div class="pt-list">${logs===null?'<div class="empty" style="padding:20px 0"><b>불러오는 중…</b></div>'
+      : pts.length||extra.length ? pts.map(p=>row(p.id,p.name)).join('')+extra.map(id=>row(id,by[id][0].point_name+' (뺀 지점)',true)).join('')
+      : `<div class="empty" style="padding:20px 0"><b>등록된 순찰 지점이 없습니다</b>${me&&me.boss?'아래 지점 관리에서 기계실 · 옥상 · 주차장 등을 등록하세요':'소장에게 순찰 지점 등록을 요청하세요'}</div>`}</div>
+    ${me&&me.boss?`<div class="pt-mgr"><button class="btn btn-gray" onclick="editPatrolPoints()">지점 관리</button><button class="btn btn-gray" onclick="printPatrolQR()" ${pts.length?'':'disabled'}>QR 인쇄</button></div>`:''}
+    <p class="hint" style="margin:10px 0 0">지점마다 붙인 QR을 휴대폰으로 찍으면 순찰 시각과 이름이 남습니다. 휴대폰 기본 카메라로 찍어도 됩니다.</p>
+  </div></div>`;
+  if(old){ old.insertAdjacentHTML('afterend', html); old.remove(); document.querySelector('#patrol-modal .modal').scrollTop=sc; }
+  else $('#modal-root').insertAdjacentHTML('beforeend', html);
+}
+// QR 읽기: 휴대폰 브라우저의 QR 읽기(BarcodeDetector) → 없으면 jsQR 을 불러와 사용
+const loadScript = src=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+let ptStream=null, ptTimer=null;
+function stopScan(){ clearInterval(ptTimer); ptTimer=null; if(ptStream){ ptStream.getTracks().forEach(t=>t.stop()); ptStream=null; } closeById('pt-scan'); }
+async function scanPatrol(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('이 브라우저는 카메라를 쓸 수 없습니다. 휴대폰 기본 카메라로 QR을 찍어 주세요', 4000); return; }
+  stopScan();
+  const v=document.createElement('div'); v.id='pt-scan'; v.className='pt-scan';
+  v.innerHTML=`<video playsinline muted autoplay></video><div class="pt-frame"></div><p>순찰 지점의 QR을 네모 안에 맞추세요</p><button class="pt-x" onclick="stopScan()" aria-label="닫기">✕</button>`;
+  document.body.appendChild(v);
+  try{ ptStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false}); }
+  catch(e){ stopScan(); toast('카메라를 쓸 수 없습니다. 카메라 권한을 허용하거나 휴대폰 기본 카메라로 찍어 주세요', 4500); return; }
+  const video=v.querySelector('video'); video.srcObject=ptStream; try{ await video.play(); }catch{}
+  let detect=null;
+  try{ if('BarcodeDetector' in window && (await BarcodeDetector.getSupportedFormats()).includes('qr_code')){ const bd=new BarcodeDetector({formats:['qr_code']}); detect=async()=>{ const r=await bd.detect(video); return r[0]&&r[0].rawValue; }; } }catch{}
+  if(!detect){
+    try{ if(typeof jsQR==='undefined') await loadScript('vendor/jsQR.js'); }catch{ stopScan(); toast('QR 읽기 기능을 불러오지 못했습니다'); return; }
+    const cv=document.createElement('canvas'), cx=cv.getContext('2d',{willReadFrequently:true});
+    detect=async()=>{ const w=video.videoWidth, h=video.videoHeight; if(!w) return null; const s=Math.min(1, 640/Math.max(w,h)); cv.width=w*s; cv.height=h*s; cx.drawImage(video,0,0,cv.width,cv.height); const r=jsQR(cx.getImageData(0,0,cv.width,cv.height).data, cv.width, cv.height); return r&&r.data; };
+  }
+  let busy=false;
+  ptTimer=setInterval(async()=>{ if(busy||!ptStream) return; busy=true;
+    try{ const txt=await detect(); if(txt){ const q=parsePatrolQR(txt); if(q){ stopScan(); patrolCheck(q.id,q.k); } else toast('순찰 QR이 아닙니다', 1500); } }catch(e){ console.warn(e); }
+    busy=false; }, 250);
+}
+function parsePatrolQR(text){ try{ const u=new URL(text, location.href); const v=u.searchParams.get('pt'); if(!v) return null; const [id,k]=v.split('.'); return id&&k?{id,k}:null; }catch{ return null; } }
+async function patrolCheck(id,k){
+  if(!me || EMBED){ toast('직원으로 로그인한 뒤 QR을 찍어 주세요', 3500); return; }
+  try{
+    const r=await rpc('mw_patrol_check',{p_point:id, p_token:k, p_emp_id:me.empId, p_emp_name:me.name});
+    if(navigator.vibrate) navigator.vibrate(80);
+    showAlert({title:'순찰 체크 완료', msg:`${r.point}\n${fmtTime(new Date(r.ts).getTime())} · ${me.name}`});
+    await patrolLoad(true); if(document.getElementById('patrol-modal') && ptDay===todayIso()){ ptLogs=patrol.logs; drawPatrol(); }
+  }catch(e){
+    const m=String(e.message||'');
+    showAlert({title:'순찰 체크를 못 했습니다', msg: /other_office/.test(m)?'다른 사업소의 QR입니다.':/bad_qr/.test(m)?'등록되지 않았거나 바뀐 QR입니다.\n소장에게 새 QR을 요청하세요.':'인터넷 연결을 확인하고 다시 찍어 주세요.'});
+  }
+}
+// 휴대폰 기본 카메라로 QR을 찍어 앱이 열린 경우 (주소의 ?pt=지점.토큰)
+function patrolFromUrl(){
+  try{ const u=new URL(location.href), v=u.searchParams.get('pt'); if(!v || EMBED) return;
+    sessionStorage.setItem('mw_pt', v); u.searchParams.delete('pt'); history.replaceState(history.state, '', u.pathname+u.search+u.hash); }catch{}
+}
+function patrolPending(){
+  let v=null; try{ v=sessionStorage.getItem('mw_pt'); sessionStorage.removeItem('mw_pt'); }catch{}
+  if(!v || !me) return; const [id,k]=v.split('.'); if(id&&k) patrolCheck(id,k);
+}
+patrolFromUrl();
+// 소장: 지점 관리
+let ptDraft=[];
+function editPatrolPoints(){ ptDraft=(patrol.points||[]).map(p=>({id:p.id, name:p.name})); if(!ptDraft.length) ptDraft=[{name:'기계실'},{name:'전기실'},{name:'옥상'},{name:'지하 주차장'}]; drawPtEdit(); }
+function drawPtEdit(){
+  closeById('pt-edit-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="pt-edit-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:480px">
+    <div class="modal-head"><h2>순찰 지점 관리</h2><button class="modal-close" onclick="closeById('pt-edit-modal')">✕</button></div>
+    <p class="hint">순서대로 순찰 목록에 보입니다. 지점을 빼도 지난 기록은 남습니다. 새로 넣은 지점은 저장 후 <b>QR 인쇄</b>에서 QR을 뽑아 붙이세요.</p>
+    <div class="pt-ed">${ptDraft.map((p,i)=>`<div class="pt-ed-row"><span>${i+1}</span><input value="${esc(p.name)}" maxlength="40" placeholder="지점 이름 (예: 기계실)" oninput="ptDraft[${i}].name=this.value">
+      <button onclick="ptMove(${i},-1)" ${i?'':'disabled'} aria-label="위로">↑</button><button onclick="ptDraft.splice(${i},1);drawPtEdit()" aria-label="빼기">✕</button></div>`).join('')}</div>
+    <button class="btn btn-gray btn-block" style="margin:8px 0" onclick="ptDraft.push({name:''});drawPtEdit();setTimeout(()=>{const a=document.querySelectorAll('.pt-ed input');a[a.length-1].focus()},30)">+ 지점 추가</button>
+    <button class="btn btn-primary btn-block" onclick="savePatrolPoints()">저장</button>
+  </div></div>`);
+}
+function ptMove(i,d){ const j=i+d; if(j<0||j>=ptDraft.length) return; [ptDraft[i],ptDraft[j]]=[ptDraft[j],ptDraft[i]]; drawPtEdit(); }
+async function savePatrolPoints(){
+  const rows=ptDraft.map(p=>({id:p.id||null, name:(p.name||'').trim()})).filter(p=>p.name);
+  try{ const n=await rpc('mw_patrol_points_save',{p_mgr_pw:mgrPw, p_rows:rows}); closeById('pt-edit-modal'); toast(`순찰 지점 ${n}곳을 저장했습니다`); await patrolLoad(true); if(document.getElementById('patrol-modal')) drawPatrol(); }
+  catch(e){ console.warn(e); toast(/manager/.test(e.message||'')?'소장 비밀번호를 확인해 주세요':'저장하지 못했습니다', 3500); }
+}
+// 소장: QR 인쇄 (A4 한 장에 6개)
+async function printPatrolQR(){
+  const w=window.open('', '_blank'); if(!w){ toast('팝업이 막혔습니다. 팝업을 허용해 주세요', 3500); return; }
+  w.document.write('<p style="font:16px sans-serif;padding:20px">QR 만드는 중…</p>');
+  try{ if(typeof qrcode==='undefined') await loadScript('vendor/qrcode.js'); }catch{ w.close(); toast('QR 기능을 불러오지 못했습니다'); return; }
+  const base=new URL('./', location.href).href, pts=(patrol.points||[]).filter(p=>p.token);
+  if(!pts.length){ w.close(); toast('QR 정보를 불러오지 못했습니다. 소장으로 다시 입장해 주세요', 3500); return; }
+  const svg=t=>{ const q=qrcode(0,'M'); q.addData(t); q.make(); return q.createSvgTag({cellSize:6, margin:2, scalable:true}); };
+  const cards=pts.map(p=>`<div class="c"><div class="o">${esc(me.officeName)} · 순찰 지점</div><div class="n">${esc(p.name)}</div><div class="q">${svg(base+'?pt='+p.id+'.'+p.token)}</div><div class="h">휴대폰 카메라로 찍으면 순찰이 기록됩니다<br><b>민원 처리 앱 · QR 순찰</b></div></div>`).join('');
+  w.document.open(); w.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${esc(me.officeName)} 순찰 QR</title><style>
+    @page{size:A4;margin:10mm}body{margin:0;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#111}
+    .g{display:grid;grid-template-columns:1fr 1fr;gap:6mm}.c{border:1.2px dashed #9aa1ad;border-radius:4mm;padding:6mm;text-align:center;break-inside:avoid;height:84mm;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+    .o{font-size:10pt;color:#5b6270}.n{font-size:20pt;font-weight:800;letter-spacing:-.02em}.q svg{width:44mm;height:44mm;display:block}.h{font-size:9pt;color:#5b6270;line-height:1.5}.h b{color:#1d47cc}
+    .tip{font-size:10pt;color:#5b6270;margin:0 0 5mm}@media print{.tip{display:none}}</style></head><body>
+    <p class="tip">인쇄 후 점선을 따라 잘라 각 지점에 붙이세요. 비 · 햇빛이 닿는 곳은 코팅을 권합니다.</p><div class="g">${cards}</div>
+    <script>setTimeout(()=>print(),400)<\/script></body></html>`); w.document.close();
 }
 
 // ── 접수 ─────────────────────────────────────
@@ -3303,6 +3494,7 @@ async function handleBack(){
   if(document.getElementById('hq-view')){ backToOfficeView(); return; }
   const viewer=document.querySelector('.viewer'); if(viewer){ viewer.remove(); return; }
   const gv=document.getElementById('guide-view'); if(gv){ gv.remove(); return; }
+  if(document.getElementById('pt-scan')){ stopScan(); return; }
   const mr=$('#modal-root');
   if(mr && mr.lastElementChild){ const top=mr.lastElementChild; if(top.id==='detail-modal') closeModal(); else top.remove(); return; }
   // 접수 · 채팅 · 통계 · 검색 탭에서는 앱을 나가지 않고 민원 탭으로
