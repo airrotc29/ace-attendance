@@ -963,20 +963,8 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .viewer .vw-slide img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
 .viewer.zoomed .vw-nav,.viewer.zoomed .vw-count{opacity:0;pointer-events:none}
 /* QR 순찰 */
-.pt-band{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 14px;padding:12px 14px;border:0;border-radius:16px;background:#fff;box-shadow:var(--lift1,0 1px 2px rgba(16,24,40,.06));cursor:pointer;text-align:left;font:inherit}
-.pt-band .pt-ic{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;background:#eef3ff;color:#1d47cc}
-.pt-band .pt-ic svg{width:21px;height:21px}
-.pt-band.all .pt-ic{background:var(--green-soft);color:var(--green)}
-.pt-band.set .pt-ic{background:#f1f2f4;color:var(--mute)}
-.pt-band .pt-tx{flex:1;min-width:0}
-.pt-band .pt-tx b{display:block;font-size:15px;color:var(--navy)}.pt-band .pt-tx b em{font-style:normal;color:#1d47cc}
-.pt-band.all .pt-tx b em{color:var(--green)}
-.pt-band .pt-tx small{display:block;margin-top:2px;font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pt-band > i{font-style:normal;color:#c2c7cf;font-size:20px}
-.pt-band .pt-go{flex:none;background:#1d47cc;color:#fff;font-weight:700;font-size:13.5px;padding:9px 14px;border-radius:999px}
 .pt-bar{display:block;height:5px;border-radius:9px;background:#eceef2;margin-top:7px;overflow:hidden}
 .pt-bar i{display:block;height:100%;border-radius:9px;background:#1d47cc}
-.pt-band.all .pt-bar i{background:var(--green)}
 .pt-day{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 10px}
 .pt-day b{min-width:120px;text-align:center;font-size:15px;color:var(--navy)}
 .pt-day button{width:32px;height:32px;border-radius:50%;border:0;background:#f1f3f6;font-size:17px;cursor:pointer}.pt-day button:disabled{opacity:.3}
@@ -1132,6 +1120,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
   <div class="bottomnav">
     <button data-tab="list" onclick="go('list')"><svg viewBox="0 0 24 24"><path d="M9 4h6v3H9z"/><path d="M15 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg>민원<span class="nbadge hidden" id="nb-list"></span></button>
     <button data-tab="new" onclick="go('new')"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>접수</button>
+    <button class="nav-patrol" onclick="openPatrol()" aria-label="QR 순찰"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg>순찰<span class="nbadge hidden" id="nb-patrol"></span></button>
     <button data-tab="chat" onclick="go('chat')"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>채팅<span class="nbadge hidden" id="nb-chat"></span></button>
     <button data-tab="stats" onclick="go('stats')"><svg viewBox="0 0 24 24"><path d="M5 20v-8M11 20V5M17 20v-5M3 20h18"/></svg>통계</button>
     <button data-tab="search" onclick="go('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>검색</button>
@@ -2009,7 +1998,7 @@ async function viewGuide(){
 }
 function downloadGuide(){
   const who = guideWho().name;
-  const a=document.createElement('a'); a.href=encodeURI(`사용설명서_${who}.pdf`); a.download=`민원처리시스템_사용설명서_${who}.pdf`;
+  const a=document.createElement('a'); a.href=encodeURI(`사용설명서_${who}.pdf`); a.download=`민원순찰관리_사용설명서_${who}.pdf`;
   document.body.appendChild(a); a.click(); a.remove();
   toast(`사용설명서(${who})를 내려받습니다`);
 }
@@ -2121,7 +2110,6 @@ function renderList(){
       ${[['none','red',all.filter(isUnassigned).length,'미지정'],['progress','amber',n('progress'),'진행중'],['today','green',all.filter(doneThisMonth).length,'완료'],['mine','blue',all.filter(i=>isMine(i)&&i.status!=='done').length,'내 담당']]
         .map(([k,c,v,l])=>`<button type="button" class="stat-tile ${c} ${listFilter===k?'on':''}" aria-pressed="${listFilter===k}" onclick="tileFilter('${k}')"><div class="n">${v}</div><div class="l">${l}</div></button>`).join('')}
     </div>
-    ${patrolBand()}
     ${listFilter!=='active'?`<div class="list-note"><span><b>${({progress:'진행중',none:'미지정',today:`${new Date().getMonth()+1}월 완료`,mine:'내 담당'})[listFilter]||''}</b> 민원 ${list.length}건</span><button onclick="tileFilter('${listFilter}')">전체 보기</button></div>`:''}
     ${list.length?list.map(issueCard).join(''):`<div class="empty"><b>${listFilter==='today'?'이번 달 완료한 민원이 없습니다':'처리할 민원이 없습니다'}</b>접수 탭에서 새 민원을 올릴 수 있습니다</div>`}`;
 }
@@ -2142,23 +2130,21 @@ async function patrolLoad(force){
     const [a,b]=dayRange(todayIso());
     const [pts, logs]=await Promise.all([ rpc('mw_patrol_points',{p_mgr_pw:me.boss?mgrPw:null}),
       ptCanView() ? rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString(), p_mgr_pw:mgrPw}) : Promise.resolve([]) ]);
-    const changed = JSON.stringify([patrol.points,patrol.logs])!==JSON.stringify([pts||[],logs||[]]);
     patrol.points=pts||[]; patrol.logs=logs||[];
-    if(changed && tab==='list') render();
+    patrolBadge();
   }catch(e){ console.warn('patrol', e); patrol.at=0; }
 }
-function patrolBand(){
-  setTimeout(()=>patrolLoad(false), 0);
-  const pts=patrol.points; if(!pts) return '';
-  if(!pts.length) return me&&me.boss ? `<button class="pt-band set" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span><span class="pt-tx"><b>QR 순찰 시작하기</b><small>순찰 지점을 등록하고 QR을 붙이면 순찰 시각이 자동으로 남습니다</small></span><i>›</i></button>` : '';
-  if(!ptCanView()) return EMBED ? '' : `<button class="pt-band" onclick="scanPatrol()"><span class="pt-ic">${QR_IC}</span><span class="pt-tx"><b>QR 순찰</b><small>순찰할 때 지점에 붙은 QR을 찍어 주세요</small></span><span class="pt-go">QR 찍기</span></button>`;
-  const done=new Set(patrol.logs.map(l=>l.point_id)); const n=pts.filter(p=>done.has(p.id)).length, last=patrol.logs[0];
-  return `<button class="pt-band ${n===pts.length?'all':''}" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span>
-    <span class="pt-tx"><b>오늘 순찰 <em>${n}</em>/${pts.length}곳</b><small>${last?`마지막 ${fmtTime(new Date(last.ts).getTime())} · ${esc(last.point_name)} · ${esc(last.emp_name||'')}`:'아직 순찰 기록이 없습니다'}</small>
-    <span class="pt-bar"><i style="width:${Math.round(n/pts.length*100)}%"></i></span></span><i>›</i></button>`;
+// 하단 메뉴 '순찰' 배지: 소장 · 본사에게 오늘 특이사항 건수
+function patrolBadge(){
+  const b=document.getElementById('nb-patrol'); if(!b) return;
+  const n=ptCanView()?(patrol.logs||[]).filter(l=>l.note && l.note!==PT_OK).length:0;
+  b.textContent=n; b.classList.toggle('hidden', !n);
 }
 async function openPatrol(){
-  if(!ptCanView()){ scanPatrol(); return; }
+  if(!ptCanView()){
+    if(patrol.points===null) await patrolLoad(true);
+    if(patrol.points && !patrol.points.length){ showAlert({title:'QR 순찰', msg:'아직 등록된 순찰 지점이 없습니다.\n소장에게 순찰 지점 등록과 QR 인쇄를 요청하세요.'}); return; }
+    scanPatrol(); return; }
   ptDay=todayIso(); ptLogs=patrol.logs; drawPatrol();
   await patrolLoad(true); await patrolLoadDay();
 }
@@ -3808,6 +3794,7 @@ refreshInstallUI();
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll(); if(tab==='chat'){ lsSet(K.seenChat(),Date.now()); markChatRead(); } updateBadges(); } });
 window.addEventListener('online',()=>{ if(sbOn) fetchAll(); });
 setInterval(()=>{ if(me && tab==='list') render(); },60000); // "n분 전" 갱신
+setInterval(()=>{ if(me && document.visibilityState==='visible') patrolLoad(false); },60000);   // 하단 '순찰' 배지 (소장: 오늘 특이사항)
 boot();
 </script>
 </body>
