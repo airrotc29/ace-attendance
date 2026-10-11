@@ -1498,7 +1498,8 @@ function adminEnter(){
   $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
   adminHome(); armBackTrap();
 }
-async function adminLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'본사 관리 화면에서 나갑니다.', ok:'나가기'})) return; lsDel(K.auth); location.reload(); }
+async function adminLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'본사 관리 화면에서 나갑니다.', ok:'나가기'})) return; aclAuth=null; lsDel(K.auth); location.reload(); }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ aclAuth=null; aclAuthUntil=0; } });   // 앱을 벗어나면 다시 확인
 let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null;
 async function adminHome(){
   $('#adm-content').innerHTML = '<div class="empty"><b>불러오는 중…</b></div>';
@@ -1673,10 +1674,22 @@ const ACL_ROLE = {staff:'직원', boss:'소장', hq:'본사'};
 const ACL_PI = ['contact_view','call','sms','contact_edit','excel'];   // 개인정보 처리
 const uaShort = u=>!u?'':/iPhone|iPad/.test(u)?'아이폰':/Android/.test(u)?'안드로이드':/Windows/.test(u)?'윈도 PC':/Macintosh/.test(u)?'맥':'기타';
 let aclState = {office:null, name:'', days:30, only:false, rows:[]};
+// 본사 담당자 확인: 접속 기록을 열 때 본사 비밀번호를 다시 입력 (로그인된 휴대폰을 다른 사람이 쓰는 경우 대비) · 10분간 유지
+let aclAuth=null, aclAuthUntil=0;
+async function aclUnlock(){
+  if(aclAuth && Date.now()<aclAuthUntil) return aclAuth;
+  const pw=await askInput({title:'본사 담당자 확인', msg:'접속 기록은 본사 담당자만 볼 수 있습니다.\n본사 비밀번호를 다시 입력하세요.', placeholder:'본사 비밀번호', min:1, ok:'확인', type:'password'});
+  if(!pw) return null;
+  const cand={code:auth.code, pw};
+  try{ await rpc('mw_access_log_list',{p_days:1, p_limit:1}, cand); }
+  catch(e){ toast('본사 비밀번호가 맞지 않습니다', 3000); return null; }
+  aclAuth=cand; aclAuthUntil=Date.now()+600e3; return cand;
+}
 async function viewAccessLog(office, name, days){
+  const cred=await aclUnlock(); if(!cred) return;
   aclState = {office:office||null, name:name||'전체 사업소', days:days||aclState.days||30, only:aclState.only&&aclState.office===(office||null), rows:null};
   drawAccessLog();
-  try{ aclState.rows = await rpc('mw_access_log_list',{p_office:aclState.office, p_days:aclState.days, p_limit:2000}) || []; }
+  try{ aclState.rows = await rpc('mw_access_log_list',{p_office:aclState.office, p_days:aclState.days, p_limit:2000}, cred) || []; }
   catch(e){ console.warn(e); aclState.rows=[]; toast('접속 기록을 불러오지 못했습니다'); }
   drawAccessLog();
   accessLog('log_view', aclState.office, `${aclState.name} · 최근 ${aclState.days}일`, aclState.office);
@@ -3233,7 +3246,7 @@ function openDialog({title, msg='', ok='확인', cancel='취소', danger=false, 
     const root=document.createElement('div'); root.className='dlg-bg';
     root.innerHTML=`<div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t">
       <h3 id="dlg-t">${esc(title)}</h3>${msg?`<p>${esc(msg).replace(/\n/g,'<br>')}</p>`:''}
-      ${input?`<input class="dlg-in" type="text" autocomplete="off" placeholder="${esc(input.placeholder||'')}"><div class="dlg-err"></div>`:''}
+      ${input?`<input class="dlg-in" type="${input.type==='password'?'password':'text'}" autocomplete="${input.type==='password'?'current-password':'off'}" placeholder="${esc(input.placeholder||'')}"><div class="dlg-err"></div>`:''}
       <div class="dlg-bt">${cancel?`<button class="dlg-c">${esc(cancel)}</button>`:''}<button class="dlg-o ${danger?'danger':''}">${esc(ok)}</button></div></div>`;
     document.body.appendChild(root);
     const inp=root.querySelector('.dlg-in');
@@ -3251,7 +3264,7 @@ function openDialog({title, msg='', ok='확인', cancel='취소', danger=false, 
 }
 const askConfirm = o=>openDialog(o);
 const showAlert = o=>openDialog({...o, cancel:null});
-const askInput = o=>openDialog({...o, ok:o.ok||'저장', input:{placeholder:o.placeholder, min:o.min, match:o.match, matchErr:o.matchErr}});
+const askInput = o=>openDialog({...o, ok:o.ok||'저장', input:{placeholder:o.placeholder, min:o.min, match:o.match, matchErr:o.matchErr, type:o.type}});
 
 // 휴대폰 뒤로가기: 열린 창이 있으면 그 창만 닫고, 없으면 "앱을 종료할까요?" 확인
 let backTrap=false, exiting=false;
