@@ -1,7 +1,7 @@
 {
-  "name": "민원 처리 공유 시스템",
-  "short_name": "민원처리",
-  "description": "관리사무소 민원 접수 · 처리 보고 · 채팅 · 월간 보고",
+  "name": "민원순찰 관리",
+  "short_name": "민원순찰 관리",
+  "description": "관리사무소 민원 접수 · 처리 보고 · QR 순찰 · 채팅 · 월간 보고",
   "lang": "ko",
   "id": "./",
   "start_url": "./",
