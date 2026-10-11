@@ -1007,6 +1007,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pts-bar .v{width:70px;flex:none;text-align:right;font-size:13px;font-weight:800;color:var(--navy)}.pts-bar .v small{display:block;font-size:10.5px;font-weight:400;color:var(--mute)}
 .pts-hours{display:flex;align-items:flex-end;gap:2px;height:64px;padding:0 1px;border-bottom:1px solid var(--line)}
 .pts-hours i{flex:1;min-height:2px;border-radius:3px 3px 0 0;background:#9db7f5}.pts-hours i.n{background:#1d47cc}
+.pts-kpi span small{display:block;font-size:10.5px;color:var(--mute)}
 .pts-hax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mute);margin-top:3px}
 .pts-bar .nm small{display:block;font-size:10.5px;color:var(--mute);font-weight:400}
 .pts-miss{font-size:12px;color:#7a4b45;background:#fff4f2;border-radius:10px;padding:7px 10px;margin:2px 0 4px;line-height:1.5}.pts-miss b{color:var(--red)}
@@ -1031,7 +1032,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pr.warn:has(+ .pr-note){border-bottom:0}
 .pr-ax{display:flex;gap:10px;padding:6px 0 0}.pr-ax > span:first-child{width:86px;flex:none}.pr-ax > span:last-child{width:62px;flex:none}
 .pr-ax > div{position:relative;flex:1;height:14px}.pr-ax i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:10.5px;color:var(--mute);white-space:nowrap}
-.pt-stat .w i{background:#e08a12}.pt-stat .w b{color:#b4761a}
+.pt-stat .w i{background:#e08a12}.pt-stat .w b{color:#b4761a}.pt-stat .b i{background:#1d47cc}.pt-stat .b b{color:#1d47cc}.pt-stat .b small{font-size:12px;color:var(--mute)}
 /* 순찰 결과 입력 (세련된 시트) */
 .modal.ptn{padding-top:10px!important}
 .ptn-grab{display:block;width:38px;height:5px;border-radius:9px;background:#dfe3ea;margin:0 auto 14px}
@@ -2181,6 +2182,23 @@ let patrol={points:null, logs:[], rounds:[], at:0}, ptDay=null, ptLogs=null, ptL
 const hm2m=v=>{ const [h,m]=String(v||'0:0').split(':').map(Number); return h*60+m; };
 function roundWin(r, y, mo, d){ const f=hm2m(r.from), t=hm2m(r.to); return [new Date(y,mo-1,d,0,f).getTime(), new Date(y,mo-1,d+(t<=f?1:0),0,t).getTime()]; }
 const roundLabel=r=>`${r.from}~${r.to==='00:00'?'24:00':r.to}`;
+// 순찰 1회 = 코스 한 바퀴: 지금 쓰는 지점을 모두 찍으면 1회. 첫 QR부터 3시간 안에 다 못 돌면 '일부만 돎'으로 보고 새로 셈
+const PT_CYCLE_MS=3*3600e3;
+function ptCycles(logs, points, now=Date.now()){
+  const act=(points||[]).filter(p=>p.active!==false), ids=new Set(act.map(p=>p.id));
+  const need=t=>act.filter(p=>!p.created || new Date(p.created).getTime()<=t).length;
+  const L=(logs||[]).filter(l=>ids.has(l.point_id)).map(l=>({t:new Date(l.ts).getTime(), p:l.point_id})).sort((a,b)=>a.t-b.t);
+  const list=[]; let cur=null, partial=0;
+  for(const l of L){
+    if(cur && l.t-cur.s>PT_CYCLE_MS){ partial++; cur=null; }
+    if(!cur) cur={s:l.t, seen:new Set()};
+    cur.seen.add(l.p); const n=need(l.t);
+    if(n && cur.seen.size>=n){ list.push({s:cur.s, e:l.t}); cur=null; }
+  }
+  const going = cur && now-cur.s<=PT_CYCLE_MS ? cur.seen.size : 0;
+  if(cur && !going) partial++;
+  return {n:list.length, list, partial, going};
+}
 // 지금 순찰 시간이면 그 회차, 아니면 다음 회차 (직원 QR 화면 안내)
 function roundNow(){ const R=patrol.rounds||[]; if(!R.length) return ''; const now=Date.now(), t=new Date(); let cur=null, next=null;
   for(const dd of [-1,0,1]) R.forEach(r=>{ const [ws,we]=roundWin(r,t.getFullYear(),t.getMonth()+1,t.getDate()+dd); if(now>=ws&&now<we) cur=cur||r; else if(ws>now && (!next||ws<next.ws)) next={r,ws}; });
@@ -2234,7 +2252,7 @@ function drawPatrol(){
   const all=pts.map(p=>({id:p.id, name:p.name})).concat(extra.map(id=>({id, name:by[id][0].point_name, gone:true})));
   const n=pts.filter(p=>by[p.id]).length, total=pts.length, [y,m,d]=ptDay.split('-').map(Number);
   const last=(logs||[])[0], pct=total?n/total:0, done=total&&n===total;
-  const isBad = l=>l.note && l.note!==PT_OK, nBad=(logs||[]).filter(isBad).length;
+  const isBad = l=>l.note && l.note!==PT_OK, nBad=(logs||[]).filter(isBad).length, cyc=ptCycles(logs, pts);   // 코스 한 바퀴 = 1회
   // 원 그래프
   const R=40, C=2*Math.PI*R, col=done?'var(--green)':n?'#1d47cc':'#c3c8d1';
   const ring=`<div class="pt-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${R}" fill="none" stroke="#eceef2" stroke-width="11"/>
@@ -2242,6 +2260,7 @@ function drawPatrol(){
     <div><b style="color:${done?'var(--green)':'var(--navy)'}">${n}<small>/${total}</small></b><span>${done?'모두 순찰':'순찰'}</span></div></div>`;
   const hero = total ? `<div class="pt-hero">${ring}<div class="pt-stat">
       <div class="g"><i></i><b>${n}</b>곳 순찰함</div><div class="r"><i></i><b>${total-n}</b>곳 ${isToday?'남음':'빠짐'}</div>
+      <div class="b"><i></i><b>${cyc.n}</b>회 코스 완주${cyc.going?`<small> · 지금 ${cyc.going}/${total}곳</small>`:''}</div>
       ${nBad?`<div class="w"><i></i><b>${nBad}</b>건 특이사항</div>`:''}
       <div class="l">${last?`마지막 <b>${fmtTime(new Date(last.ts).getTime())}</b> · ${esc(last.point_name)} · ${esc(last.emp_name||'')}`:'아직 기록 없음'}</div></div></div>` : '';
   // 정한 순찰 시간(회차): 회차마다 정한 시간 안에 찍은 지점 수
@@ -3222,7 +3241,7 @@ async function exportExcel(){
         const mEnd=monthRange(statMonth)[1], recs=(d.logs||[]).filter(l=>new Date(l.ts).getTime()<mEnd).map((l,n)=>({'번호':n+1,'일시':fmtDT(new Date(l.ts).getTime()),'지점':nm[l.point_id]||'','확인자':l.emp_name||'','결과':l.note&&l.note!==PT_OK?'특이사항':'이상 없음','내용':l.note&&l.note!==PT_OK?l.note:'','사진':l.photo||''}));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recs), '순찰 기록');
         const [,mm]=statMonth.split('-');
-        const ps=[['항목','값'],['순찰 이행률',pa.coverage==null?'-':pa.coverage+'%'],['총 순찰',pa.total],['하루 평균',pa.perDay],['야간 순찰 (22~06시)',pa.night],['특이사항',pa.badList.length],['모든 지점 순찰한 날',pa.fullDays],['하루 종일 미순찰',pa.missDays],[],
+        const ps=[['항목','값'],['순찰 이행률',pa.coverage==null?'-':pa.coverage+'%'],['순찰 (코스 완주)',pa.total],['일부만 돈 순찰',pa.partial],['QR 찍은 횟수',pa.scans],['하루 평균 완주',pa.perDay],['야간 완주 (22~06시)',pa.night],['특이사항',pa.badList.length],['모든 지점 순찰한 날',pa.fullDays],['하루 종일 미순찰',pa.missDays],[],
           ['지점','순찰한 날','지난 날','이행률','순찰 횟수','특이사항','상태'],...pa.points.map(x=>[x.name,x.days,x.avail,x.pct==null?'-':x.pct+'%',x.count,x.bad,x.active?'사용':'뺀 지점']),[],
           ['날짜','이행률'],...pa.daily.slice(0,pa.elapsed).map((v,i)=>[`${+mm}/${i+1}`, v==null?'-':v+'%'])];
         if(pa.rounds) ps.push([],['순찰 시간(회차)','시간','해야 할 순찰','지킨 순찰','이행률'],...pa.rounds.per.map(x=>[x.name,x.label,x.req,x.hit,x.pct==null?'-':x.pct+'%']),['합계','',pa.rounds.req,pa.rounds.hit,pa.rounds.pct==null?'-':pa.rounds.pct+'%'],
@@ -3275,8 +3294,9 @@ function patrolAnalyze(d, ym){
       if(lost.length) miss.push({d:dd, round:r.name, label:roundLabel(r), points:lost}); });
     const req=per.reduce((a,x)=>a+x.req,0), hit=per.reduce((a,x)=>a+x.hit,0);
     rounds={ per:per.map(x=>({...x, label:roundLabel(x), pct:x.req?Math.round(x.hit/x.req*100):null})), req, hit, pct:req?Math.round(hit/req*100):null, miss:miss.reverse() }; }
-  return { ym, elapsed, rounds, lastDay, total:logs.length, points:per, coverage:sumAvail?Math.round(sumDays/sumAvail*100):null,
-    perDay:(()=>{ const st=Math.min(...pts.map(startDay)), n=elapsed-st+1; return n>0?Math.round(logs.length/n*10)/10:0; })(), night:logs.filter(l=>{ const h=l.t.getHours(); return h>=22||h<6; }).length,
+  const cyc=ptCycles(logs, pts), isNight=t=>{ const h=new Date(t).getHours(); return h>=22||h<6; };
+  return { ym, elapsed, rounds, lastDay, total:cyc.n, scans:logs.length, partial:cyc.partial, points:per, coverage:sumAvail?Math.round(sumDays/sumAvail*100):null,
+    perDay:(()=>{ const st=Math.min(...pts.map(startDay)), n=elapsed-st+1; return n>0?Math.round(cyc.n/n*10)/10:0; })(), night:cyc.list.filter(c=>isNight(c.s)).length,
     hours, daily, badList:logs.filter(bad).map(l=>({t:l.t, point:name[l.point_id]||'', emp:l.emp_name||'', note:l.note, photo:l.photo||null})).reverse(),
     byEmp:Object.entries(byEmp).sort((a,b)=>b[1]-a[1]), fullDays:daily.filter(v=>v===100).length, missDays:daily.filter(v=>v===0).length };
 }
@@ -3295,7 +3315,7 @@ function patrolStatsCard(){
   return `<div class="card pts"><h3>QR 순찰 <small class="bar-sub">${+mm}월 1일 ~ ${a.elapsed}일 · 소장 · 본사만 봅니다</small></h3>
     <div class="pts-hero"><div class="pt-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${R}" fill="none" stroke="#eceef2" stroke-width="11"/>${cv?`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${cv>=80?'var(--green)':cv>=50?'#e08a12':'var(--red)'}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${(C*cv/100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>`:''}</svg>
       <div><b>${a.coverage==null?'-':a.coverage}<small>%</small></b><span>순찰 이행률</span></div></div>
-      <div class="pts-kpi"><div><b>${a.total}</b><span>총 순찰</span></div><div><b>${a.perDay}</b><span>하루 평균</span></div><div class="w"><b>${a.badList.length}</b><span>특이사항</span></div><div><b>${a.night}</b><span>야간 22~06시</span></div></div></div>
+      <div class="pts-kpi"><div><b>${a.total}</b><span>코스 완주 <small>QR ${a.scans}번</small></span></div><div><b>${a.perDay}</b><span>하루 평균 완주</span></div><div class="w"><b>${a.badList.length}</b><span>특이사항</span></div><div><b>${a.night}</b><span>야간 완주 22~06시</span></div></div></div>
     <div class="pts-sub">날짜별 이행 <span>진할수록 모든 지점 순찰 · 빨강 = 미순찰</span></div>
     <div class="pts-days">${a.daily.map((v,i)=>`<i style="background:${col(v)}" title="${+mm}/${i+1} ${v==null?'-':v+'%'}">${i+1}</i>`).join('')}</div>
     <div class="pts-sub">지점별 이행률 <span>순찰한 날 / 지난 날</span></div>
@@ -3304,7 +3324,7 @@ function patrolStatsCard(){
     ${a.rounds&&a.rounds.req?`<div class="pts-sub">정한 순찰 시간 <span>지킨 회차 ${a.rounds.hit}/${a.rounds.req} · ${a.rounds.pct==null?'-':a.rounds.pct+'%'}</span></div>
     ${a.rounds.per.map(r=>`<div class="pts-bar"><span class="nm">${esc(r.name)}<small>${r.label}</small></span><div class="bg"><div style="width:${r.pct||0}%;background:${r.pct==null?'#c3c8d1':r.pct>=80?'var(--green)':r.pct>=50?'#e08a12':'var(--red)'}"></div></div><span class="v">${r.pct==null?'-':r.pct+'%'}<small>${r.hit}/${r.req}</small></span></div>`).join('')}
     ${a.rounds.miss.length?`<div class="pts-miss">최근 빠진 회차 · ${a.rounds.miss.slice(0,3).map(x=>`<b>${+mm}/${x.d} ${esc(x.round)}</b> ${x.points.map(esc).join(', ')}`).join(' · ')}</div>`:''}`:''}
-    <div class="pts-sub">시간대별 순찰 <span>0시 → 24시 · 진한 막대 = 야간</span></div>
+    <div class="pts-sub">시간대별 QR <span>찍은 횟수 · 0시 → 24시 · 진한 막대 = 야간</span></div>
     <div class="pts-hours">${a.hours.map((v,h)=>{ const mx=Math.max(1,...a.hours); return `<i class="${h>=22||h<6?'n':''}" style="height:${Math.round(v/mx*100)}%" title="${h}시 ${v}회"></i>`; }).join('')}</div>
     <div class="pts-hax"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
     ${a.badList.length?`<div class="pts-sub">특이사항 <span>최근 ${Math.min(5,a.badList.length)}건 / ${a.badList.length}건</span></div>${a.badList.slice(0,5).map(b=>`<div class="pts-bad"><span><b>${b.t.getMonth()+1}/${b.t.getDate()} ${fmtTime(b.t.getTime())}</b> ${esc(b.point)} · ${esc(b.note)} <small>${esc(b.emp)}</small></span>${b.photo?`<img src="${esc(b.photo)}" alt="특이사항 사진" onclick="viewImg(this)">`:''}</div>`).join('')}`:''}
@@ -3472,7 +3492,7 @@ async function autoFillReport(){
   if(ptCanView()){ try{ const c=ptMonthCache[statMonth]; const d=c&&c.data ? c.data : await patrolMonthFetch(statMonth); ptMonthCache[statMonth]={at:Date.now(), data:d};
     const a=patrolAnalyze(d, statMonth);
     if(a){ const low=a.points.filter(p=>p.active && p.pct!=null && p.pct<70);
-      r.note+=`\n· QR 순찰: 이행률 ${a.coverage}%, 총 ${a.total}회(하루 평균 ${a.perDay}회, 야간 ${a.night}회), 특이사항 ${a.badList.length}건.`;
+      r.note+=`\n· QR 순찰: 이행률 ${a.coverage}%, 코스 완주 ${a.total}회(하루 평균 ${a.perDay}회, 야간 ${a.night}회${a.partial?`, 일부만 돈 순찰 ${a.partial}회`:''}), 특이사항 ${a.badList.length}건.`;
       if(a.badList.length) r.note+=`\n· 순찰 특이사항: ${a.badList.slice(0,3).map(b=>`${b.point} ${b.note}`).join(', ')}${a.badList.length>3?' 등':''}.`;
       if(low.length) r.improve+=`\n· 순찰 이행률 낮은 지점: ${low.map(p=>`${p.name} ${p.pct}%`).join(', ')}. 순찰 동선 · 근무표 점검 요청.`;
       if(a.missDays) r.improve+=`\n· 하루 종일 순찰 기록이 없는 날 ${a.missDays}일. 순찰 누락 원인 확인 필요.`;
@@ -3595,13 +3615,13 @@ function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · �
     return `<div>${H('QR 순찰 실적')}
     <div class="tiles" style="grid-template-columns:repeat(4,1fr)">
       ${rtile('순찰 이행률', pt.coverage||0, `<span class="dl">지점 ${act.length}곳 · ${act.reduce((n,p)=>n+Math.min(p.days,p.avail),0)}/${act.reduce((n,p)=>n+p.avail,0)}일</span>`)}
-      ${tile('총 순찰', `${pt.total}<small>회</small>`, `<span class="dl">하루 평균 ${pt.perDay}회 · 야간 ${pt.night}회</span>`)}
+      ${tile('순찰 (코스 완주)', `${pt.total}<small>회</small>`, `<span class="dl">하루 평균 ${pt.perDay}회 · 야간 ${pt.night}회${pt.partial?` · 일부만 ${pt.partial}회`:''}</span>`)}
       ${tile('특이사항', `${pt.badList.length}<small>건</small>`, `<span class="dl">민원 전환 ${ptIss}건</span>`)}
       ${tile('모든 지점 순찰한 날', `${pt.fullDays}<small>일</small>`, `<span class="dl">${pt.missDays?`<b style="color:${BAD}">미순찰 ${pt.missDays}일</b>`:'미순찰일 없음'}</span>`)}
     </div>
     <div class="grid2">
       <div class="fig"><h3>지점별 순찰 이행률</h3><div class="sub">순찰한 날 / 지난 날</div>${bars}</div>
-      <div class="fig"><h3>시간대별 순찰</h3><div class="sub">0~24시 순찰 횟수 · 진한 막대 = 야간(22~06시)</div>${hours}</div>
+      <div class="fig"><h3>시간대별 QR</h3><div class="sub">0~24시 QR 찍은 횟수 · 진한 막대 = 야간(22~06시)</div>${hours}</div>
     </div>
     <div class="fig full"><h3>날짜별 순찰 이행</h3><div class="sub">그날 돌아본 지점 비율 · 진한 초록 = 모든 지점, 빨강 = 미순찰</div>${cal}</div>
     ${pt.rounds&&pt.rounds.req?`<div class="fig full"><h3>정한 순찰 시간 이행 · ${pt.rounds.pct==null?'-':pt.rounds.pct+'%'}</h3><div class="sub">회차마다 정한 시간 안에 모든 지점을 찍었는지 · 지킨 회차 ${pt.rounds.hit} / 해야 할 회차 ${pt.rounds.req} (지점 기준) · ${pt.rounds.per.map(r=>`${esc(r.name)} ${r.label}`).join(', ')}</div>
