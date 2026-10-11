@@ -3196,7 +3196,6 @@ function renderStats(){
   <div class="card"><h3>담당 팀별 배정 <small class="bar-sub">담당이 정해진 ${st.byTeam.reduce((a,e)=>a+e[1],0)}건 중</small></h3>${bars(st.byTeam)}</div>
   <div class="card"><h3>처리자별 완료 <small class="bar-sub">${+m}월 완료 ${st.done.length}건 중</small></h3>${bars(st.byPerson,'',{avatar:1})}</div>
   <div class="card"><h3>접수 경로 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.bySrc,'',{icon:1})}</div>
-  ${patrolStatsCard()}
   <div class="card"><h3>반복 민원 <small style="font-weight:400;color:var(--mute)">최근 6개월 · 같은 장소·분류 2회 이상</small></h3>
     ${rep.length?rep.slice(0,12).map(g=>`<div class="repeat-item"><b>${g.count}회</b> ${esc(g.items[0].location||g.items[0].title)} <span class="badge b-cat">${esc(g.items[0].category)}</span><small>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}${i.reopened?' (재발 '+i.reopened+'회)':''}`).join(' · ')}</small><small style="color:var(--amber)">근본 원인 점검 권장</small></div>`).join(''):'<div style="color:var(--gray4);font-size:13px">반복 민원 없음</div>'}
   </div>
@@ -3205,6 +3204,7 @@ function renderStats(){
     ${st.recv.sort((a,b)=>a.createdAt-b.createdAt).map(i=>`<tr><td>${fmtDate(i.createdAt)}</td><td>${esc(i.title)}</td><td>${esc(i.location)}</td><td>${esc(i.category)}</td><td>${esc(i.assignee?.name||'-')}</td><td>${STATUS[i.status]}</td><td>${i.doneAt?fmtDate(i.doneAt):'-'}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--gray4)">접수 내역 없음</td></tr>'}
     </tbody></table></div>
   </div>
+  ${patrolStatsCard()}
   <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button></div>`;
 }
 async function exportExcel(){
@@ -3300,7 +3300,8 @@ function patrolStatsCard(){
     <div class="pts-days">${a.daily.map((v,i)=>`<i style="background:${col(v)}" title="${+mm}/${i+1} ${v==null?'-':v+'%'}">${i+1}</i>`).join('')}</div>
     <div class="pts-sub">지점별 이행률 <span>순찰한 날 / 지난 날</span></div>
     ${a.points.map(p=>`<div class="pts-bar ${p.active?'':'gone'}"><span class="nm">${esc(p.name)}</span><div class="bg"><div style="width:${p.pct||0}%;background:${p.pct==null?'#c3c8d1':p.pct>=80?'var(--green)':p.pct>=50?'#e08a12':'var(--red)'}"></div></div><span class="v">${p.active?`${p.pct==null?'-':p.pct+'%'}<small>${p.days}/${p.avail}일</small>`:`<small>뺀 지점 · ${p.count}회</small>`}</span></div>`).join('')}
-    ${a.rounds?`<div class="pts-sub">정한 순찰 시간 <span>지킨 회차 ${a.rounds.hit}/${a.rounds.req} · ${a.rounds.pct==null?'-':a.rounds.pct+'%'}</span></div>
+    ${a.rounds&&!a.rounds.req?`<div class="pts-sub">정한 순찰 시간 <span>${a.rounds.per.map(r=>`${esc(r.name)} ${r.label}`).join(' · ')}</span></div><div class="pts-miss" style="background:#f4f6fa;color:var(--mute)">지점을 등록한 뒤 끝난 회차가 아직 없습니다. 다음 회차가 끝나면 여기에 집계됩니다.</div>`:''}
+    ${a.rounds&&a.rounds.req?`<div class="pts-sub">정한 순찰 시간 <span>지킨 회차 ${a.rounds.hit}/${a.rounds.req} · ${a.rounds.pct==null?'-':a.rounds.pct+'%'}</span></div>
     ${a.rounds.per.map(r=>`<div class="pts-bar"><span class="nm">${esc(r.name)}<small>${r.label}</small></span><div class="bg"><div style="width:${r.pct||0}%;background:${r.pct==null?'#c3c8d1':r.pct>=80?'var(--green)':r.pct>=50?'#e08a12':'var(--red)'}"></div></div><span class="v">${r.pct==null?'-':r.pct+'%'}<small>${r.hit}/${r.req}</small></span></div>`).join('')}
     ${a.rounds.miss.length?`<div class="pts-miss">최근 빠진 회차 · ${a.rounds.miss.slice(0,3).map(x=>`<b>${+mm}/${x.d} ${esc(x.round)}</b> ${x.points.map(esc).join(', ')}`).join(' · ')}</div>`:''}`:''}
     <div class="pts-sub">시간대별 순찰 <span>0시 → 24시 · 진한 막대 = 야간</span></div>
@@ -3603,7 +3604,7 @@ function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · �
       <div class="fig"><h3>시간대별 순찰</h3><div class="sub">0~24시 순찰 횟수 · 진한 막대 = 야간(22~06시)</div>${hours}</div>
     </div>
     <div class="fig full"><h3>날짜별 순찰 이행</h3><div class="sub">그날 돌아본 지점 비율 · 진한 초록 = 모든 지점, 빨강 = 미순찰</div>${cal}</div>
-    ${pt.rounds?`<div class="fig full"><h3>정한 순찰 시간 이행 · ${pt.rounds.pct==null?'-':pt.rounds.pct+'%'}</h3><div class="sub">회차마다 정한 시간 안에 모든 지점을 찍었는지 · 지킨 회차 ${pt.rounds.hit} / 해야 할 회차 ${pt.rounds.req} (지점 기준) · ${pt.rounds.per.map(r=>`${esc(r.name)} ${r.label}`).join(', ')}</div>
+    ${pt.rounds&&pt.rounds.req?`<div class="fig full"><h3>정한 순찰 시간 이행 · ${pt.rounds.pct==null?'-':pt.rounds.pct+'%'}</h3><div class="sub">회차마다 정한 시간 안에 모든 지점을 찍었는지 · 지킨 회차 ${pt.rounds.hit} / 해야 할 회차 ${pt.rounds.req} (지점 기준) · ${pt.rounds.per.map(r=>`${esc(r.name)} ${r.label}`).join(', ')}</div>
       ${pt.rounds.per.map(r=>`<div class="hb"><span class="hl">${esc(r.name)}</span><div class="hbar"><div class="hs" style="width:calc((100% - 58px) * ${((r.pct||0)/100).toFixed(3)})"><i style="flex:1;background:${pcol(r.pct)}"></i></div><span class="hv" style="width:56px">${r.pct==null?'-':r.pct+'%'} <small style="color:${MUTE}">${r.hit}/${r.req}</small></span></div></div>`).join('')}
       ${pt.rounds.miss.length?`<div class="sub" style="margin-top:2mm">빠진 회차 ${pt.rounds.miss.length}건${pt.rounds.miss.length>8?' · 최근 8건':''}: ${pt.rounds.miss.slice(0,8).map(x=>`${m}/${x.d} ${esc(x.round)}(${esc(x.points.join(', '))})`).join(' · ')}</div>`:''}</div>`:''}
     <table class="t" style="margin-top:3mm">
