@@ -474,6 +474,24 @@ mark{background:#fff1a8;box-shadow:none}
 .hq-tx small .r{color:var(--red);font-weight:600}.hq-tx small .g{color:var(--green);font-weight:600}
 .hq-more{flex:none;width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:#9aa1ad;font-size:20px;line-height:1;cursor:pointer;letter-spacing:1px}
 .hq-more:active{background:#f1f3f6}
+.hq-acl{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:13px 16px;border:0;border-radius:16px;background:#fff;box-shadow:var(--e-float,0 1px 2px rgba(16,24,40,.06));cursor:pointer;text-align:left;font:inherit}
+.hq-acl svg{width:20px;height:20px;color:#1d47cc;flex:none}.hq-acl span{font-weight:700;color:var(--navy);font-size:14.5px}.hq-acl small{margin-left:auto;font-size:11.5px;color:var(--mute)}
+.acl-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 8px}
+.acl-bar button{border:1px solid var(--line2);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.acl-bar button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.acl-only{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--mute)}
+.acl-sum{font-size:12.5px;color:var(--mute);margin-bottom:6px}
+.acl-list{border-top:1px solid var(--line)}
+.acl-row{display:flex;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.acl-row.pi{background:linear-gradient(90deg,rgba(194,71,61,.06),transparent 60%)}
+.acl-t{flex:none;width:76px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;line-height:1.4}
+.acl-m{flex:1;min-width:0;font-size:13.5px}
+.acl-m b{font-size:14px;color:var(--navy)}
+.acl-role,.acl-off{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:#eef3ff;color:#1d47cc}
+.acl-off{background:#f1f2f4;color:var(--mute)}
+.acl-a{margin-top:2px;color:var(--ink);font-weight:600}.acl-a span{font-weight:400;color:#4b5563}
+.acl-row.pi .acl-a{color:var(--red)}
+.acl-m small{display:block;margin-top:2px;font-size:11.5px;color:#9aa1ad}
 .hq-sh-meta{font-size:13px;color:var(--mute);margin:-6px 0 12px;text-align:center}
 .dlg-bg{position:fixed;inset:0;z-index:400;background:rgba(17,17,17,.42);display:flex;align-items:center;justify-content:center;padding:24px;animation:dlgFade .14s ease-out}
 .dlg{background:#fff;border-radius:18px;width:min(340px,100%);padding:22px 20px 16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);animation:dlgPop .16s ease-out}
@@ -889,7 +907,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .sheet.rich .sh-head .cd{font-style:normal;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;font-weight:700;letter-spacing:.06em;color:#1d47cc;background:#eef3ff;border-radius:6px;padding:2px 7px}
 .sheet.rich .sh-head .warn{color:var(--red);font-style:normal}
 .dlg.sheet.rich .sh-acts{background:#fff;border-radius:16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
-.dlg.sheet.rich .sh-acts button.sh-row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:9px 14px;font-size:15.5px;font-weight:600;color:#111827;border-bottom:1px solid #eef0f4;cursor:pointer}
+.dlg.sheet.rich .sh-acts button.sh-row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:8px 14px;font-size:15.5px;font-weight:600;color:#111827;border-bottom:1px solid #eef0f4;cursor:pointer}
 .dlg.sheet.rich .sh-acts button.sh-row:active{background:#f6f7fa}
 .sheet.rich .sh-ic{width:34px;height:34px;border-radius:10px;flex:none;background:#eef3ff;color:#1d47cc;display:flex;align-items:center;justify-content:center}
 .sheet.rich .sh-ic svg{width:18px;height:18px}
@@ -1136,6 +1154,21 @@ function msgToRow(m){ return { id:m.id, office_id:me.officeId, kind:m.kind||'msg
 function rpc(name, args={}, c=auth){
   return sb.rpc(name, {p_code:c.code, p_pw:c.pw, ...args}).then(r=>{ if(r.error) throw r.error; return r.data; });
 }
+// ── 접속기록 (개인정보 보호법 제29조 · 「개인정보의 안전성 확보조치 기준」 제8조) ──
+// 로그인 · 민원인 연락처 열람/전화/문자/수정 · 엑셀 · 본사 관리 작업을 서버에 남김. 접속 IP · 기기는 서버가 기록.
+let hqMode=false;
+function accessLog(action, target, detail, office){
+  try{
+    if(!auth || !auth.code || !sb) return;
+    const hq = EMBED || hqMode;
+    rpc('mw_log',{ p_action:action, p_target:target?String(target).slice(0,80):null, p_detail:detail?String(detail).slice(0,200):null,
+      p_emp_id:(!hq&&me)?me.empId:null, p_emp_name:hq?'본사 관리자':(me?me.name:null),
+      p_role:hq?'hq':(me&&me.boss?'boss':'staff'), p_office:office||null }).catch(e=>console.warn('access log', e));
+  }catch(e){ console.warn('access log', e); }
+}
+// 기록에 남기는 정보주체: 민원인 이름(호실) + 가린 번호
+const contactWho = it => { const c=it&&it.contact; if(!c) return ''; return [c.name, c.phone?maskPhone(c.phone):''].filter(Boolean).join(' '); };
+const seenContact = {};   // 같은 민원 연락처 열람은 10분에 한 번만 기록
 
 // ── 쓰기 (서버 실패 시 대기열에 넣고 다음 동기화 때 재전송) ──
 // 전송 중인 항목: 저장이 끝나기 전에 도착한 동기화 결과가 방금 쓴 내용을 덮지 않도록
@@ -1397,6 +1430,7 @@ function enter(empId, mgr){
   go(['list','new','chat','stats','search'].includes(lastTab)?lastTab:'list');
   refreshPushUI(); syncPushSub(false);
   armBackTrap();
+  if(!EMBED) accessLog('login', null, me.boss?'소장 입장':'직원 입장');
   setTimeout(askContactDone, 1500);   // 전화 · 문자 중 앱이 닫혔다 다시 열린 경우
 }
 // 나가기는 상단에서 숨기고, 오른쪽 위 내 이름을 누르면 나옴
@@ -1460,6 +1494,7 @@ async function boot(){
 
 // ── 본사 관리 ──
 function adminEnter(){
+  hqMode=true; accessLog('login', null, '본사 입장');
   $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
   adminHome(); armBackTrap();
 }
@@ -1525,7 +1560,8 @@ const AO_IC={
   img:AO_SV('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>'),
   trash:AO_SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
   doc:AO_SV('<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>'),
-  pen:AO_SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')
+  pen:AO_SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  log:AO_SV('<path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h3"/><circle cx="17.5" cy="17.5" r="3.5" fill="#fff"/><path d="M17.5 16v1.6l1 .8"/>')
 };
 // ── 본사: 사업소 이름 바꾸기 (코드 · 비밀번호는 그대로) ──
 async function renameOffice(id){
@@ -1533,12 +1569,13 @@ async function renameOffice(id){
   const nm=await askInput({title:'사업소 이름 바꾸기', msg:`현재 이름: ${o.name}`, placeholder:'새 사업소 이름', min:1, ok:'바꾸기'});
   if(!nm) return;
   const name=nm.trim(); if(!name) return;
-  try{ await rpc('mw_office_rename',{p_office:id, p_name:name}); toast('사업소 이름을 바꿨습니다'); await adminHome(); }
+  try{ await rpc('mw_office_rename',{p_office:id, p_name:name}); accessLog('office_rename', id, `${o.name} → ${name}`, id); toast('사업소 이름을 바꿨습니다'); await adminHome(); }
   catch(e){ console.warn(e); toast('이름을 바꾸지 못했습니다', 3500); }
 }
 // ── 본사: 사업소 소장 화면 열기 (본사 로그인으로 바로 열림 · 비밀번호 입력 없음) ──
 function pickOfficeView(id){
   const o=adminOffices.find(x=>x.id===id); if(!o) return;
+  accessLog('office_view', o.id, o.name, o.id);
   showOfficeView({code:o.code, name:o.name}, {pw:auth.pw});
 }
 function showOfficeView(t, creds){
@@ -1606,6 +1643,7 @@ function renderAdminHome(){
           <button class="hq-more" onclick="officeMenu('${esc(o.id)}')" aria-label="${esc(o.name)} 관리">⋯</button>
         </div>`).join('') : '<div class="empty"><b>아직 사업소가 없습니다</b>오른쪽 위 + 추가를 눌러 만들어 주세요</div>'}
     </div>
+    <button class="hq-acl no-print" onclick="viewAccessLog(null,'전체 사업소')">${AO_IC.log}<span>전체 접속 기록 보기</span><small>로그인 · 민원인 연락처 열람 · 본사 작업</small></button>
     <button class="btn btn-gray btn-block no-print" onclick="adminLogout()">나가기</button>`;
 }
 // 사업소 관리 메뉴 (⋯)
@@ -1620,11 +1658,56 @@ async function officeMenu(id){
     {group:2, value:'brand', label:'관리단 표시', desc:'화면 맨 아래 이름 · 문구', icon:AO_IC.tag},
     {group:2, value:'cover', label:'건물 사진', desc:'민원 화면 맨 위 사진', icon:AO_IC.img},
     {group:3, value:'pw', label:'직원 비밀번호', desc:'직원 공통 로그인', icon:AO_IC.key},
+    {group:3, value:'log', label:'접속 기록', desc:'로그인 · 민원인 연락처 열람 기록', icon:AO_IC.log},
     {group:3, value:'mgr', label:'소장 비밀번호', desc:o.has_mgr?'소장 입장용':'아직 없음 · 정해 주세요', icon:AO_IC.shield},
     {group:4, value:'del', label:'사업소 삭제', desc:'두 번 확인 후 영구 삭제', icon:AO_IC.trash, danger:true} ]});
   if(v==='report') adminReport(id); else if(v==='roster') adminRoster(id); else if(v==='rename') renameOffice(id);
   else if(v==='pw') adminPw(id,o.name); else if(v==='mgr') adminMgrPw(id,o.name,o.code); else if(v==='brand') adminBrand(id);
-  else if(v==='cover') adminCover(id); else if(v==='del') adminDelete(id,o.name);
+  else if(v==='cover') adminCover(id); else if(v==='del') adminDelete(id,o.name); else if(v==='log') viewAccessLog(id, o.name);
+}
+// ── 본사: 접속 기록 보기 · 점검 (월 1회 이상 점검 권장) ──
+const ACL_ACT = {login:'로그인', contact_view:'연락처 열람', call:'민원인 전화', sms:'민원인 문자', contact_edit:'연락처 수정', excel:'엑셀 내려받기',
+  office_view:'사업소 화면 열람', office_create:'사업소 만듦', office_rename:'이름 바꿈', office_pw:'직원 비밀번호 변경', mgr_pw:'소장 비밀번호 변경',
+  office_delete:'사업소 삭제', roster_save:'명단 저장', log_view:'접속 기록 점검'};
+const ACL_ROLE = {staff:'직원', boss:'소장', hq:'본사'};
+const ACL_PI = ['contact_view','call','sms','contact_edit','excel'];   // 개인정보 처리
+const uaShort = u=>!u?'':/iPhone|iPad/.test(u)?'아이폰':/Android/.test(u)?'안드로이드':/Windows/.test(u)?'윈도 PC':/Macintosh/.test(u)?'맥':'기타';
+let aclState = {office:null, name:'', days:30, only:false, rows:[]};
+async function viewAccessLog(office, name, days){
+  aclState = {office:office||null, name:name||'전체 사업소', days:days||aclState.days||30, only:aclState.only&&aclState.office===(office||null), rows:null};
+  drawAccessLog();
+  try{ aclState.rows = await rpc('mw_access_log_list',{p_office:aclState.office, p_days:aclState.days, p_limit:2000}) || []; }
+  catch(e){ console.warn(e); aclState.rows=[]; toast('접속 기록을 불러오지 못했습니다'); }
+  drawAccessLog();
+  accessLog('log_view', aclState.office, `${aclState.name} · 최근 ${aclState.days}일`, aclState.office);
+}
+function drawAccessLog(){
+  const st=aclState, all=st.rows||[], rows=st.only?all.filter(r=>ACL_PI.includes(r.action)):all;
+  const body = st.rows===null ? '<div class="empty" style="padding:30px 0"><b>불러오는 중…</b></div>'
+    : rows.length ? rows.map(r=>`<div class="acl-row ${ACL_PI.includes(r.action)?'pi':''}">
+        <div class="acl-t">${fmtKo(new Date(r.ts).getTime())}</div>
+        <div class="acl-m"><div><b>${esc(r.emp_name||'-')}</b><span class="acl-role">${ACL_ROLE[r.role]||esc(r.role||'')}</span>${!st.office&&r.office_name?`<span class="acl-off">${esc(r.office_name)}</span>`:''}</div>
+          <div class="acl-a">${ACL_ACT[r.action]||esc(r.action)}${r.detail?` · <span>${esc(r.detail)}</span>`:''}</div>
+          <small>${esc(r.ip||'IP 없음')}${r.ua?' · '+uaShort(r.ua):''}</small></div></div>`).join('')
+    : '<div class="empty" style="padding:30px 0"><b>기록이 없습니다</b>선택한 기간에 남은 기록이 없습니다</div>';
+  closeById('acl-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="acl-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:560px;max-height:90vh">
+    <div class="modal-head"><h2>접속 기록 <small style="font-weight:500;color:var(--mute);font-size:13px">${esc(st.name)}</small></h2><button class="modal-close" onclick="closeById('acl-modal')">✕</button></div>
+    <div class="acl-bar">${[7,30,90,365].map(d=>`<button class="${st.days===d?'on':''}" onclick="viewAccessLog(aclState.office, aclState.name, ${d})">${d===365?'1년':d+'일'}</button>`).join('')}
+      <label class="acl-only"><input type="checkbox" ${st.only?'checked':''} onchange="aclState.only=this.checked; drawAccessLog()">연락처 관련만</label></div>
+    <div class="acl-sum">${st.rows===null?'':`${rows.length}건 · 로그인 ${all.filter(r=>r.action==='login').length} · 연락처 처리 ${all.filter(r=>ACL_PI.includes(r.action)).length}`}</div>
+    <div class="acl-list">${body}</div>
+    <p class="hint" style="margin:10px 0 8px">개인정보 보호법 제29조 · 「개인정보의 안전성 확보조치 기준」 제8조에 따라 접속 기록을 남기고 2년간 보관합니다. 월 1회 이상 확인하세요. 기록은 고치거나 지울 수 없습니다.</p>
+    <button class="btn btn-gray btn-block" onclick="exportAccessLog()" ${rows.length?'':'disabled'}>엑셀로 받기</button>
+  </div></div>`);
+}
+function exportAccessLog(){
+  const st=aclState, rows=(st.only?(st.rows||[]).filter(r=>ACL_PI.includes(r.action)):(st.rows||[])).map(r=>({'일시':fmtDT(new Date(r.ts).getTime()),'사업소':r.office_name||'','이름':r.emp_name||'','구분':ACL_ROLE[r.role]||r.role||'','본사 비밀번호 접속':r.via_hq?'예':'','작업':ACL_ACT[r.action]||r.action,'내용':r.detail||'','IP':r.ip||'','기기':uaShort(r.ua)}));
+  if(!rows.length) return;
+  const fn=`접속기록_${st.name}_최근${st.days}일_${fmtDate(Date.now())}`;
+  if(typeof XLSX!=='undefined'){ const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), '접속기록'); XLSX.writeFile(wb, fn+'.xlsx'); }
+  else{ const keys=Object.keys(rows[0]); const csv='\ufeff'+[keys.join(','), ...rows.map(r=>keys.map(k=>`"${String(r[k]).replace(/"/g,'""')}"`).join(','))].join('\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=fn+'.csv'; document.body.appendChild(a); a.click(); a.remove(); }
 }
 function openNewOffice(){
   closeById('new-office-modal');
@@ -1650,6 +1733,7 @@ async function adminCreate(){
   try{
     const nid = await rpc('mw_office_create',{p_name:name, p_office_code:code, p_office_pw:pw});
     await rpc('mw_office_set_manager_password',{p_office:nid, p_new_pw:mg});
+    accessLog('office_create', nid, `${name} (${code})`, nid);
     knownOfficePw[code]=pw; closeById('new-office-modal'); await adminHome(); showMgrHandoff(name, code, mg, pw);
   }catch(e){
     const dup = /duplicate|unique/i.test(e.message||'');
@@ -1659,7 +1743,7 @@ async function adminCreate(){
 async function adminPw(id,name){
   const np = await askInput({title:'사업소 비밀번호 바꾸기', msg:`${name} 의 새 비밀번호를 입력하세요. 바꾸면 직원들은 새 비밀번호로 다시 로그인합니다.`, placeholder:'6자 이상', min:6}); if(!np) return;
   if(np.length<6){ toast('6자 이상이어야 합니다'); return; }
-  try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); const o=adminOffices.find(x=>x.id===id); if(o) knownOfficePw[o.code]=np; toast('비밀번호를 바꿨습니다'); }
+  try{ await rpc('mw_office_set_password',{p_office:id, p_new_pw:np}); const o=adminOffices.find(x=>x.id===id); if(o) knownOfficePw[o.code]=np; accessLog('office_pw', id, name, id); toast('비밀번호를 바꿨습니다'); }
   catch(e){ toast(/same_as_manager/.test(e.message||'') ? '소장 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '바꾸지 못했습니다', 3500); }
 }
 // 소장 로그인 비밀번호: 본사가 정해서 소장에게만 따로 알려 줌
@@ -1679,7 +1763,7 @@ async function saveMgrPw(id,name,code){
   const np=$('#mgrset-pw').value.trim(), err=$('#mgrset-err');
   const fail=t=>{ err.textContent=t; err.classList.remove('hidden'); };
   if(np.length<4) return fail('4자 이상 입력하세요');
-  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); closeById('mgrset-modal'); await adminHome(); showMgrHandoff(name, code, np, knownOfficePw[code]||''); }
+  try{ await rpc('mw_office_set_manager_password',{p_office:id, p_new_pw:np}); accessLog('mgr_pw', id, name, id); closeById('mgrset-modal'); await adminHome(); showMgrHandoff(name, code, np, knownOfficePw[code]||''); }
   catch(e){ fail(/same_as_office/.test(e.message||'') ? '사업소(직원) 비밀번호와 같은 비밀번호는 쓸 수 없습니다' : '정하지 못했습니다. 인터넷을 확인하세요'); }
 }
 // 정한 직후 한 번만 보여 줌 (서버에는 암호화되어 저장되어 다시 볼 수 없음)
@@ -1749,7 +1833,7 @@ async function adminDelete(id,name){
   // 2단계: 사업소 이름을 직접 입력해야 삭제 (실수로 누르는 것 방지)
   const typed=await askInput({title:'정말 삭제할까요?', msg:`확인을 위해 사업소 이름 "${name}" 을(를) 그대로 입력하세요.\n삭제하면 되돌릴 수 없습니다.`, placeholder:name, min:1, ok:'영구 삭제', danger:true, match:name, matchErr:'사업소 이름이 일치하지 않습니다'});
   if(!typed){ toast('삭제를 취소했습니다'); return; }
-  try{ await rpc('mw_office_delete',{p_office:id}); toast('삭제되었습니다'); adminHome(); }
+  try{ await rpc('mw_office_delete',{p_office:id}); accessLog('office_delete', id, name, id); toast('삭제되었습니다'); adminHome(); }
   catch(e){ toast('삭제하지 못했습니다'); }
 }
 async function adminRoster(id){
@@ -1793,6 +1877,7 @@ async function rosterSave(){
   const rows = rosterDraft.filter(r=>r.name && r.name.trim());
   try{
     const n = await rpc('mw_employees_save',{p_office:rosterOffice.id, p_rows:rows});
+    accessLog('roster_save', rosterOffice.id, `${rosterOffice.name} · ${n}명`, rosterOffice.id);
     toast(`${n}명 저장했습니다`); adminHome();
   }catch(e){ toast('저장하지 못했습니다'); }
 }
@@ -2030,6 +2115,7 @@ const PEND_KEY='mw_pending_contact';
 let pendTimer=null;
 function startContact(id, kind, text, url){
   const pc={id, kind, text, at:Date.now(), hidden:false, office:me.officeId, emp:me.empId};
+  { const it=issues[id]; accessLog(kind==='call'?'call':'sms', id, it?`${it.title} · ${contactWho(it)}`:''); }
   lsSet(PEND_KEY, pc);   // 휴대폰이 앱을 닫았다 다시 열어도 물어볼 수 있게 기기에 잠시 보관
   openExternal(url);
   clearTimeout(pendTimer);
@@ -2090,7 +2176,9 @@ function openSms(id, pick, afterDone){
 
 // ── 상세 ─────────────────────────────────────
 let openDetailId=null;
-function openDetail(id){ openDetailId=id; refreshDetail(); }
+function openDetail(id){ openDetailId=id; refreshDetail();
+  const it=issues[id]; if(it && it.contact && (it.contact.phone||it.contact.name) && !(seenContact[id] > Date.now()-600e3)){ seenContact[id]=Date.now(); accessLog('contact_view', id, `${it.title} · ${contactWho(it)}`); }
+}
 function closeModal(){ openDetailId=null; $('#modal-root').innerHTML=''; }
 function refreshDetail(){
   const it=issues[openDetailId]; if(!it){ closeModal(); return; }
@@ -2325,7 +2413,9 @@ function editIssue(id){
     <div class="form-row"><label><input type="checkbox" id="e-urgent" ${it.urgent?'checked':''}> 긴급</label></div>
     <button class="btn btn-primary btn-block" onclick="saveEdit('${id}')">저장</button></div></div>`);
 }
-function saveEdit(id){ const it=issues[id]; const t=$('#e-title').value.trim(); if(!t){toast('내용을 입력해 주세요');return;} const ct=makeContact($('#e-cname').value,$('#e-cphone').value); if(ct===false){ toast('전화번호를 확인해 주세요'); return; } it.contact=ct; it.title=t; it.location=$('#e-loc').value.trim(); it.category=$('#e-cat').value; it.source=$('#e-src').value; it.content=$('#e-content').value.trim(); it.urgent=$('#e-urgent').checked; it.logs.push({ts:Date.now(),type:'edit',by:{empId:me.empId,name:me.name},text:'내용 수정'}); saveIssue(it); const em=$('#edit-modal'); if(em) em.remove(); toast('수정되었습니다'); }
+function saveEdit(id){ const it=issues[id]; const t=$('#e-title').value.trim(); if(!t){toast('내용을 입력해 주세요');return;} const ct=makeContact($('#e-cname').value,$('#e-cphone').value); if(ct===false){ toast('전화번호를 확인해 주세요'); return; }
+  if(JSON.stringify(it.contact||null)!==JSON.stringify(ct||null)){ const before=contactWho(it); accessLog('contact_edit', id, `${it.title} · ${before||'없음'} → ${ct?contactWho({contact:ct}):'삭제'}`); }
+  it.contact=ct; it.title=t; it.location=$('#e-loc').value.trim(); it.category=$('#e-cat').value; it.source=$('#e-src').value; it.content=$('#e-content').value.trim(); it.urgent=$('#e-urgent').checked; it.logs.push({ts:Date.now(),type:'edit',by:{empId:me.empId,name:me.name},text:'내용 수정'}); saveIssue(it); const em=$('#edit-modal'); if(em) em.remove(); toast('수정되었습니다'); }
 
 // ── 채팅 ─────────────────────────────────────
 const QUICK = [
@@ -2688,6 +2778,7 @@ function exportExcel(){
   const sum=[['항목','값'],['접수',st.recv.length],['완료',st.done.length],['미완료 누적',st.open.length],['평균 처리시간',dur(st.avg)],['긴급',st.urgent],[],['분류','건수'],...st.byCat,[],['담당 팀','건수'],...st.byTeam,[],['처리자','완료 건수'],...st.byPerson];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sum), '요약');
   XLSX.writeFile(wb, `${me.officeName}_민원처리_${statMonth}.xlsx`);
+  accessLog('excel', statMonth, `${statMonth} 민원 엑셀 (연락처 가림)`);
 }
 
 // ── 검색 ─────────────────────────────────────
