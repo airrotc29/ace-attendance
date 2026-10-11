@@ -3555,72 +3555,146 @@ async function autoFillReport(){
   [im,nt].forEach(t=>{ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+4,320)+'px'; });
   toast('자동분석 내용을 채웠습니다. 확인하고 고쳐 쓰세요',3000);
 }
-// ── 자동 업무일지: 오늘 접수 · 완료 · 미완료 민원, 채팅, (소장 · 본사) 순찰을 모아 한 장으로 ──
-// 새로 입력하는 것이 없습니다. 열 때마다 그 시점의 기록으로 다시 만들고, 인쇄 · PDF 로 저장합니다.
+// ── 자동 업무일지: 오늘 민원 · 순찰 · 채팅을 그림과 표로 한 장 (소장 · 본사만) ──
+// 새로 입력하는 것이 없습니다. 열 때마다 그 시점의 기록으로 다시 만듭니다.
 function workLogData(){
-  const [a,b]=dayRange(todayIso()), s=a.getTime(), e=b.getTime(), all=Object.values(issues);
+  const iso=todayIso(), [a,b]=dayRange(iso), s=a.getTime(), e=b.getTime(), all=Object.values(issues);
+  const pa=new Date(a); pa.setDate(pa.getDate()-1); const [pS,pE]=dayRange(fmtDate(pa)), ps=pS.getTime(), pe=pE.getTime();
   const recv=all.filter(i=>i.createdAt>=s&&i.createdAt<e).sort((x,y)=>x.createdAt-y.createdAt);
   const done=all.filter(i=>i.status==='done'&&i.doneAt>=s&&i.doneAt<e).sort((x,y)=>x.doneAt-y.doneAt);
   const open=all.filter(i=>i.createdAt<e&&i.status!=='done').sort((x,y)=>(+!!y.urgent)-(+!!x.urgent)||x.createdAt-y.createdAt);
   const durs=done.map(i=>i.doneAt-i.createdAt).filter(x=>x>0);
   const msgs=Object.values(chat).filter(m=>m.ts>=s&&m.ts<e&&!(m.meta&&m.meta.deleted));
+  const hr=t=>{ const d=new Date(t); return d.getHours()+d.getMinutes()/60; }, hb=t=>Math.min(23,Math.floor(hr(t)));
+  const H=()=>Array(24).fill(0), hRecv=H(), hDone=H(), hChat=H(), hScan=H();
+  recv.forEach(i=>hRecv[hb(i.createdAt)]++); done.forEach(i=>hDone[hb(i.doneAt)]++); msgs.forEach(m=>hChat[hb(m.ts)]++);
+  const cats={}; recv.forEach(i=>{ const k=i.category||'기타'; cats[k]=(cats[k]||0)+1; });
   const d={ date:fmtDate(s), recv, done, open, avgMs:durs.length?durs.reduce((p,q)=>p+q,0)/durs.length:0,
-    chat:{all:msgs.length, sys:msgs.filter(m=>m.kind==='sys').length}, pt:null };
+    chat:{all:msgs.length, sys:msgs.filter(m=>m.kind==='sys').length}, hours:{recv:hRecv, done:hDone, chat:hChat, scan:H()},
+    cats:Object.entries(cats).sort((x,y)=>y[1]-x[1]),
+    yest:{recv:all.filter(i=>i.createdAt>=ps&&i.createdAt<pe).length, done:all.filter(i=>i.status==='done'&&i.doneAt>=ps&&i.doneAt<pe).length},
+    aged:open.filter(i=>Date.now()-i.createdAt>=3*86400e3).length, pt:null };
   if(ptCanView()){   // 순찰 기록은 소장 · 본사 업무일지에만
     const logs=(patrol.logs||[]).filter(l=>{ const t=new Date(l.ts).getTime(); return t>=s&&t<e; });
-    const pts=(patrol.points||[]).filter(p=>p.active);
-    const cyc=ptCycles(logs, pts), per=pts.map(p=>({name:p.name, n:logs.filter(l=>l.point_id===p.id).length}));
-    d.pt={ cycles:cyc.n, partial:cyc.partial, scans:logs.length, per, checked:per.filter(p=>p.n).length, total:per.length,
-      missing:per.filter(p=>!p.n).map(p=>p.name),
-      bad:logs.filter(l=>l.note&&l.note!==PT_OK).map(l=>({t:new Date(l.ts).getTime(), point:(pts.find(p=>p.id===l.point_id)||{}).name||'', emp:l.emp_name||'', note:l.note, photo:l.photo||null})).sort((x,y)=>x.t-y.t) };
+    const pts=(patrol.points||[]).filter(p=>p.active), cyc=ptCycles(logs, pts);
+    const rows=pts.map(p=>({name:p.name, times:logs.filter(l=>l.point_id===p.id).map(l=>{ const t=new Date(l.ts).getTime(); return {h:hr(t), t, bad:!!(l.note&&l.note!==PT_OK), who:l.emp_name||'', note:l.note||'', photo:l.photo||null}; }).sort((x,y)=>x.h-y.h)}));
+    logs.forEach(l=>{ hScan[hb(new Date(l.ts).getTime())]++; }); d.hours.scan=hScan;
+    d.pt={ cycles:cyc.n, partial:cyc.partial, scans:logs.length, rows, total:rows.length, checked:rows.filter(r=>r.times.length).length,
+      missing:rows.filter(r=>!r.times.length).map(r=>r.name),
+      bad:rows.flatMap(r=>r.times.filter(t=>t.bad).map(t=>({...t, point:r.name}))).sort((x,y)=>x.h-y.h) };
   }
   return d;
 }
 function workLogHTML(d){
-  const off=esc(me.officeName||''), who=esc(me.name||''), isUrg=i=>!!i.urgent;
+  const off=esc(me.officeName||''), who=esc(me.name||''), now=Date.now(), P=d.pt, DAY=864e5;
+  const isUrg=i=>!!i.urgent, esc0=x=>esc(x||''), fmtH=h=>`${String(Math.floor(h)).padStart(2,'0')}:${String(Math.round((h%1)*60)%60).padStart(2,'0')}`;
   const doneText=i=>{ const l=(i.logs||[]).filter(x=>x.type==='done'&&x.text).pop(); return l?l.text:''; };
-  const tile=(v,l,sub,c='')=>`<div class="t ${c}"><b>${v}</b><span>${l}</span>${sub?`<small>${sub}</small>`:''}</div>`;
-  const more=(n,k)=>n>k?`<p class="more">외 ${n-k}건</p>`:'';
-  const recvU=d.recv.filter(isUrg).length, openU=d.open.filter(isUrg).length;
-  const recvRows=d.recv.slice(0,12).map(i=>`<tr><td class="c">${fmtTime(i.createdAt)}</td><td>${isUrg(i)?'<b class="r">[긴급]</b> ':''}${esc(i.location||'-')}</td><td>${esc(i.title||'')}</td><td class="c">${esc(i.source||'-')}</td><td class="c">${esc(i.assignee&&i.assignee.type!=='none'?i.assignee.name:'미지정')}</td></tr>`).join('');
-  const doneRows=d.done.slice(0,12).map(i=>`<tr><td class="c">${fmtTime(i.doneAt)}</td><td>${esc(i.location||'-')}</td><td>${esc(i.title||'')}</td><td>${esc(doneText(i)||'-')}</td><td class="c">${esc(i.assignee&&i.assignee.name||'-')}</td></tr>`).join('');
-  const openRows=d.open.slice(0,8).map(i=>{ const days=Math.max(0,Math.floor((Date.now()-i.createdAt)/86400000));
-    return `<tr><td class="c">${fmtDate(i.createdAt)}</td><td>${isUrg(i)?'<b class="r">[긴급]</b> ':''}${esc(i.location||'-')}</td><td>${esc(i.title||'')}</td><td class="c">${esc(i.assignee&&i.assignee.type!=='none'?i.assignee.name:'미지정')}</td><td class="c">${days}일</td></tr>`; }).join('');
-  const P=d.pt;
-  const ptPart=P?`<h2>순찰</h2>
-    <div class="tiles">${tile(P.cycles,'코스 완주',P.partial?`일부만 ${P.partial}회`:'모든 지점 한 바퀴','')}${tile(`${P.checked}/${P.total}`,'확인한 지점','')}${tile(P.scans,'QR 찍은 횟수','')}${tile(P.bad.length,'특이사항',P.bad.length?'아래 확인':'없음',P.bad.length?'warn':'')}</div>
-    <table><thead><tr><th>지점</th><th>찍은 횟수</th></tr></thead><tbody>${P.per.map(p=>`<tr><td>${esc(p.name)}</td><td class="c ${p.n?'':'r'}">${p.n?p.n+'회':'아직 없음'}</td></tr>`).join('')||'<tr><td colspan="2" class="c muted">등록된 지점이 없습니다</td></tr>'}</tbody></table>
-    ${P.bad.length?`<h2 style="margin-top:4mm">특이사항</h2><table><thead><tr><th>시각</th><th>지점</th><th>확인자</th><th>내용</th></tr></thead><tbody>${P.bad.map(b=>`<tr><td class="c">${fmtTime(b.t)}</td><td>${esc(b.point)}</td><td class="c">${esc(b.emp)}</td><td>${esc(b.note)}${b.photo?' <span class="muted">(사진 있음)</span>':''}</td></tr>`).join('')}</tbody></table>`:''}`:'';
-  const where=i=>!i.location||(i.title||'').includes(i.location)?(i.title||i.location||''):`${i.location} ${i.title||''}`;   // 제목에 장소가 있으면 한 번만
-  const next=[...d.open.filter(isUrg).map(i=>`긴급 미완료: ${where(i)}`), ...(P?P.missing.map(n=>`오늘 아직 안 찍은 지점: ${n}`):[])];
+  const where=i=>{ const lt=(i.location||'').split(/\s+/).filter(Boolean), tt=(i.title||'').split(/\s+/).filter(w=>w&&!lt.includes(w)); return [i.location, tt.join(' ')].filter(Boolean).join(' ')||i.title||''; };   // 장소와 겹치는 낱말은 한 번만
+  const delta=(n,p)=>{ const x=n-p; return x>0?`▲ ${x} 어제보다 많음`:x<0?`▼ ${-x} 어제보다 적음`:'어제와 같음'; };
+  const kpi=(v,l,sub,c='')=>`<div class="kpi ${c}"><b>${v}</b><span>${l}</span><small>${sub}</small></div>`;
+  const recvU=d.recv.filter(isUrg).length, openU=d.open.filter(isUrg).length, oldNU=d.open.filter(i=>!isUrg(i)&&now-i.createdAt>=3*DAY).length;
+  // ── 한눈에 보는 요약 (자동 문장) ──
+  const brief=[`접수 <b>${d.recv.length}</b>건 · 완료 <b>${d.done.length}</b>건${d.avgMs?` · 완료까지 평균 ${dur(d.avgMs)}`:''}`];
+  brief.push(openU?`<b class="r">긴급 민원 ${openU}건</b>이 아직 열려 있어 내일 가장 먼저 확인이 필요합니다.`:(d.open.length?`열린 민원 ${d.open.length}건 · 긴급은 없습니다.`:'열린 민원이 없습니다.'));
+  if(oldNU) brief.push(`3일 넘게 열린 민원 ${oldNU}건이 있습니다.`);
+  if(P){ brief.push(P.missing.length?`순찰 <b>${P.checked}/${P.total}</b>곳 확인 · <b class="r">미확인 ${P.missing.join(', ')}</b>`:`순찰 ${P.total}곳을 모두 확인했습니다.`);
+    if(P.bad.length) brief.push(`특이사항 <b class="o">${P.bad.length}건</b>이 있어 아래 사진과 함께 확인이 필요합니다.`); }
+  // ── 시간대 흐름 그래프 ──
+  const hmax=Math.max(1,...d.hours.recv,...d.hours.done), W=720, base=112, span=base-12, bw=W/24;
+  let bars='';
+  for(let h=0;h<24;h++){ const x=h*bw, night=h>=22||h<6, r=d.hours.recv[h], dn=d.hours.done[h], sc=d.hours.scan[h], ch=d.hours.chat[h];
+    if(night) bars+=`<rect x="${x}" y="0" width="${bw}" height="124" fill="#f1f2f6"/>`;
+    if(r) bars+=`<rect x="${(x+bw*.12).toFixed(1)}" y="${(base-r/hmax*span).toFixed(1)}" width="${(bw*.36).toFixed(1)}" height="${(r/hmax*span).toFixed(1)}" rx="2" fill="#3b6fd8"><title>${h}시 접수 ${r}건</title></rect>`;
+    if(dn) bars+=`<rect x="${(x+bw*.52).toFixed(1)}" y="${(base-dn/hmax*span).toFixed(1)}" width="${(bw*.36).toFixed(1)}" height="${(dn/hmax*span).toFixed(1)}" rx="2" fill="#1f8a55"><title>${h}시 완료 ${dn}건</title></rect>`;
+    if(sc) bars+=`<circle cx="${(x+bw/2).toFixed(1)}" cy="130" r="${Math.min(6,2.5+sc).toFixed(1)}" fill="#1d47cc"><title>${h}시 순찰 ${sc}회</title></circle>`;
+    if(ch) bars+=`<circle cx="${(x+bw/2).toFixed(1)}" cy="146" r="2.8" fill="#9aa1ad"><title>${h}시 채팅 ${ch}건</title></circle>`;
+  }
+  const hours=`<svg viewBox="0 0 ${W} 156" class="chart">${bars}<line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="#cfd4dd"/>
+    <text x="4" y="10" class="ax">${hmax}건</text>${[0,6,12,18,24].map(h=>`<text x="${Math.min(W-14,Math.max(10,h*bw))}" y="153" text-anchor="middle" class="ax">${h}시</text>`).join('')}</svg>`;
+  // ── 열린 민원 도넛 ──
+  const oTot=d.open.length, oRest=oTot-openU-oldNU, C=2*Math.PI*44;
+  let acc=0; const seg=(v,c)=>{ if(!v||!oTot) return ''; const len=v/oTot*C, s=`<circle cx="60" cy="60" r="44" fill="none" stroke="${c}" stroke-width="15" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" transform="rotate(-90 60 60)"/>`; acc+=len; return s; };
+  const donut=`<svg viewBox="0 0 120 120" class="donut"><circle cx="60" cy="60" r="44" fill="none" stroke="#eef0f4" stroke-width="15"/>${seg(openU,'#c93434')}${seg(oldNU,'#e08a12')}${seg(oRest,'#3b6fd8')}<text x="60" y="61" text-anchor="middle" class="dbig">${oTot}</text><text x="60" y="78" text-anchor="middle" class="dsm">열린 민원</text></svg>`;
+  // ── 분류 막대 ──
+  const cmax=Math.max(1,...d.cats.map(c=>c[1]));
+  const catHtml=d.cats.length?d.cats.slice(0,6).map(([k,v])=>`<div class="hb"><span class="hl">${esc0(k)}</span><div class="hbar"><i style="width:${(v/cmax*100).toFixed(0)}%"></i></div><b>${v}건</b></div>`).join(''):'<p class="muted">오늘 접수된 민원이 없습니다</p>';
+  // ── 열린 민원 카드 ──
+  const openCards=d.open.slice(0,8).map(i=>{ const days=Math.max(0,Math.floor((now-i.createdAt)/DAY)), w=Math.min(100,days/7*100);
+    return `<div class="ocard ${isUrg(i)?'urg':''}"><div class="oh">${isUrg(i)?'<span class="tag r">긴급</span>':''}<b>${esc0(where(i))}</b></div><div class="om">${esc0(i.assignee&&i.assignee.type!=='none'?i.assignee.name:'담당 미지정')} · 접수 ${fmtDate(i.createdAt).slice(5)} · ${days}일 경과</div><div class="age"><i style="width:${w.toFixed(0)}%"></i></div></div>`; }).join('');
+  // ── 담당별 현황: 지금 맡고 있는 민원 · 오늘 완료 ──
+  const wm={}; const who_=i=>i.assignee&&i.assignee.type!=='none'?(i.assignee.name||'미지정'):'미지정';
+  d.open.forEach(i=>{ const k=who_(i); (wm[k]=wm[k]||{open:0,done:0}).open++; });
+  d.done.forEach(i=>{ const k=i.assignee&&i.assignee.name||'-'; (wm[k]=wm[k]||{open:0,done:0}).done++; });
+  const wEntries=Object.entries(wm).sort((x,y)=>(y[1].open+y[1].done)-(x[1].open+x[1].done)).slice(0,8), wmax=Math.max(1,...wEntries.map(([,v])=>v.open+v.done));
+  const workHtml=wEntries.length?wEntries.map(([k,v])=>`<div class="wr"><span class="wn">${esc0(k)}</span><div class="wbar"><i class="wo" style="width:${(v.open/wmax*100).toFixed(0)}%"></i><i class="wd" style="width:${(v.done/wmax*100).toFixed(0)}%"></i></div><b>${v.open}<small> 열림</small> · ${v.done}<small> 완료</small></b></div>`).join(''):'<p class="muted">담당자가 정해진 민원이 없습니다</p>';
+  // ── 처리 시간 분포: 오늘 끝낸 민원이 접수에서 완료까지 걸린 시간 ──
+  const bk=[['1시간 이내',0,1],['1~3시간',1,3],['3~24시간',3,24],['하루 넘게',24,1e9]].map(([l,a,b2])=>({l,a,b2,n:0}));
+  d.done.forEach(i=>{ const h=(i.doneAt-i.createdAt)/3600e3; const k=bk.find(x=>h>=x.a&&h<x.b2); if(k) k.n++; });
+  const bmax=Math.max(1,...bk.map(x=>x.n));
+  const procHtml=d.done.length?`<div class="legend"><span>완료 ${d.done.length}건${d.avgMs?` · 평균 ${dur(d.avgMs)}`:''}</span></div>${bk.map(x=>`<div class="hb"><span class="hl">${x.l}</span><div class="hbar"><i style="width:${(x.n/bmax*100).toFixed(0)}%;background:#1f8a55"></i></div><b>${x.n}건</b></div>`).join('')}`:'<p class="muted">오늘 완료된 민원이 없습니다</p>';
+  // ── 순찰 타임라인 ──
+  let ptSvg='', ptBad='';
+  if(P){ const RH=26, LBL=112, TW=600, lx=h=>LBL+h/24*TW, H2=P.rows.length*RH+22;
+    ptSvg=`<svg viewBox="0 0 ${LBL+TW+8} ${H2}" class="chart pt">${P.rows.map((r,i)=>{ const cy=i*RH+RH/2;
+        return `<text x="0" y="${cy+4}" class="sl">${esc0(r.name)}</text><line x1="${LBL}" x2="${LBL+TW}" y1="${cy}" y2="${cy}" stroke="#eceef2" stroke-width="8" stroke-linecap="round"/>`+
+          (r.times.length?r.times.map(t=>`<circle cx="${lx(t.h).toFixed(1)}" cy="${cy}" r="6" fill="${t.bad?'#e08a12':'#1f8a55'}" stroke="#fff" stroke-width="1.5"><title>${fmtTime(t.t)} ${esc0(t.who)}${t.bad?' · 특이사항':''}</title></circle>`).join(''):`<text x="${lx(12)}" y="${cy+4}" text-anchor="middle" class="miss">오늘 아직 안 찍음</text>`); }).join('')}
+      ${[0,6,12,18,24].map(h=>`<text x="${lx(h)}" y="${H2-5}" text-anchor="middle" class="ax">${h}시</text>`).join('')}</svg>`;
+    ptBad=P.bad.map(b=>`<div class="bad"><div><b>${fmtTime(b.t)} · ${esc0(b.point)}</b> <span class="muted">${esc0(b.who)}</span><p>${esc0(b.note)}</p></div>${b.photo?`<img src="${esc(b.photo)}" alt="특이사항 사진">`:''}</div>`).join('');
+  }
+  // ── 표 ──
+  const recvRows=d.recv.slice(0,8).map(i=>`<tr><td class="c">${fmtTime(i.createdAt)}</td><td>${isUrg(i)?'<b class="r">긴급</b> ':''}${esc0(where(i))}</td><td class="c">${esc0(i.assignee&&i.assignee.type!=='none'?i.assignee.name:'미지정')}</td></tr>`).join('');
+  const doneRows=d.done.slice(0,8).map(i=>`<tr><td class="c">${fmtTime(i.doneAt)}</td><td>${esc0(where(i))}</td><td>${esc0(doneText(i)||'-')}</td><td class="c">${esc0(i.assignee&&i.assignee.name||'-')}</td></tr>`).join('');
+  // ── 내일 확인 ──
+  const next=[...d.open.filter(isUrg).map(i=>`긴급 민원 확인: ${where(i)}`), ...d.open.filter(i=>!isUrg(i)&&now-i.createdAt>=3*DAY).slice(0,3).map(i=>`3일 넘긴 민원 확인: ${where(i)}`), ...(P?P.missing.map(n=>`순찰 확인: ${n} (오늘 미확인)`):[]), ...(P?P.bad.map(b=>`특이사항 조치 확인: ${b.point} · ${b.note}`):[])];
+  const sec=(t,body,cls='')=>`<section class="sec ${cls}"><h2>${t}</h2>${body}</section>`;
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${d.date} 업무일지 - ${off}</title>
 <style>
-@page{size:A4;margin:12mm 13mm}*{box-sizing:border-box}
-body{font-family:Pretendard,"Noto Sans KR",sans-serif;color:#1d2330;font-size:10.5pt;margin:0;padding:12px;max-width:960px;margin:0 auto}
-.bar{display:flex;gap:8px;justify-content:center;padding:10px 0 14px}.bar button{font:inherit;font-size:14px;font-weight:700;padding:9px 16px;border-radius:999px;border:1px solid #cfd4dd;background:#fff;cursor:pointer}.bar button:first-child{background:#1d2330;color:#fff;border-color:#1d2330}
-h1{font-size:19pt;margin:0 0 1mm}.meta{color:#6b7280;font-size:9.5pt;margin-bottom:4mm}
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin:2mm 0 3mm}@media (max-width:480px){.tiles{grid-template-columns:1fr 1fr}}.t{border:1px solid #d9dde5;border-radius:3mm;padding:2.5mm}.t b{display:block;font-size:16pt}.t span{font-size:9pt;color:#6b7280}.t small{display:block;font-size:8.5pt;color:#6b7280;margin-top:1mm}.t.warn{border-color:#f3b8b1;background:#fff6f5}.t.warn b{color:#b42318}
-h2{font-size:11.5pt;margin:4mm 0 1.5mm;border-bottom:1.2pt solid #1d2330;padding-bottom:1mm}
-table{width:100%;border-collapse:collapse;font-size:9.2pt}th,td{border:1px solid #cfd4dd;padding:1.3mm 1.7mm;vertical-align:top}th{background:#f3f4f7}td.c,th{text-align:center}
-.r{color:#b42318}.muted,.more{font-size:9pt;color:#6b7280;margin:1mm 0}
-ul{margin:1mm 0 0 5mm;padding:0;font-size:10pt}
-.end{margin-top:6mm;text-align:center;font-size:10pt;color:#374151}
-@media print{.bar{display:none}}
+@page{size:A4;margin:11mm 12mm}*{box-sizing:border-box}
+body{font-family:Pretendard,"Noto Sans KR",sans-serif;color:#1d2330;font-size:10pt;margin:0 auto;padding:14px;max-width:960px;background:#fff}
+.bar{display:flex;gap:8px;justify-content:center;padding:4px 0 12px}.bar button{font:inherit;font-size:14px;font-weight:700;padding:9px 16px;border-radius:999px;border:1px solid #cfd4dd;background:#fff;cursor:pointer}.bar button:first-child{background:#1d2330;color:#fff;border-color:#1d2330}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:2px solid #1d2330;padding-bottom:6px;margin-bottom:10px}
+.hd h1{font-size:20pt;margin:0}.meta{color:#6b7280;font-size:9pt;margin-top:2px}
+.tag{display:inline-block;font-size:8.5pt;font-weight:800;padding:2px 8px;border-radius:999px;margin-right:4px;vertical-align:1px}.tag.r{background:#fde8e6;color:#b42318}.tag.g{background:#e7f6ee;color:#1f8a55}
+.brief{background:#f5f7fb;border-radius:10px;padding:9px 12px;margin-bottom:9px}.brief b.r,.r{color:#b42318}.brief b.o{color:#b4761a}
+.brief ul{margin:3px 0 0 16px;padding:0;line-height:1.55}.brief li{margin-bottom:1px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.kpi{border:1px solid #dfe3ea;border-radius:10px;padding:8px 10px}.kpi b{display:block;font-size:19pt;line-height:1.1}.kpi span{font-size:9pt;color:#6b7280}.kpi small{display:block;font-size:8.3pt;color:#6b7280;margin-top:3px}
+.kpi.warn{border-color:#f3b8b1;background:#fff6f5}.kpi.warn b{color:#b42318}
+.sec{margin-bottom:11px;break-inside:avoid}.sec h2{font-size:11.5pt;margin:0 0 5px;padding-bottom:3px;border-bottom:1.2pt solid #1d2330}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chart{width:100%;display:block}.chart .ax{font-size:9px;fill:#6b7280}.chart .sl{font-size:11px;fill:#1d2330}.chart .miss{font-size:10px;fill:#b42318;font-weight:700}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:8.8pt;color:#374151;margin-bottom:3px}.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.dn-wrap{display:flex;align-items:center;gap:12px}.donut{width:118px;flex:none}.donut .dbig{font-size:22px;font-weight:800;fill:#1d2330}.donut .dsm{font-size:9px;fill:#6b7280}
+.dn-leg{font-size:9pt;line-height:1.9}.dn-leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.hb{display:grid;grid-template-columns:86px 1fr 44px;gap:6px;align-items:center;margin:3px 0;font-size:9.2pt}.hbar{height:9px;background:#eef0f4;border-radius:5px;overflow:hidden}.hbar i{display:block;height:100%;background:#3b6fd8;border-radius:5px}.hb b{text-align:right;font-variant-numeric:tabular-nums}.wr{display:grid;grid-template-columns:78px 1fr auto;gap:6px;align-items:center;margin:4px 0;font-size:9.2pt}.wn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wbar{height:10px;background:#eef0f4;border-radius:5px;overflow:hidden;display:flex}.wbar i{display:block;height:100%}.wbar .wo{background:#e08a12}.wbar .wd{background:#1f8a55}.wr b{font-size:9pt;font-variant-numeric:tabular-nums;white-space:nowrap}.wr small{color:#6b7280;font-weight:400}
+.ocards{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ocard{border:1px solid #dfe3ea;border-radius:9px;padding:7px 9px}.ocard.urg{border-color:#f3b8b1;background:#fff8f7}.oh{font-size:10pt;margin-bottom:2px}.om{font-size:8.4pt;color:#6b7280}
+.age{height:5px;background:#eef0f4;border-radius:4px;margin-top:5px;overflow:hidden}.age i{display:block;height:100%;background:#e08a12}.ocard.urg .age i{background:#c93434}
+.bads{display:grid;grid-template-columns:1fr 1fr;gap:7px}.bad{display:flex;gap:9px;align-items:flex-start;border:1px solid #f1d8a8;background:#fffaf1;border-radius:9px;padding:7px 9px}.bad p{margin:2px 0 0;font-size:9.5pt}.bad img{width:64px;height:64px;object-fit:cover;border-radius:7px;flex:none}
+.muted{font-size:8.8pt;color:#6b7280}
+table{width:100%;border-collapse:collapse;font-size:8.8pt}th,td{border:1px solid #d6dbe3;padding:3px 5px;vertical-align:top}th{background:#f3f4f7}td.c,th{text-align:center}
+ul.todo{list-style:none;margin:0;padding:0;font-size:9.5pt}ul.todo li{display:flex;gap:8px;align-items:flex-start;margin-bottom:4px}ul.todo i{flex:none;width:11px;height:11px;border:1.4pt solid #6b7280;border-radius:3px;margin-top:3px}
+.end{margin-top:8px;text-align:center;font-size:9.5pt;color:#374151}
+@media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}.two,.ocards,.bads{grid-template-columns:1fr}}
+@media print{.bar{display:none}body{padding:0}.sec{break-inside:avoid}}
 </style></head><body>
 <div class="bar"><button onclick="window.print()">인쇄 · PDF 저장</button><button onclick="window.close()">닫기</button></div>
-<h1>업무일지 · ${d.date}</h1>
-<div class="meta">${off} · 작성 ${who} · ${fmtDT(Date.now())} 기준</div>
-<h2 style="margin-top:0">민원</h2>
-<div class="tiles">${tile(d.recv.length,'오늘 접수',recvU?`긴급 ${recvU}건`:'')}${tile(d.done.length,'오늘 완료',d.avgMs?`평균 ${dur(d.avgMs)}`:'')}${tile(d.open.length,'아직 미완료',openU?`긴급 ${openU}건`:'',openU?'warn':'')}${tile(d.chat.all,'채팅',d.chat.sys?`안내 ${d.chat.sys}건 포함`:'')}</div>
-<h2>오늘 접수</h2>
-${d.recv.length?`<table><thead><tr><th>시각</th><th>장소</th><th>내용</th><th>경로</th><th>담당</th></tr></thead><tbody>${recvRows}</tbody></table>${more(d.recv.length,12)}`:'<p class="muted">오늘 접수된 민원이 없습니다</p>'}
-<h2>오늘 완료</h2>
-${d.done.length?`<table><thead><tr><th>시각</th><th>장소</th><th>내용</th><th>조치</th><th>처리자</th></tr></thead><tbody>${doneRows}</tbody></table>${more(d.done.length,12)}`:'<p class="muted">오늘 완료된 민원이 없습니다</p>'}
-<h2>아직 열린 민원</h2>
-${d.open.length?`<table><thead><tr><th>접수일</th><th>장소</th><th>내용</th><th>담당</th><th>경과</th></tr></thead><tbody>${openRows}</tbody></table>${more(d.open.length,8)}`:'<p class="muted">열린 민원이 없습니다</p>'}
-${ptPart}
-<h2>내일 확인할 것</h2>
-${next.length?`<ul>${next.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="muted">특별히 없습니다</p>'}
+<header class="hd"><div><h1>업무일지</h1><div class="meta">${d.date} · ${off} · 작성 ${who} · ${fmtTime(now)} 기준</div></div>
+  <div>${openU?'<span class="tag r">긴급 확인 필요</span>':'<span class="tag g">긴급 없음</span>'}${P&&P.missing.length?`<span class="tag r">순찰 미확인 ${P.missing.length}곳</span>`:''}</div></header>
+${sec('한눈에 보기',`<div class="brief"><ul>${brief.map(x=>`<li>${x}</li>`).join('')}</ul></div>`)}
+<section class="kpis">${kpi(d.recv.length,'오늘 접수',delta(d.recv.length,d.yest.recv)+' (접수)',openU?'':'')}${kpi(d.done.length,'오늘 완료',delta(d.done.length,d.yest.done)+(d.avgMs?` · 평균 ${dur(d.avgMs)}`:''))}${kpi(d.open.length,'아직 열린 민원',openU?`긴급 ${openU}건`:'긴급 없음',openU?'warn':'')}${P?kpi(`${P.checked}/${P.total}`,'순찰 확인 지점',P.cycles?`코스 완주 ${P.cycles}회`:'코스 완주 없음',P.missing.length?'warn':''):kpi(d.chat.all,'채팅 메시지',`안내 ${d.chat.sys}건 포함`)}</section>
+${sec('시간대 흐름',`<div class="legend"><span><i style="background:#3b6fd8"></i>접수</span><span><i style="background:#1f8a55"></i>완료</span>${P?'<span><i style="background:#1d47cc;border-radius:50%"></i>순찰</span>':''}<span><i style="background:#9aa1ad;border-radius:50%"></i>채팅</span><span><i style="background:#f1f2f6;border:1px solid #dfe3ea"></i>야간 22~06시</span></div>${hours}`)}
+<div class="two">
+${sec('열린 민원 상태',`<div class="dn-wrap">${donut}<div class="dn-leg"><div><i style="background:#c93434"></i>긴급 ${openU}건</div><div><i style="background:#e08a12"></i>3일 넘김 ${oldNU}건</div><div><i style="background:#3b6fd8"></i>그 밖 ${oRest}건</div></div></div>`)}
+${sec('오늘 접수 분류',catHtml)}
+</div>
+<div class="two">${sec('담당별 현황',`<div class="legend"><span><i style="background:#e08a12"></i>맡고 있는 민원</span><span><i style="background:#1f8a55"></i>오늘 완료</span></div>${workHtml}`)}${sec('오늘 완료 · 처리 시간',procHtml)}</div>
+${d.open.length?sec('열린 민원',`<div class="ocards">${openCards}</div>${d.open.length>8?`<p class="muted">외 ${d.open.length-8}건</p>`:''}`):''}
+${P?sec('순찰',`<div class="legend"><span><i style="background:#1f8a55;border-radius:50%"></i>이상 없음</span><span><i style="background:#e08a12;border-radius:50%"></i>특이사항</span><span>코스 완주 ${P.cycles}회${P.partial?` · 일부만 ${P.partial}회`:''} · QR ${P.scans}번</span></div>${ptSvg}${P.bad.length?`<div class="bads" style="margin-top:6px">${ptBad}</div>`:''}`):''}
+<div class="two">
+${sec('접수 목록',d.recv.length?`<table><thead><tr><th>시각</th><th>내용</th><th>담당</th></tr></thead><tbody>${recvRows}</tbody></table>${d.recv.length>8?`<p class="muted">외 ${d.recv.length-8}건</p>`:''}`:'<p class="muted">오늘 접수된 민원이 없습니다</p>')}
+${sec('완료 목록',d.done.length?`<table><thead><tr><th>시각</th><th>내용</th><th>조치</th><th>처리자</th></tr></thead><tbody>${doneRows}</tbody></table>${d.done.length>8?`<p class="muted">외 ${d.done.length-8}건</p>`:''}`:'<p class="muted">오늘 완료된 민원이 없습니다</p>')}
+</div>
+${sec('내일 확인할 것',next.length?`<ul class="todo">${next.map(x=>`<li><i></i><span>${esc0(x)}</span></li>`).join('')}</ul>`:'<p class="muted">특별히 없습니다</p>')}
 <div class="end">위와 같이 ${d.date} 업무를 기록합니다.<br>${who}</div>
 </body></html>`;
 }
