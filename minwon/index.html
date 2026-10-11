@@ -3335,7 +3335,7 @@ function reportAnalysis(ym){
   const st=monthStats(ym); const [y,m]=ym.split('-').map(Number); const [s,e]=monthRange(ym);
   const pd=new Date(y,m-2,1); const prevYm=`${pd.getFullYear()}-${pad(pd.getMonth()+1)}`; const pv=monthStats(prevYm);
   const ref=Math.min(Date.now(), e); const isNow=Date.now()<e;
-  const short=i=>[i.location,i.title].filter(Boolean).join(' ');
+  const short=i=>i.location && !(i.title||'').includes(i.location) ? `${i.location} ${i.title||''}`.trim() : (i.title||i.location||'');   // 제목에 장소가 이미 있으면 한 번만
   const imp=[], note=[];
   if(!st.recv.length && !st.open.length) return {improve:'· 이 달 접수된 민원이 없습니다.', note:`· ${m}월 접수 민원 없음.`};
   // 개선 건의 ① 반복 민원
@@ -3398,6 +3398,7 @@ function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · �
   const [ms,me_]=monthRange(ym);
   const lastDay=new Date(y,m,0).getDate();
   const office=esc(me.officeName);
+  const ttl=pt?'민원 처리 · 순찰 현황 보고':'민원 처리 현황 보고';   // 순찰 실적이 실리면 제목에도
   const dt=(o.date||fmtDate(Date.now())).replace(/-/g,'. ');
   const boss=EMPLOYEES.find(e=>isBoss(e));
   // 차트 색 (검증된 2색 + 같은 계열 연한 단계) · 글자 색
@@ -3488,8 +3489,8 @@ function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · �
       g+=`<rect x="${cx}" y="${cy}" width="${cw}" height="${chh}" rx="3" fill="${fill}"><title>${m}월 ${d}일 ${v==null?'-':v+'%'}</title></rect><text x="${cx+4}" y="${cy+9}" class="cd" fill="${dark?'#ffffff':MUTE}">${d}</text>${v!=null?`<text x="${cx+cw-3}" y="${cy+15}" text-anchor="end" class="cd" fill="${dark?'#ffffff':INK2}">${v}%</text>`:''}`; });
     const cal=`<svg viewBox="0 0 ${W} ${Hh}" width="100%" style="max-width:120mm">${g}</svg>`;
     return `<div>${H('QR 순찰 실적')}
-    <div class="tiles">
-      ${rtile('순찰 이행률', pt.coverage||0, `<span class="dl">지점 ${act.length}곳 · ${act.reduce((n,p)=>n+Math.min(p.days,p.avail),0)}/${act.reduce((n,p)=>n+p.avail,0)} 지점·일</span>`)}
+    <div class="tiles" style="grid-template-columns:repeat(4,1fr)">
+      ${rtile('순찰 이행률', pt.coverage||0, `<span class="dl">지점 ${act.length}곳 · ${act.reduce((n,p)=>n+Math.min(p.days,p.avail),0)}/${act.reduce((n,p)=>n+p.avail,0)}일</span>`)}
       ${tile('총 순찰', `${pt.total}<small>회</small>`, `<span class="dl">하루 평균 ${pt.perDay}회 · 야간 ${pt.night}회</span>`)}
       ${tile('특이사항', `${pt.badList.length}<small>건</small>`, `<span class="dl">민원 전환 ${ptIss}건</span>`)}
       ${tile('모든 지점 순찰한 날', `${pt.fullDays}<small>일</small>`, `<span class="dl">${pt.missDays?`<b style="color:${BAD}">미순찰 ${pt.missDays}일</b>`:'미순찰일 없음'}</span>`)}
@@ -3525,10 +3526,10 @@ function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · �
   const rankList=rows=>rows.length?rows.map(([k,v],i)=>`<div class="rk"><span class="no${i===0?' first':''}">${i+1}</span><span class="hl">${esc(k)}</span><div class="hbar"><div class="hs" style="width:calc((100% - 40px) * ${(v/Math.max(1,rows[0][1])).toFixed(3)})"><i style="flex:1;background:${C1}"></i></div><span class="hv">${v}건</span></div></div>`).join(''):'<div class="muted" style="font-size:9pt">자료 없음</div>';
 
   return `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${y}년 ${m}월 민원 처리 현황 보고 - ${office}</title>
+<title>${y}년 ${m}월 ${ttl} - ${office}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-@page{size:A4;margin:14mm 13mm 15mm;@bottom-right{content:counter(page) " / " counter(pages);font-family:Pretendard,"Noto Sans KR",sans-serif;font-size:9pt;font-weight:700;color:#52514e;vertical-align:middle}@bottom-left{content:"${office} 관리사무소 · ${y}년 ${m}월 민원 처리 현황 보고";font-family:Pretendard,"Noto Sans KR",sans-serif;font-size:7.5pt;color:#9a9a94;vertical-align:middle;white-space:nowrap}}
+@page{size:A4;margin:14mm 13mm 15mm;@bottom-right{content:counter(page) " / " counter(pages);font-family:Pretendard,"Noto Sans KR",sans-serif;font-size:9pt;font-weight:700;color:#52514e;vertical-align:middle}@bottom-left{content:"${office} 관리사무소 · ${y}년 ${m}월 ${ttl}";font-family:Pretendard,"Noto Sans KR",sans-serif;font-size:7.5pt;color:#9a9a94;vertical-align:middle;white-space:nowrap}}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Pretendard','Noto Sans KR',sans-serif;color:#111;font-size:10.3pt;line-height:1.55;background:#ececE8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .bar{position:sticky;top:0;z-index:5;background:#111;display:flex;gap:8px;justify-content:center;padding:10px}
@@ -3630,7 +3631,7 @@ thead{display:table-header-group}
     <div class="doc">${office} 관리사무소<br>민원순찰 관리 자동 집계</div>
     <table class="sign"><tr><th class="v" rowspan="2">결<br>재</th><th>담 당</th><th>소 장</th><th>관리인</th></tr><tr><td></td><td></td><td></td></tr></table>
   </div>
-  <h1>${y}년 ${m}월 민원 처리 현황 보고</h1>
+  <h1>${y}년 ${m}월 ${ttl}</h1>
   <table class="meta">
     <tr><th>수 신</th><td>${esc(o.to)}</td><th>보 고 일</th><td>${esc(dt)}</td></tr>
     <tr><th>발 신</th><td>${office} 관리사무소</td><th>작 성 자</th><td>${esc(o.writer)}</td></tr>
@@ -3693,7 +3694,7 @@ thead{display:table-header-group}
   ${pt?ptSection():''}
   <div>${H('특이사항')}
   <div class="box flow">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div>
-  <div class="end">위와 같이 ${y}년 ${m}월 민원 처리${pt?' · 순찰':''} 현황을 보고합니다.<br>${esc(dt)}
+  <div class="end">위와 같이 ${y}년 ${m}월 ${ttl.replace(' 보고','')}을 보고합니다.<br>${esc(dt)}
     <div class="sig">${office} 관리사무소장 ${esc(boss?boss.name:'')} (인)</div></div></div>
 </div></body></html>`;
 }
