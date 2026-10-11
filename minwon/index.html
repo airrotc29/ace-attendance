@@ -3992,8 +3992,9 @@ function installBanner(){
   const dl='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>';
   return `<div class="push-card inst-card">
     <div class="pc-ic">${dl}</div>
-    <div class="pc-tx"><b>앱으로 다운받기</b><small>홈 화면 아이콘으로 바로 열립니다</small></div>
-    <button class="pc-go" onclick="installApp()">다운받기</button>
+    ${installedApp?`<div class="pc-tx"><b>이 휴대폰에 앱이 이미 있습니다</b><small>앱 아이콘으로 열면 더 편합니다</small></div>
+    <button class="pc-go" onclick="showInstalledGuide()">찾는 법</button>`:`<div class="pc-tx"><b>앱으로 다운받기</b><small>홈 화면 아이콘으로 바로 열립니다</small></div>
+    <button class="pc-go" onclick="installApp()">다운받기</button>`}
     <button class="pc-x" onclick="lsSet('mw_inst_later',Date.now());render()" aria-label="나중에" title="나중에 (7일간 숨김)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>`;
 }
@@ -4059,7 +4060,27 @@ const platform = ()=>{ const ua=navigator.userAgent||''; if(/iphone|ipad|ipod/i.
 function refreshInstallUI(){ const show=!isStandalone(); ['lg-install','tb-install','adm-install'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('hidden', !show); }); refreshPushUI(); }
 window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); installPrompt=e; refreshInstallUI(); });
 window.addEventListener('appinstalled', ()=>{ installPrompt=null; refreshInstallUI(); if(me) render(); closeById('inst-modal'); toast('설치되었습니다. 홈 화면이나 바탕화면의 아이콘으로 여세요', 3500); });
+// 이미 설치된 앱이 있는지 (안드로이드 크롬) — 있으면 크롬이 다시 설치해 주지 않으므로 찾는 법을 안내
+let installedApp=false;
+async function checkInstalled(){ try{ if(!navigator.getInstalledRelatedApps || isStandalone()) return; const a=await navigator.getInstalledRelatedApps(); const v=!!(a&&a.length); if(v!==installedApp){ installedApp=v; refreshInstallUI(); if(me) render(); } }catch{} }
+function showInstalledGuide(){
+  closeById('inst-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="inst-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:460px">
+    <div class="modal-head"><h2>앱이 이미 설치되어 있습니다</h2><button class="modal-close" onclick="closeById('inst-modal')">✕</button></div>
+    <div class="inst-app"><img src="icons/icon-192.png?v=3" alt=""><div><b>민원순찰 관리</b><small>예전에 설치했다면 이름이 '민원처리'로<br>보일 수 있습니다 (곧 새 이름으로 바뀝니다)</small></div></div>
+    <div class="ig main"><h3>아이콘 찾기 (갤럭시)</h3><ol>
+      <li>홈 화면을 <b>위로 쓸어 올려</b> 앱스 화면을 엽니다.</li>
+      <li>위쪽 검색에 <b>민원</b>을 넣어 <b>민원순찰 관리</b>(또는 민원처리)를 찾습니다.</li>
+      <li>아이콘을 <b>길게 눌러 → 홈에 추가</b>를 누릅니다.</li></ol>
+      <p class="hint">새로 설치한 앱이 홈 화면에 안 생기면: 홈 화면 빈 곳을 길게 누름 → <b>설정</b> → <b>새 앱을 홈 화면에 추가</b> 켜기.</p></div>
+    <details class="ig-more"><summary>그래도 없거나 새로 설치하고 싶으면</summary><div class="ig"><ol>
+      <li>휴대폰 <b>설정 → 애플리케이션</b>에서 <b>민원순찰 관리</b>(또는 민원처리)를 눌러 <b>삭제</b>합니다.</li>
+      <li>크롬에서 이 주소를 다시 열고 <b>앱으로 다운받기</b> → <b>설치</b>를 누릅니다.</li></ol>
+      <p class="hint">로그인 정보만 다시 넣으면 되고, 민원 · 순찰 기록은 서버에 있어 그대로입니다.</p></div></details>
+  </div></div>`);
+}
 async function installApp(){
+  if(!installPrompt && installedApp && platform()==='android'){ showInstalledGuide(); return; }
   if(installPrompt){
     try{ installPrompt.prompt(); const r=await installPrompt.userChoice; if(r && r.outcome==='accepted') toast('설치를 시작합니다'); }catch(e){ console.warn(e); }
     installPrompt=null; refreshInstallUI(); return;
@@ -4083,13 +4104,14 @@ function showInstallGuide(){
     <div class="modal-head"><h2>앱으로 설치하기</h2><button class="modal-close" onclick="closeById('inst-modal')">✕</button></div>
     <div class="inst-app"><img src="icons/icon-192.png?v=3" alt=""><div><b>민원순찰 관리</b><small>홈 화면 · 바탕화면에 아이콘이 생기고<br>주소창 없이 앱처럼 열립니다</small></div></div>
     ${block(order[0],true)}
+    ${pf==='android'?`<p class="hint" style="margin:-4px 0 12px">크롬에 <b>"앱이 이미 설치되어 있습니다"</b>가 나오면 → <a href="#" onclick="event.preventDefault();showInstalledGuide()" style="color:#1d47cc;font-weight:700">아이콘 찾는 법</a></p>`:''}
     <details class="ig-more"><summary>다른 기기에서 설치하는 법</summary>${order.slice(1).map(k=>block(k,false)).join('')}</details>
   </div></div>`);
 }
 if('serviceWorker' in navigator && !EMBED && /^https?:$/.test(location.protocol)){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw', e)); });
 }
-refreshInstallUI();
+refreshInstallUI(); checkInstalled();
 
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ if(sbOn) fetchAll(); if(tab==='chat'){ lsSet(K.seenChat(),Date.now()); markChatRead(); } updateBadges(); } });
 window.addEventListener('online',()=>{ if(sbOn) fetchAll(); });
