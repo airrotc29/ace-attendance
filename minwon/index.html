@@ -3269,7 +3269,7 @@ function renderStats(){
     </tbody></table></div>
   </div>
   ${patrolStatsCard()}
-  <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button><button class="btn btn-gray" onclick="openWorkLog()">오늘 업무일지</button></div>`;
+  <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button>${ptCanView()?'<button class="btn btn-gray" onclick="openWorkLog()">오늘 업무일지</button>':''}</div>`;
 }
 async function exportExcel(){
   if(typeof XLSX==='undefined'){ toast('엑셀 모듈을 불러오지 못했습니다 (인터넷 확인)'); return; }
@@ -3624,7 +3624,8 @@ ${next.length?`<ul>${next.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class
 <div class="end">위와 같이 ${d.date} 업무를 기록합니다.<br>${who}</div>
 </body></html>`;
 }
-async function openWorkLog(){   // 누른 순간 창을 열어야 팝업이 막히지 않음
+async function openWorkLog(){   // 소장 · 본사만. 누른 순간 창을 열어야 팝업이 막히지 않음
+  if(!ptCanView()){ toast('업무일지는 소장 · 본사만 볼 수 있습니다', 3000); return; }
   const w=window.open('', '_blank'); if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
   w.document.write('<!doctype html><meta charset="utf-8"><title>업무일지 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">업무일지를 만드는 중입니다…</body>');
   try{ if(ptCanView()) await patrolLoad(true); }catch(e){ console.warn('patrol for log', e); }
