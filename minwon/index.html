@@ -3666,7 +3666,6 @@ thead{display:table-header-group}
     <div class="fig"><h3>처리자 순위</h3><div class="sub">${m}월 완료 건수 상위 5명</div>${rankList(top5)}</div>
   </div>
 
-  ${pt?ptSection():''}
 
   <div>${H(`처리 완료 내역 (${doneRows.length}건)`)}
   <table class="t">
@@ -3691,9 +3690,10 @@ thead{display:table-header-group}
   <div class="photos">${photoRows.map((x,n)=>`<div class="ph"><div class="cap">${n+1}. ${esc(x.i.title)} <span>· ${esc(x.i.location||'')} · ${md(x.i.doneAt)} 완료</span></div>
     <div class="imgs"><div>${x.before?`<img src="${esc(x.before)}">`:'<div class="na">사진 없음</div>'}<div class="lb">접수 · 조치 전</div></div><div>${x.after?`<img src="${esc(x.after)}">`:'<div class="na">사진 없음</div>'}<div class="lb">완료 · 조치 후</div></div></div></div>`).join('')}</div>`:''}
 
+  ${pt?ptSection():''}
   <div>${H('특이사항')}
   <div class="box flow">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div>
-  <div class="end">위와 같이 ${y}년 ${m}월 민원 처리 현황을 보고합니다.<br>${esc(dt)}
+  <div class="end">위와 같이 ${y}년 ${m}월 민원 처리${pt?' · 순찰':''} 현황을 보고합니다.<br>${esc(dt)}
     <div class="sig">${office} 관리사무소장 ${esc(boss?boss.name:'')} (인)</div></div></div>
 </div></body></html>`;
 }
