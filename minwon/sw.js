@@ -1,4 +1,4 @@
-// 민원 처리 공유 시스템 · 서비스 워커
+// 민원순찰 관리 · 서비스 워커
 // 앱 화면은 항상 최신 버전을 먼저 받고(네트워크 우선), 끊겼을 때만 저장본을 씁니다.
 // 서버 데이터(Supabase)는 저장하지 않습니다.
 const CACHE = 'minwon-v7';
@@ -38,7 +38,7 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
-  const title = d.title || '민원 처리';
+  const title = d.title || '민원순찰 관리';
   const urgent = /긴급/.test(title);
   e.waitUntil((async () => {
     const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

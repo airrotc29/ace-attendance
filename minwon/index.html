@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#ffffff"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="민원처리"/>
+<meta name="apple-mobile-web-app-title" content="민원순찰 관리"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
 <link rel="manifest" href="manifest.webmanifest"/>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=3"/>
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=3"/>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=3"/>
-<title>민원 처리 공유 시스템</title>
+<title>민원순찰 관리</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
 <style>
@@ -973,6 +973,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pt-band.all .pt-tx b em{color:var(--green)}
 .pt-band .pt-tx small{display:block;margin-top:2px;font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pt-band > i{font-style:normal;color:#c2c7cf;font-size:20px}
+.pt-band .pt-go{flex:none;background:#1d47cc;color:#fff;font-weight:700;font-size:13.5px;padding:9px 14px;border-radius:999px}
 .pt-bar{display:block;height:5px;border-radius:9px;background:#eceef2;margin-top:7px;overflow:hidden}
 .pt-bar i{display:block;height:100%;border-radius:9px;background:#1d47cc}
 .pt-band.all .pt-bar i{background:var(--green)}
@@ -990,6 +991,56 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pt-row.miss .pt-nm small{color:var(--red)}.pt-row.gone{opacity:.6}
 .pt-cnt{font-size:12px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:999px;padding:2px 8px}
 .pt-mgr{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pt-stat .w i{background:#e08a12}.pt-stat .w b{color:#b4761a}
+.pt-tile.warn{background:linear-gradient(160deg,#fff4e2,#fffaf2);border:1px solid #f1d6a6}
+.pt-tile.warn .pt-dot{background:#e08a12}
+.pt-note{margin:4px 0 0;font-size:12.5px;line-height:1.4;color:#8a5a0c;background:#fff;border-radius:8px;padding:5px 7px;word-break:keep-all}
+.pt-tl-row .dot.bad{background:#e08a12}
+/* 순찰 결과 입력 */
+.ptn-h{display:flex;align-items:center;gap:12px;margin:0 0 14px}.ptn-h > div{flex:1;min-width:0}
+.ptn-h .pt-ic{width:44px;height:44px;border-radius:13px;flex:none;display:grid;place-items:center;background:#eef3ff;color:#1d47cc}.ptn-h .pt-ic svg{width:22px;height:22px}
+.ptn-h b{display:block;font-size:19px;color:var(--navy)}.ptn-h small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px}
+.ptn-ok,.ptn-bad{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:16px;padding:16px;margin-bottom:10px;font:inherit;font-size:17px;font-weight:800;cursor:pointer;text-align:left}
+.ptn-ok span,.ptn-bad span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:17px;flex:none}
+.ptn-ok{background:var(--green-soft);color:var(--green)}.ptn-ok span{background:var(--green)}
+.ptn-bad{background:#fff4e2;color:#a8640a}.ptn-bad span{background:#e08a12}
+.ptn-bad.on{box-shadow:inset 0 0 0 2px #e08a12}.ptn-ok.dim{opacity:.45}
+.ptn-words{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.ptn-words button{border:1px solid var(--line2);background:#fff;border-radius:999px;padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}
+.ptn-ta textarea{width:100%;box-sizing:border-box;font:inherit;font-size:15px;border:1px solid var(--line2);border-radius:14px;padding:11px 12px;resize:none;background:#fff}
+.ptn-ta textarea:focus{outline:none;border-color:#1d47cc;box-shadow:0 0 0 3px rgba(29,71,204,.12)}
+.ptn-mic{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:6px 0 10px;padding:12px;border:0;border-radius:14px;background:#111827;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.ptn-mic svg{width:20px;height:20px}.ptn-mic.on{background:var(--red);animation:ptnPulse 1.2s infinite}
+@keyframes ptnPulse{50%{box-shadow:0 0 0 8px rgba(194,71,61,.18)}}
+.ptn-iss{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#4b5563;margin:0 0 10px}
+.pt-hero{display:flex;align-items:center;gap:18px;padding:14px;border-radius:18px;background:linear-gradient(135deg,#f5f8ff,#fff);border:1px solid #e6ecfa;margin:0 0 12px}
+.pt-ring{position:relative;width:104px;height:104px;flex:none}.pt-ring svg{width:100%;height:100%}
+.pt-ring > div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.pt-ring b{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums}.pt-ring b small{font-size:15px;color:var(--mute);font-weight:700}
+.pt-ring span{font-size:11.5px;color:var(--mute);margin-top:4px;font-weight:600}
+.pt-stat{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:#4b5563}
+.pt-stat > div{display:flex;align-items:center;gap:7px}.pt-stat i{width:9px;height:9px;border-radius:50%;flex:none}
+.pt-stat b{font-size:17px;color:var(--navy)}.pt-stat .g i{background:var(--green)}.pt-stat .r i{background:var(--red)}.pt-stat .r b{color:var(--red)}
+.pt-stat .l{font-size:12.5px;color:var(--mute);display:block;line-height:1.45}.pt-stat .l b{font-size:13px}
+.pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 4px}
+.pt-tile{border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.pt-tile.ok{background:linear-gradient(160deg,#e9f6ef,#f6fbf8);border:1px solid #cfe9db}
+.pt-tile.miss{background:linear-gradient(160deg,#fdeeed,#fff8f7);border:1px solid #f4d2ce}
+.pt-tile.gone{opacity:.6}
+.pt-th{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.pt-tile .pt-dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff}
+.pt-tile.ok .pt-dot{background:var(--green)}.pt-tile.miss .pt-dot{background:var(--red)}
+.pt-th em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--green);background:#fff;border-radius:999px;padding:2px 8px}
+.pt-tile b{font-size:15px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pt-tile b small{font-size:11px;color:var(--mute);font-weight:500}
+.pt-tile > small{font-size:12px;color:#4b5563}.pt-tile.miss > small{color:var(--red)}
+.pt-tl{margin-top:12px;padding:12px;border-radius:16px;background:#f7f8fb}
+.pt-tl-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.pt-tl-h b{font-size:13.5px;color:var(--navy)}.pt-tl-h span{font-size:11px;color:var(--mute)}
+.pt-tl-row,.pt-tl-ax{display:flex;align-items:center;gap:8px;height:22px}
+.pt-tl-row .nm,.pt-tl-ax > span{width:64px;flex:none;font-size:11.5px;color:#4b5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-tl-row .bar{position:relative;flex:1;height:8px;border-radius:9px;background:#e6e9ef}
+.pt-tl-row .dot{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#1d47cc;box-shadow:0 0 0 2px #fff}
+.pt-tl-row .now{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--red);opacity:.5;border-radius:2px}
+.pt-tl-ax > div{position:relative;flex:1;height:14px}.pt-tl-ax i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:10.5px;color:var(--mute)}
 .pt-ed{display:flex;flex-direction:column;gap:6px}
 .pt-ed-row{display:flex;align-items:center;gap:6px}.pt-ed-row span{width:20px;text-align:center;color:var(--mute);font-size:13px}
 .pt-ed-row input{flex:1;min-width:0}
@@ -1034,7 +1085,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
   <div class="login-box">
     <div class="login-logo">
       <div class="mark"><img src="icons/icon.svg?v=3" alt=""></div>
-      <h1>민원 처리 공유 시스템</h1>
+      <h1>민원순찰 관리</h1>
       <div class="rule"></div>
       <p>접수 · 담당 · 처리 보고 · 채팅 · 월간 통계</p>
     </div>
@@ -1836,7 +1887,7 @@ function showMgrHandoff(name, code, pw, officePw=''){
   </div></div>`);
 }
 function handoffMsg(h){
-  return `[민원처리 앱] ${h.name} 소장 입장 안내\n주소: ${location.origin+location.pathname}\n사업소 코드: ${h.code}\n사업소 비밀번호(직원 공통): ${h.opw}\n소장 비밀번호: ${h.pw}\n입장: 사업소 코드 · 사업소 비밀번호 → 이름(소장) 선택 → 소장 비밀번호\n※ 소장 비밀번호는 다른 직원에게 알려 주지 마세요.`;
+  return `[민원순찰 관리 앱] ${h.name} 소장 입장 안내\n주소: ${location.origin+location.pathname}\n사업소 코드: ${h.code}\n사업소 비밀번호(직원 공통): ${h.opw}\n소장 비밀번호: ${h.pw}\n입장: 사업소 코드 · 사업소 비밀번호 → 이름(소장) 선택 → 소장 비밀번호\n※ 소장 비밀번호는 다른 직원에게 알려 주지 마세요.`;
 }
 async function handoffSend(kind){
   const h=handoff; if(!h) return; const err=document.getElementById('ho-err');
@@ -2026,7 +2077,7 @@ function updateBadges(){
   const b=$('#nb-chat'); b.textContent=nc>99?'99+':nc; b.classList.toggle('hidden',!nc||tab==='chat');
   const mine = Object.values(issues).filter(it=>it.status!=='done'&&isMine(it)).length;
   const bl=$('#nb-list'); bl.textContent=mine; bl.classList.toggle('hidden',!mine);
-  document.title = (nc?`(${nc}) `:'')+'민원 처리 공유 시스템';
+  document.title = (nc?`(${nc}) `:'')+'민원순찰 관리';
 }
 
 // ── 민원 목록 ────────────────────────────────
@@ -2081,13 +2132,16 @@ function renderList(){
 const PT_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg>';
 const QR_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></svg>';
 let patrol={points:null, logs:[], at:0}, ptDay=null, ptLogs=null;
+// 순찰 기록은 소장 · 본사만 봄. 직원은 QR 찍기만 (서버도 소장 비밀번호 · 본사 비밀번호일 때만 기록을 내려줌)
+const ptCanView = ()=>!!(me && (me.boss || EMBED));
 const dayRange = iso=>{ const [y,m,d]=iso.split('-').map(Number); return [new Date(y,m-1,d), new Date(y,m-1,d+1)]; };
 async function patrolLoad(force){
   if(!me || !sb || (!force && Date.now()-patrol.at<60e3)) return;
   patrol.at=Date.now();
   try{
     const [a,b]=dayRange(todayIso());
-    const [pts, logs]=await Promise.all([ rpc('mw_patrol_points',{p_mgr_pw:me.boss?mgrPw:null}), rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString()}) ]);
+    const [pts, logs]=await Promise.all([ rpc('mw_patrol_points',{p_mgr_pw:me.boss?mgrPw:null}),
+      ptCanView() ? rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString(), p_mgr_pw:mgrPw}) : Promise.resolve([]) ]);
     const changed = JSON.stringify([patrol.points,patrol.logs])!==JSON.stringify([pts||[],logs||[]]);
     patrol.points=pts||[]; patrol.logs=logs||[];
     if(changed && tab==='list') render();
@@ -2097,18 +2151,21 @@ function patrolBand(){
   setTimeout(()=>patrolLoad(false), 0);
   const pts=patrol.points; if(!pts) return '';
   if(!pts.length) return me&&me.boss ? `<button class="pt-band set" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span><span class="pt-tx"><b>QR 순찰 시작하기</b><small>순찰 지점을 등록하고 QR을 붙이면 순찰 시각이 자동으로 남습니다</small></span><i>›</i></button>` : '';
+  if(!ptCanView()) return EMBED ? '' : `<button class="pt-band" onclick="scanPatrol()"><span class="pt-ic">${QR_IC}</span><span class="pt-tx"><b>QR 순찰</b><small>순찰할 때 지점에 붙은 QR을 찍어 주세요</small></span><span class="pt-go">QR 찍기</span></button>`;
   const done=new Set(patrol.logs.map(l=>l.point_id)); const n=pts.filter(p=>done.has(p.id)).length, last=patrol.logs[0];
   return `<button class="pt-band ${n===pts.length?'all':''}" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span>
     <span class="pt-tx"><b>오늘 순찰 <em>${n}</em>/${pts.length}곳</b><small>${last?`마지막 ${fmtTime(new Date(last.ts).getTime())} · ${esc(last.point_name)} · ${esc(last.emp_name||'')}`:'아직 순찰 기록이 없습니다'}</small>
     <span class="pt-bar"><i style="width:${Math.round(n/pts.length*100)}%"></i></span></span><i>›</i></button>`;
 }
 async function openPatrol(){
+  if(!ptCanView()){ scanPatrol(); return; }
   ptDay=todayIso(); ptLogs=patrol.logs; drawPatrol();
   await patrolLoad(true); await patrolLoadDay();
 }
 async function patrolLoadDay(){
+  if(!ptCanView()) return;
   const day=ptDay, [a,b]=dayRange(day);
-  try{ const logs=await rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString()}) || []; if(day!==ptDay) return; ptLogs=logs; if(day===todayIso()) patrol.logs=logs; }
+  try{ const logs=await rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString(), p_mgr_pw:mgrPw}) || []; if(day!==ptDay) return; ptLogs=logs; if(day===todayIso()) patrol.logs=logs; }
   catch(e){ console.warn(e); toast('순찰 기록을 불러오지 못했습니다'); }
   if(document.getElementById('patrol-modal')) drawPatrol();
 }
@@ -2121,22 +2178,42 @@ function drawPatrol(){
   const by={}; (logs||[]).forEach(l=>(by[l.point_id]=by[l.point_id]||[]).push(l));
   Object.values(by).forEach(a=>a.sort((x,y)=>new Date(x.ts)-new Date(y.ts)));
   const extra=Object.keys(by).filter(id=>!pts.some(p=>p.id===id));   // 지금은 뺀 지점의 기록
-  const n=pts.filter(p=>by[p.id]).length, [y,m,d]=ptDay.split('-').map(Number);
-  const row=(id,name,gone)=>{ const c=by[id]||[]; return `<div class="pt-row ${c.length?'ok':'miss'} ${gone?'gone':''}"><span class="pt-dot">${c.length?'✓':'!'}</span>
-    <div class="pt-nm"><b>${esc(name)}</b><small>${c.length?c.map(l=>`${fmtTime(new Date(l.ts).getTime())} ${esc(l.emp_name||'')}`).join(' · '):(isToday?'아직 안 돌았습니다':'순찰 기록 없음')}</small></div>
-    ${c.length>1?`<span class="pt-cnt">${c.length}회</span>`:''}</div>`; };
-  // 위에 지점 관리 창이 떠 있어도 그 아래 제자리에서 다시 그림
+  const all=pts.map(p=>({id:p.id, name:p.name})).concat(extra.map(id=>({id, name:by[id][0].point_name, gone:true})));
+  const n=pts.filter(p=>by[p.id]).length, total=pts.length, [y,m,d]=ptDay.split('-').map(Number);
+  const last=(logs||[])[0], pct=total?n/total:0, done=total&&n===total;
+  const isBad = l=>l.note && l.note!==PT_OK, nBad=(logs||[]).filter(isBad).length;
+  // 원 그래프
+  const R=40, C=2*Math.PI*R, col=done?'var(--green)':n?'#1d47cc':'#c3c8d1';
+  const ring=`<div class="pt-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${R}" fill="none" stroke="#eceef2" stroke-width="11"/>
+    ${n?`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${col}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>`:''}</svg>
+    <div><b style="color:${done?'var(--green)':'var(--navy)'}">${n}<small>/${total}</small></b><span>${done?'모두 순찰':'순찰'}</span></div></div>`;
+  const hero = total ? `<div class="pt-hero">${ring}<div class="pt-stat">
+      <div class="g"><i></i><b>${n}</b>곳 순찰함</div><div class="r"><i></i><b>${total-n}</b>곳 ${isToday?'남음':'빠짐'}</div>
+      ${nBad?`<div class="w"><i></i><b>${nBad}</b>건 특이사항</div>`:''}
+      <div class="l">${last?`마지막 <b>${fmtTime(new Date(last.ts).getTime())}</b> · ${esc(last.point_name)} · ${esc(last.emp_name||'')}`:'아직 기록 없음'}</div></div></div>` : '';
+  // 지점 타일
+  const tile=p=>{ const c=by[p.id]||[]; const lastc=c[c.length-1]; const bad=c.filter(isBad);
+    return `<div class="pt-tile ${c.length?(bad.length?'warn':'ok'):'miss'} ${p.gone?'gone':''}"><div class="pt-th"><span class="pt-dot">${c.length?(bad.length?'⚠':'✓'):'!'}</span>${c.length>1?`<em>${c.length}회</em>`:''}</div>
+      <b>${esc(p.name)}${p.gone?' <small>(뺀 지점)</small>':''}</b>
+      <small>${c.length?`${fmtTime(new Date(lastc.ts).getTime())} · ${esc(lastc.emp_name||'')}${lastc.note===PT_OK?' · 이상 없음':''}`:(isToday?'아직 안 돌았습니다':'기록 없음')}</small>
+      ${bad.map(l=>`<p class="pt-note">⚠ ${fmtTime(new Date(l.ts).getTime())} ${esc(l.note)}</p>`).join('')}</div>`; };
+  // 시간대별 순찰 (0~24시)
+  const nowH = isToday ? (new Date().getHours()+new Date().getMinutes()/60) : 24;
+  const tl = all.length && logs && logs.length ? `<div class="pt-tl"><div class="pt-tl-h"><b>시간대별 순찰</b><span>0시 → 24시</span></div>
+    ${all.map(p=>`<div class="pt-tl-row"><span class="nm">${esc(p.name)}</span><div class="bar">${isToday?`<i class="now" style="left:${(nowH/24*100).toFixed(1)}%"></i>`:''}
+      ${(by[p.id]||[]).map(l=>{ const t=new Date(l.ts), h=t.getHours()+t.getMinutes()/60; return `<i class="dot ${isBad(l)?'bad':''}" style="left:${(h/24*100).toFixed(1)}%" title="${fmtTime(t.getTime())} ${esc(l.emp_name||'')} ${esc(l.note||'')}"></i>`; }).join('')}</div></div>`).join('')}
+    <div class="pt-tl-ax"><span></span><div>${[0,6,12,18,24].map(h=>`<i style="left:${h/24*100}%">${h}</i>`).join('')}</div></div></div>` : '';
   const old=document.getElementById('patrol-modal'), sc=old?old.querySelector('.modal').scrollTop:0;
-  const html=`<div class="modal-bg" id="patrol-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:520px">
+  const html=`<div class="modal-bg" id="patrol-modal" onclick="if(event.target===this)this.remove()"><div class="modal pt-modal" style="max-width:520px">
     <div class="modal-head"><h2>QR 순찰</h2><button class="modal-close" onclick="closeById('patrol-modal')">✕</button></div>
     <div class="pt-day"><button onclick="patrolDay(-1)" aria-label="전날">‹</button><b>${m}월 ${d}일${isToday?' · 오늘':''}</b><button onclick="patrolDay(1)" aria-label="다음 날" ${isToday?'disabled':''}>›</button></div>
-    ${pts.length?`<div class="pt-sum"><b>${n}</b>/${pts.length}곳 순찰<span class="pt-bar big"><i style="width:${pts.length?Math.round(n/pts.length*100):0}%"></i></span></div>`:''}
-    ${isToday&&pts.length&&!EMBED?`<button class="btn btn-primary btn-block pt-scan-btn" onclick="scanPatrol()">${QR_IC}QR 찍어서 순찰 체크</button>`:''}
-    <div class="pt-list">${logs===null?'<div class="empty" style="padding:20px 0"><b>불러오는 중…</b></div>'
-      : pts.length||extra.length ? pts.map(p=>row(p.id,p.name)).join('')+extra.map(id=>row(id,by[id][0].point_name+' (뺀 지점)',true)).join('')
-      : `<div class="empty" style="padding:20px 0"><b>등록된 순찰 지점이 없습니다</b>${me&&me.boss?'아래 지점 관리에서 기계실 · 옥상 · 주차장 등을 등록하세요':'소장에게 순찰 지점 등록을 요청하세요'}</div>`}</div>
+    ${logs===null?'<div class="empty" style="padding:30px 0"><b>불러오는 중…</b></div>':`
+    ${hero}
+    ${isToday&&total&&!EMBED?`<button class="btn btn-primary btn-block pt-scan-btn" onclick="scanPatrol()">${QR_IC}QR 찍어서 순찰 체크</button>`:''}
+    ${all.length?`<div class="pt-grid">${all.map(tile).join('')}</div>`
+      :`<div class="empty" style="padding:20px 0"><b>등록된 순찰 지점이 없습니다</b>${me&&me.boss?'아래 지점 관리에서 기계실 · 옥상 · 주차장 등을 등록하세요':'소장에게 순찰 지점 등록을 요청하세요'}</div>`}
+    ${tl}`}
     ${me&&me.boss?`<div class="pt-mgr"><button class="btn btn-gray" onclick="editPatrolPoints()">지점 관리</button><button class="btn btn-gray" onclick="printPatrolQR()" ${pts.length?'':'disabled'}>QR 인쇄</button></div>`:''}
-    <p class="hint" style="margin:10px 0 0">지점마다 붙인 QR을 휴대폰으로 찍으면 순찰 시각과 이름이 남습니다. 휴대폰 기본 카메라로 찍어도 됩니다.</p>
   </div></div>`;
   if(old){ old.insertAdjacentHTML('afterend', html); old.remove(); document.querySelector('#patrol-modal .modal').scrollTop=sc; }
   else $('#modal-root').insertAdjacentHTML('beforeend', html);
@@ -2169,15 +2246,72 @@ async function scanPatrol(){
 function parsePatrolQR(text){ try{ const u=new URL(text, location.href); const v=u.searchParams.get('pt'); if(!v) return null; const [id,k]=v.split('.'); return id&&k?{id,k}:null; }catch{ return null; } }
 async function patrolCheck(id,k){
   if(!me || EMBED){ toast('직원으로 로그인한 뒤 QR을 찍어 주세요', 3500); return; }
+  const fail=e=>{ const m=String(e&&e.message||''); showAlert({title:'순찰 체크를 못 했습니다', msg: /other_office/.test(m)?'다른 사업소의 QR입니다.':/bad_qr/.test(m)?'등록되지 않았거나 바뀐 QR입니다.\n소장에게 새 QR을 요청하세요.':'인터넷 연결을 확인하고 다시 찍어 주세요.'}); };
+  let point; try{ point=(await rpc('mw_patrol_peek',{p_point:id, p_token:k})).point; }catch(e){ fail(e); return; }
+  if(navigator.vibrate) navigator.vibrate(60);
+  const r0=await patrolNoteSheet(point); if(!r0){ toast('순찰 체크를 취소했습니다'); return; }
   try{
-    const r=await rpc('mw_patrol_check',{p_point:id, p_token:k, p_emp_id:me.empId, p_emp_name:me.name});
-    if(navigator.vibrate) navigator.vibrate(80);
-    showAlert({title:'순찰 체크 완료', msg:`${r.point}\n${fmtTime(new Date(r.ts).getTime())} · ${me.name}`});
+    const r=await rpc('mw_patrol_check',{p_point:id, p_token:k, p_emp_id:me.empId, p_emp_name:me.name, p_note:r0.note});
+    if(r0.issue) patrolToIssue(point, r0.note);
+    showAlert({title:'순찰 체크 완료', msg:`${r.point} · ${r0.ok?'이상 없음':'특이사항 기록'}${r0.issue?' · 민원 접수':''}\n${fmtTime(new Date(r.ts).getTime())} · ${me.name}`});
     await patrolLoad(true); if(document.getElementById('patrol-modal') && ptDay===todayIso()){ ptLogs=patrol.logs; drawPatrol(); }
-  }catch(e){
-    const m=String(e.message||'');
-    showAlert({title:'순찰 체크를 못 했습니다', msg: /other_office/.test(m)?'다른 사업소의 QR입니다.':/bad_qr/.test(m)?'등록되지 않았거나 바뀐 QR입니다.\n소장에게 새 QR을 요청하세요.':'인터넷 연결을 확인하고 다시 찍어 주세요.'});
-  }
+  }catch(e){ fail(e); }
+}
+// 순찰 결과 입력: 이상 없음 한 번에, 특이사항은 글 · 빠른 단어 · 음성으로 (원하면 민원으로도 접수)
+const PT_WORDS=['누수','물 고임','악취','소음','파손','조명 고장','문 열림','쓰레기','결로','경보'];
+const PT_OK='이상 없음';
+function patrolNoteSheet(point){
+  return new Promise(res=>{
+    if(dlgClose) dlgClose(null);
+    closeById('pt-note');
+    const t=fmtTime(Date.now());
+    $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="pt-note"><div class="modal ptn" style="max-width:460px">
+      <div class="ptn-h"><span class="pt-ic">${PT_IC}</span><div><b>${esc(point)}</b><small>순찰 · ${t} · ${esc(me.name)}</small></div><button class="modal-close ptn-x" aria-label="취소">✕</button></div>
+      <button class="ptn-ok"><span>✓</span>이상 없음</button>
+      <button class="ptn-bad"><span>!</span>특이사항 있음</button>
+      <div class="ptn-more hidden">
+        <div class="ptn-words">${PT_WORDS.map(w=>`<button type="button">${w}</button>`).join('')}</div>
+        <div class="ptn-ta"><textarea maxlength="200" rows="3" placeholder="무엇이 이상한지 적거나 🎤 를 눌러 말하세요"></textarea>
+          <button type="button" class="ptn-mic" aria-label="말로 입력"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>말로 입력</span></button></div>
+        <label class="ptn-iss"><input type="checkbox" checked> 민원으로도 접수 (담당 미지정 · 순찰 발견)</label>
+        <button class="btn btn-primary btn-block ptn-save">순찰 기록하기</button>
+      </div></div></div>`);
+    const root=document.getElementById('pt-note'), ta=root.querySelector('textarea');
+    const done=v=>{ stopVoice(); if(root.isConnected) root.remove(); if(dlgClose===close) dlgClose=null; res(v); };
+    const close=()=>done(null); dlgClose=close;   // 휴대폰 뒤로가기 · Esc 는 취소
+    root.addEventListener('click',e=>{ if(e.target===root) close(); });
+    root.querySelector('.ptn-x').onclick=close;
+    root.querySelector('.ptn-ok').onclick=()=>done({ok:true, note:PT_OK, issue:false});
+    root.querySelector('.ptn-bad').onclick=()=>{ root.querySelector('.ptn-more').classList.remove('hidden'); root.querySelector('.ptn-bad').classList.add('on'); root.querySelector('.ptn-ok').classList.add('dim'); setTimeout(()=>ta.focus(),50); };
+    root.querySelectorAll('.ptn-words button').forEach(b=>b.onclick=()=>{ ta.value=(ta.value.trim()?ta.value.trim()+', ':'')+b.textContent; ta.focus(); });
+    root.querySelector('.ptn-mic').onclick=e=>startVoice(e.currentTarget, ta);
+    root.querySelector('.ptn-save').onclick=()=>{ const v=ta.value.trim(); if(!v){ toast('특이사항을 적거나 말해 주세요'); ta.focus(); return; } done({ok:false, note:v, issue:root.querySelector('.ptn-iss input').checked}); };
+  });
+}
+// 음성 입력 (휴대폰 브라우저의 음성 인식 · 한국어). 지원하지 않으면 키보드의 마이크를 안내
+let voiceRec=null;
+function stopVoice(){ if(voiceRec){ try{ voiceRec.stop(); }catch{} voiceRec=null; } }
+function startVoice(btn, ta){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('이 브라우저는 음성 입력을 지원하지 않습니다. 키보드의 🎤 마이크 버튼을 써 주세요', 4000); return; }
+  if(voiceRec){ stopVoice(); return; }
+  const r=new SR(); r.lang='ko-KR'; r.interimResults=true; r.continuous=false; r.maxAlternatives=1;
+  const base=ta.value.trim()?ta.value.trim()+' ':'';
+  const label=btn.querySelector('span'); btn.classList.add('on'); label.textContent='듣는 중… 누르면 멈춤';
+  r.onresult=e=>{ let t=''; for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; ta.value=(base+t).slice(0,200); };
+  r.onerror=e=>{ toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'마이크 사용을 허용해 주세요':e.error==='no-speech'?'말소리가 들리지 않았습니다':'음성 인식이 끊겼습니다. 다시 눌러 주세요', 3000); };
+  r.onend=()=>{ if(voiceRec===r) voiceRec=null; btn.classList.remove('on'); label.textContent='말로 입력'; };
+  voiceRec=r; try{ r.start(); }catch(e){ voiceRec=null; btn.classList.remove('on'); label.textContent='말로 입력'; toast('음성 입력을 시작하지 못했습니다'); }
+}
+// 특이사항 → 민원 접수 (담당 미지정 · 접수 경로 '순찰 발견' · 장소 = 순찰 지점)
+function patrolToIssue(point, note){
+  const now=Date.now(), id=uid();
+  const it={ id, title:note.slice(0,60), content:`QR 순찰 중 발견 (${point} · ${fmtTime(now)})\n${note}`, location:point, category:'기타', source:'순찰 발견', urgent:false, photos:[], contact:null,
+    reporter:{empId:me.empId,name:me.name,team:me.team}, assignee:{type:'none'}, assignedBy:me.empId, status:'open', createdAt:now, updatedAt:now, doneAt:null,
+    logs:[{ts:now,type:'create',by:{empId:me.empId,name:me.name},text:'민원 접수 (순찰 중 발견)'}] };
+  saveIssue(it);
+  sysMsg(`새 민원 접수 · ${it.title} (${point}) · 담당 미지정 · 순찰 발견`, id);
+  if(tab==='list') render();
 }
 // 휴대폰 기본 카메라로 QR을 찍어 앱이 열린 경우 (주소의 ?pt=지점.토큰)
 function patrolFromUrl(){
@@ -2217,7 +2351,7 @@ async function printPatrolQR(){
   const base=new URL('./', location.href).href, pts=(patrol.points||[]).filter(p=>p.token);
   if(!pts.length){ w.close(); toast('QR 정보를 불러오지 못했습니다. 소장으로 다시 입장해 주세요', 3500); return; }
   const svg=t=>{ const q=qrcode(0,'M'); q.addData(t); q.make(); return q.createSvgTag({cellSize:6, margin:2, scalable:true}); };
-  const cards=pts.map(p=>`<div class="c"><div class="o">${esc(me.officeName)} · 순찰 지점</div><div class="n">${esc(p.name)}</div><div class="q">${svg(base+'?pt='+p.id+'.'+p.token)}</div><div class="h">휴대폰 카메라로 찍으면 순찰이 기록됩니다<br><b>민원 처리 앱 · QR 순찰</b></div></div>`).join('');
+  const cards=pts.map(p=>`<div class="c"><div class="o">${esc(me.officeName)} · 순찰 지점</div><div class="n">${esc(p.name)}</div><div class="q">${svg(base+'?pt='+p.id+'.'+p.token)}</div><div class="h">휴대폰 카메라로 찍으면 순찰이 기록됩니다<br><b>민원순찰 관리 · QR 순찰</b></div></div>`).join('');
   w.document.open(); w.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${esc(me.officeName)} 순찰 QR</title><style>
     @page{size:A4;margin:10mm}body{margin:0;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#111}
     .g{display:grid;grid-template-columns:1fr 1fr;gap:6mm}.c{border:1.2px dashed #9aa1ad;border-radius:4mm;padding:6mm;text-align:center;break-inside:avoid;height:84mm;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
@@ -3357,7 +3491,7 @@ thead{display:table-header-group}
 <div class="bar"><button onclick="window.print()">인쇄 · PDF 저장</button><button class="ghost" onclick="window.close()">닫기</button></div>
 <div class="sheet">
   <div class="top">
-    <div class="doc">${office} 관리사무소<br>민원 처리 공유 시스템 자동 집계</div>
+    <div class="doc">${office} 관리사무소<br>민원순찰 관리 자동 집계</div>
     <table class="sign"><tr><th class="v" rowspan="2">결<br>재</th><th>담 당</th><th>소 장</th><th>관리인</th></tr><tr><td></td><td></td><td></td></tr></table>
   </div>
   <h1>${y}년 ${m}월 민원 처리 현황 보고</h1>
@@ -3661,7 +3795,7 @@ function showInstallGuide(){
   const block=(k,main)=>{ const g=guides[k]; return `<div class="ig ${main?'main':''}"><h3>${g.t}</h3><ol>${g.s.map(x=>`<li>${x}</li>`).join('')}</ol><p class="hint">${g.n}</p></div>`; };
   $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="inst-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:460px">
     <div class="modal-head"><h2>앱으로 설치하기</h2><button class="modal-close" onclick="closeById('inst-modal')">✕</button></div>
-    <div class="inst-app"><img src="icons/icon-192.png?v=3" alt=""><div><b>민원처리</b><small>홈 화면 · 바탕화면에 아이콘이 생기고<br>주소창 없이 앱처럼 열립니다</small></div></div>
+    <div class="inst-app"><img src="icons/icon-192.png?v=3" alt=""><div><b>민원순찰 관리</b><small>홈 화면 · 바탕화면에 아이콘이 생기고<br>주소창 없이 앱처럼 열립니다</small></div></div>
     ${block(order[0],true)}
     <details class="ig-more"><summary>다른 기기에서 설치하는 법</summary>${order.slice(1).map(k=>block(k,false)).join('')}</details>
   </div></div>`);
