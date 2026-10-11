@@ -465,6 +465,9 @@ mark{background:#fff1a8;box-shadow:none}
 .hq-lh{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
 .hq-lh h3{margin:0}.hq-lh h3 small{font-weight:400;color:var(--mute);font-size:13px;margin-left:4px}
 .hq-add{border:0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;padding:8px 13px;border-radius:999px;cursor:pointer}
+.vd-head{display:flex;flex-direction:column;gap:2px}.vd-head b{font-size:17px;color:var(--navy)}.vd-head small{color:var(--mute);font-size:13px}
+.vd-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}.vd-row:first-of-type{border-top:0}.vd-tx{flex:1;min-width:0}.vd-tx b{display:block;font-size:15px;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vd-tx small{display:block;color:var(--mute);font-size:12.5px;margin-top:3px}.vd-tx code{font-size:12px;background:#f1f3f7;border-radius:6px;padding:1px 6px}
+.vd-del{border:1px solid #f1c4bf;background:#fff;color:var(--red);font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;cursor:pointer;flex:none}
 .adm-item.hq-row{display:flex;align-items:center;gap:12px;padding:12px 0}
 .hq-th{width:44px;height:44px;border-radius:13px;flex:none;overflow:hidden;background:linear-gradient(145deg,#1d47cc,#0f2a7a);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .hq-th img{width:100%;height:100%;object-fit:cover}.hq-th svg{width:22px;height:22px}
@@ -1537,6 +1540,7 @@ async function loginSubmit(){
   const btn=$('#lg-btn1'); btn.disabled=true; btn.textContent='확인 중…'; setLoginErr('');
   try{
     const cand={code, pw};
+    if(await vendorLoginTry(cand)) return;   // 아비투스 운영자 계정이면 관리회사 화면으로
     const info = await rpc('mw_login', {}, cand);
     auth = cand;
     if(info.is_hq){ lsSet(K.auth,{code,pw,hq:true}); adminEnter(); return; }
@@ -1629,6 +1633,7 @@ async function boot(){
   if(saved && saved.code && saved.pw){
     auth = {code:saved.code, pw:saved.pw};
     try{
+      if(saved.vendor){ vendorCred={code:saved.code, pw:saved.pw}; await rpc('mw_vendor_login', {}, vendorCred); vendorEnter(); return; }
       if(saved.hq){ await rpc('mw_offices_list'); adminEnter(); return; }
       const info = await rpc('mw_login');
       lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null, cover:info.cover||null};
@@ -1654,6 +1659,93 @@ function adminEnter(){
   $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
   adminHome(); armBackTrap();
 }
+// ══════════════════════════════════════════════
+// 아비투스 운영자: 관리회사 만들기 · 삭제 · 비밀번호 (사업소 · 민원 내용은 보지 않음)
+// ══════════════════════════════════════════════
+let vendorCred=null, vendorList=[], vendorMode=false;
+const vrpc = (name,args={}) => rpc(name, args, vendorCred);
+async function vendorLoginTry(cand){
+  let v=null; try{ v=await rpc('mw_vendor_login', {}, cand); }catch(e){ return false; }
+  if(!v) return false;
+  vendorCred=cand; auth=cand; lsSet(K.auth,{code:cand.code, pw:cand.pw, vendor:true}); vendorEnter(); return true;
+}
+function vendorEnter(){
+  vendorMode=true; hqMode=false;
+  $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
+  renderVendor(); armBackTrap();
+}
+async function renderVendor(){
+  const box=$('#adm-content'); box.innerHTML='<div class="empty"><b>불러오는 중…</b></div>';
+  try{ vendorList = await vrpc('mw_vendor_list') || []; }
+  catch(e){ console.warn(e); box.innerHTML='<div class="empty"><b>관리회사 목록을 불러오지 못했습니다</b>잠시 후 다시 열어 주세요</div>'; return; }
+  const offices=vendorList.reduce((a,c)=>a+c.offices,0);
+  box.innerHTML=`
+    <div class="card hq-hero"><div class="vd-head"><b>아비투스 운영</b><small>관리회사 ${vendorList.length}곳 · 사업소 ${offices}곳</small></div></div>
+    <div class="card">
+      <div class="hq-lh"><h3>관리회사<small>${vendorList.length}곳</small></h3><button class="hq-add" onclick="vendorNewCompany()">+ 관리회사 만들기</button></div>
+      ${vendorList.length?vendorList.map((c,i)=>`<div class="vd-row">
+        <div class="vd-tx"><b>${esc(c.name)}</b><small>본사 ID <code>${esc(c.login_id||'없음')}</code> · 사업소 ${c.offices}곳 · ${esc(c.created)}</small></div>
+        <button class="vd-del" onclick="vendorDeleteCompany(${i})" aria-label="${esc(c.name)} 삭제">삭제</button></div>`).join(''):'<div class="empty"><b>아직 관리회사가 없습니다</b>+ 관리회사 만들기로 시작하세요</div>'}
+    </div>
+    <button class="btn btn-gray btn-block" onclick="vendorChangePw()">아비투스 비밀번호 바꾸기</button>
+    <button class="btn btn-gray btn-block" style="margin-top:8px" onclick="vendorLogout()">나가기</button>`;
+}
+const VD_MSG={name_required:'관리회사 이름을 넣어 주세요', bad_login:'본사 ID는 영문 · 숫자 · . _ - 로 4~20자',
+  login_taken:'이미 쓰는 ID입니다 (사업소 코드와 같아도 안 됩니다)', weak_password:'비밀번호는 8자 이상, 영문과 숫자를 함께 써 주세요',
+  unauthorized:'아비투스 비밀번호가 맞지 않습니다', has_offices:'사업소가 남아 있어 삭제할 수 없습니다. 먼저 사업소를 지워 주세요', confirm_mismatch:'회사 이름이 맞지 않습니다'};
+const vdErr = e=>{ const m=String(e&&e.message||''); const k=Object.keys(VD_MSG).find(k=>m.includes(k)); return k?VD_MSG[k]:'저장하지 못했습니다. 다시 시도해 주세요'; };
+function vendorNewCompany(){
+  closeById('vd-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="vd-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:480px">
+    <div class="modal-head"><h2>관리회사 만들기</h2><button class="modal-close" onclick="closeById('vd-modal')">✕</button></div>
+    <p class="hint">관리회사마다 본사 계정 1개를 만듭니다. 이 계정으로 그 회사의 사업소를 관리합니다.</p>
+    <div class="form-row"><label>관리회사 이름</label><input id="vd-name" maxlength="40" placeholder="예) 청라 에이스하이테크시티 관리회사"></div>
+    <div class="form-row"><label>본사 계정 ID</label><input id="vd-login" maxlength="20" placeholder="영문 · 숫자 4~20자" autocapitalize="off" autocomplete="off"></div>
+    <div class="form-row"><label>본사 비밀번호</label><input id="vd-pw" type="password" maxlength="40" placeholder="8자 이상, 영문과 숫자" autocomplete="new-password"></div>
+    <div class="form-row"><label>비밀번호 확인</label><input id="vd-pw2" type="password" maxlength="40" autocomplete="new-password"></div>
+    <div class="form-row"><label>담당자 이름 (선택)</label><input id="vd-accname" maxlength="40" placeholder="예) 홍길동 과장"></div>
+    <div id="vd-err" class="lg-err hidden" style="margin:0 0 10px"></div>
+    <button class="btn btn-primary btn-block" onclick="vendorCreateSubmit()">관리회사 만들기</button>
+  </div></div>`);
+  setTimeout(()=>$('#vd-name').focus(),50);
+}
+async function vendorCreateSubmit(){
+  const name=$('#vd-name').value.trim(), login=$('#vd-login').value.trim(), pw=$('#vd-pw').value, pw2=$('#vd-pw2').value, accname=$('#vd-accname').value.trim();
+  const err=$('#vd-err'), fail=t=>{ err.textContent=t; err.classList.remove('hidden'); };
+  if(!name) return fail('관리회사 이름을 넣어 주세요');
+  if(!/^[A-Za-z0-9._-]{4,20}$/.test(login)) return fail(VD_MSG.bad_login);
+  if(pw.length<8 || !/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return fail(VD_MSG.weak_password);
+  if(pw!==pw2) return fail('비밀번호 확인이 맞지 않습니다');
+  try{ const r=await vrpc('mw_vendor_company_create',{p_name:name, p_acc_login:login, p_acc_pw:pw, p_acc_name:accname});
+    closeById('vd-modal'); toast(`${r.name} · 본사 ID ${r.login_id} 를 만들었습니다`, 3500); renderVendor(); }
+  catch(e){ console.warn(e); fail(vdErr(e)); }
+}
+async function vendorDeleteCompany(i){
+  const c=vendorList[i]; if(!c) return;
+  if(c.offices>0){ showAlert({title:'삭제할 수 없습니다', msg:`${c.name}에 사업소가 ${c.offices}곳 남아 있습니다.\n사업소를 먼저 지운 뒤 다시 눌러 주세요.`}); return; }
+  const v=await askInput({title:'관리회사를 삭제할까요?', msg:`'${c.name}'과 본사 계정(${c.login_id||'없음'})이 함께 지워집니다.\n삭제하려면 회사 이름을 정확히 입력하세요.`, placeholder:c.name, match:c.name, matchErr:'회사 이름이 맞지 않습니다', ok:'삭제', danger:true});
+  if(v===null) return;
+  try{ await vrpc('mw_vendor_company_delete',{p_company_id:c.id, p_confirm:v}); toast(`${c.name} 을(를) 삭제했습니다`, 3000); renderVendor(); }
+  catch(e){ console.warn(e); showAlert({title:'삭제하지 못했습니다', msg:vdErr(e)}); }
+}
+function vendorChangePw(){
+  closeById('vd-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="vd-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:440px">
+    <div class="modal-head"><h2>아비투스 비밀번호 바꾸기</h2><button class="modal-close" onclick="closeById('vd-modal')">✕</button></div>
+    <div class="form-row"><label>새 비밀번호</label><input id="vd-npw" type="password" maxlength="40" placeholder="8자 이상, 영문과 숫자" autocomplete="new-password"></div>
+    <div class="form-row"><label>새 비밀번호 확인</label><input id="vd-npw2" type="password" maxlength="40" autocomplete="new-password"></div>
+    <div id="vd-err" class="lg-err hidden" style="margin:0 0 10px"></div>
+    <button class="btn btn-primary btn-block" onclick="vendorPwSubmit()">바꾸기</button></div></div>`);
+}
+async function vendorPwSubmit(){
+  const a=$('#vd-npw').value, b=$('#vd-npw2').value, err=$('#vd-err'), fail=t=>{ err.textContent=t; err.classList.remove('hidden'); };
+  if(a.length<8 || !/[A-Za-z]/.test(a) || !/[0-9]/.test(a)) return fail(VD_MSG.weak_password);
+  if(a!==b) return fail('비밀번호 확인이 맞지 않습니다');
+  try{ await vrpc('mw_vendor_change_pw',{p_new:a}); vendorCred={code:vendorCred.code, pw:a}; auth=vendorCred; lsSet(K.auth,{code:vendorCred.code, pw:a, vendor:true});
+    closeById('vd-modal'); toast('비밀번호를 바꿨습니다', 3000); }
+  catch(e){ console.warn(e); fail(vdErr(e)); }
+}
+async function vendorLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'아비투스 운영 화면에서 나갑니다.', ok:'나가기'})) return; vendorCred=null; lsDel(K.auth); location.reload(); }
 async function adminLogout(){ if(!await askConfirm({title:'나가시겠습니까?', msg:'본사 관리 화면에서 나갑니다.', ok:'나가기'})) return; aclAuth=null; lsDel(K.auth); location.reload(); }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ aclAuth=null; aclAuthUntil=0; } });   // 앱을 벗어나면 다시 확인
 let admYm = fmtDate(Date.now()).slice(0,7), admSummary = null;
