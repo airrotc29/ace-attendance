@@ -973,6 +973,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pt-band.all .pt-tx b em{color:var(--green)}
 .pt-band .pt-tx small{display:block;margin-top:2px;font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pt-band > i{font-style:normal;color:#c2c7cf;font-size:20px}
+.pt-band .pt-go{flex:none;background:#1d47cc;color:#fff;font-weight:700;font-size:13.5px;padding:9px 14px;border-radius:999px}
 .pt-bar{display:block;height:5px;border-radius:9px;background:#eceef2;margin-top:7px;overflow:hidden}
 .pt-bar i{display:block;height:100%;border-radius:9px;background:#1d47cc}
 .pt-band.all .pt-bar i{background:var(--green)}
@@ -990,6 +991,34 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pt-row.miss .pt-nm small{color:var(--red)}.pt-row.gone{opacity:.6}
 .pt-cnt{font-size:12px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:999px;padding:2px 8px}
 .pt-mgr{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pt-hero{display:flex;align-items:center;gap:18px;padding:14px;border-radius:18px;background:linear-gradient(135deg,#f5f8ff,#fff);border:1px solid #e6ecfa;margin:0 0 12px}
+.pt-ring{position:relative;width:104px;height:104px;flex:none}.pt-ring svg{width:100%;height:100%}
+.pt-ring > div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.pt-ring b{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums}.pt-ring b small{font-size:15px;color:var(--mute);font-weight:700}
+.pt-ring span{font-size:11.5px;color:var(--mute);margin-top:4px;font-weight:600}
+.pt-stat{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:#4b5563}
+.pt-stat > div{display:flex;align-items:center;gap:7px}.pt-stat i{width:9px;height:9px;border-radius:50%;flex:none}
+.pt-stat b{font-size:17px;color:var(--navy)}.pt-stat .g i{background:var(--green)}.pt-stat .r i{background:var(--red)}.pt-stat .r b{color:var(--red)}
+.pt-stat .l{font-size:12.5px;color:var(--mute);display:block;line-height:1.45}.pt-stat .l b{font-size:13px}
+.pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 4px}
+.pt-tile{border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.pt-tile.ok{background:linear-gradient(160deg,#e9f6ef,#f6fbf8);border:1px solid #cfe9db}
+.pt-tile.miss{background:linear-gradient(160deg,#fdeeed,#fff8f7);border:1px solid #f4d2ce}
+.pt-tile.gone{opacity:.6}
+.pt-th{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.pt-tile .pt-dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff}
+.pt-tile.ok .pt-dot{background:var(--green)}.pt-tile.miss .pt-dot{background:var(--red)}
+.pt-th em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--green);background:#fff;border-radius:999px;padding:2px 8px}
+.pt-tile b{font-size:15px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pt-tile b small{font-size:11px;color:var(--mute);font-weight:500}
+.pt-tile > small{font-size:12px;color:#4b5563}.pt-tile.miss > small{color:var(--red)}
+.pt-tl{margin-top:12px;padding:12px;border-radius:16px;background:#f7f8fb}
+.pt-tl-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.pt-tl-h b{font-size:13.5px;color:var(--navy)}.pt-tl-h span{font-size:11px;color:var(--mute)}
+.pt-tl-row,.pt-tl-ax{display:flex;align-items:center;gap:8px;height:22px}
+.pt-tl-row .nm,.pt-tl-ax > span{width:64px;flex:none;font-size:11.5px;color:#4b5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-tl-row .bar{position:relative;flex:1;height:8px;border-radius:9px;background:#e6e9ef}
+.pt-tl-row .dot{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#1d47cc;box-shadow:0 0 0 2px #fff}
+.pt-tl-row .now{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--red);opacity:.5;border-radius:2px}
+.pt-tl-ax > div{position:relative;flex:1;height:14px}.pt-tl-ax i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:10.5px;color:var(--mute)}
 .pt-ed{display:flex;flex-direction:column;gap:6px}
 .pt-ed-row{display:flex;align-items:center;gap:6px}.pt-ed-row span{width:20px;text-align:center;color:var(--mute);font-size:13px}
 .pt-ed-row input{flex:1;min-width:0}
@@ -2081,13 +2110,16 @@ function renderList(){
 const PT_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg>';
 const QR_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></svg>';
 let patrol={points:null, logs:[], at:0}, ptDay=null, ptLogs=null;
+// 순찰 기록은 소장 · 본사만 봄. 직원은 QR 찍기만 (서버도 소장 비밀번호 · 본사 비밀번호일 때만 기록을 내려줌)
+const ptCanView = ()=>!!(me && (me.boss || EMBED));
 const dayRange = iso=>{ const [y,m,d]=iso.split('-').map(Number); return [new Date(y,m-1,d), new Date(y,m-1,d+1)]; };
 async function patrolLoad(force){
   if(!me || !sb || (!force && Date.now()-patrol.at<60e3)) return;
   patrol.at=Date.now();
   try{
     const [a,b]=dayRange(todayIso());
-    const [pts, logs]=await Promise.all([ rpc('mw_patrol_points',{p_mgr_pw:me.boss?mgrPw:null}), rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString()}) ]);
+    const [pts, logs]=await Promise.all([ rpc('mw_patrol_points',{p_mgr_pw:me.boss?mgrPw:null}),
+      ptCanView() ? rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString(), p_mgr_pw:mgrPw}) : Promise.resolve([]) ]);
     const changed = JSON.stringify([patrol.points,patrol.logs])!==JSON.stringify([pts||[],logs||[]]);
     patrol.points=pts||[]; patrol.logs=logs||[];
     if(changed && tab==='list') render();
@@ -2097,18 +2129,21 @@ function patrolBand(){
   setTimeout(()=>patrolLoad(false), 0);
   const pts=patrol.points; if(!pts) return '';
   if(!pts.length) return me&&me.boss ? `<button class="pt-band set" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span><span class="pt-tx"><b>QR 순찰 시작하기</b><small>순찰 지점을 등록하고 QR을 붙이면 순찰 시각이 자동으로 남습니다</small></span><i>›</i></button>` : '';
+  if(!ptCanView()) return EMBED ? '' : `<button class="pt-band" onclick="scanPatrol()"><span class="pt-ic">${QR_IC}</span><span class="pt-tx"><b>QR 순찰</b><small>순찰할 때 지점에 붙은 QR을 찍어 주세요</small></span><span class="pt-go">QR 찍기</span></button>`;
   const done=new Set(patrol.logs.map(l=>l.point_id)); const n=pts.filter(p=>done.has(p.id)).length, last=patrol.logs[0];
   return `<button class="pt-band ${n===pts.length?'all':''}" onclick="openPatrol()"><span class="pt-ic">${PT_IC}</span>
     <span class="pt-tx"><b>오늘 순찰 <em>${n}</em>/${pts.length}곳</b><small>${last?`마지막 ${fmtTime(new Date(last.ts).getTime())} · ${esc(last.point_name)} · ${esc(last.emp_name||'')}`:'아직 순찰 기록이 없습니다'}</small>
     <span class="pt-bar"><i style="width:${Math.round(n/pts.length*100)}%"></i></span></span><i>›</i></button>`;
 }
 async function openPatrol(){
+  if(!ptCanView()){ scanPatrol(); return; }
   ptDay=todayIso(); ptLogs=patrol.logs; drawPatrol();
   await patrolLoad(true); await patrolLoadDay();
 }
 async function patrolLoadDay(){
+  if(!ptCanView()) return;
   const day=ptDay, [a,b]=dayRange(day);
-  try{ const logs=await rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString()}) || []; if(day!==ptDay) return; ptLogs=logs; if(day===todayIso()) patrol.logs=logs; }
+  try{ const logs=await rpc('mw_patrol_logs',{p_from:a.toISOString(), p_to:b.toISOString(), p_mgr_pw:mgrPw}) || []; if(day!==ptDay) return; ptLogs=logs; if(day===todayIso()) patrol.logs=logs; }
   catch(e){ console.warn(e); toast('순찰 기록을 불러오지 못했습니다'); }
   if(document.getElementById('patrol-modal')) drawPatrol();
 }
@@ -2121,22 +2156,39 @@ function drawPatrol(){
   const by={}; (logs||[]).forEach(l=>(by[l.point_id]=by[l.point_id]||[]).push(l));
   Object.values(by).forEach(a=>a.sort((x,y)=>new Date(x.ts)-new Date(y.ts)));
   const extra=Object.keys(by).filter(id=>!pts.some(p=>p.id===id));   // 지금은 뺀 지점의 기록
-  const n=pts.filter(p=>by[p.id]).length, [y,m,d]=ptDay.split('-').map(Number);
-  const row=(id,name,gone)=>{ const c=by[id]||[]; return `<div class="pt-row ${c.length?'ok':'miss'} ${gone?'gone':''}"><span class="pt-dot">${c.length?'✓':'!'}</span>
-    <div class="pt-nm"><b>${esc(name)}</b><small>${c.length?c.map(l=>`${fmtTime(new Date(l.ts).getTime())} ${esc(l.emp_name||'')}`).join(' · '):(isToday?'아직 안 돌았습니다':'순찰 기록 없음')}</small></div>
-    ${c.length>1?`<span class="pt-cnt">${c.length}회</span>`:''}</div>`; };
-  // 위에 지점 관리 창이 떠 있어도 그 아래 제자리에서 다시 그림
+  const all=pts.map(p=>({id:p.id, name:p.name})).concat(extra.map(id=>({id, name:by[id][0].point_name, gone:true})));
+  const n=pts.filter(p=>by[p.id]).length, total=pts.length, [y,m,d]=ptDay.split('-').map(Number);
+  const last=(logs||[])[0], pct=total?n/total:0, done=total&&n===total;
+  // 원 그래프
+  const R=40, C=2*Math.PI*R, col=done?'var(--green)':n?'#1d47cc':'#c3c8d1';
+  const ring=`<div class="pt-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${R}" fill="none" stroke="#eceef2" stroke-width="11"/>
+    ${n?`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${col}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>`:''}</svg>
+    <div><b style="color:${done?'var(--green)':'var(--navy)'}">${n}<small>/${total}</small></b><span>${done?'모두 순찰':'순찰'}</span></div></div>`;
+  const hero = total ? `<div class="pt-hero">${ring}<div class="pt-stat">
+      <div class="g"><i></i><b>${n}</b>곳 순찰함</div><div class="r"><i></i><b>${total-n}</b>곳 ${isToday?'남음':'빠짐'}</div>
+      <div class="l">${last?`마지막 <b>${fmtTime(new Date(last.ts).getTime())}</b> · ${esc(last.point_name)} · ${esc(last.emp_name||'')}`:'아직 기록 없음'}</div></div></div>` : '';
+  // 지점 타일
+  const tile=p=>{ const c=by[p.id]||[]; const lastc=c[c.length-1];
+    return `<div class="pt-tile ${c.length?'ok':'miss'} ${p.gone?'gone':''}"><div class="pt-th"><span class="pt-dot">${c.length?'✓':'!'}</span>${c.length>1?`<em>${c.length}회</em>`:''}</div>
+      <b>${esc(p.name)}${p.gone?' <small>(뺀 지점)</small>':''}</b>
+      <small>${c.length?`${fmtTime(new Date(lastc.ts).getTime())} · ${esc(lastc.emp_name||'')}`:(isToday?'아직 안 돌았습니다':'기록 없음')}</small></div>`; };
+  // 시간대별 순찰 (0~24시)
+  const nowH = isToday ? (new Date().getHours()+new Date().getMinutes()/60) : 24;
+  const tl = all.length && logs && logs.length ? `<div class="pt-tl"><div class="pt-tl-h"><b>시간대별 순찰</b><span>0시 → 24시</span></div>
+    ${all.map(p=>`<div class="pt-tl-row"><span class="nm">${esc(p.name)}</span><div class="bar">${isToday?`<i class="now" style="left:${(nowH/24*100).toFixed(1)}%"></i>`:''}
+      ${(by[p.id]||[]).map(l=>{ const t=new Date(l.ts), h=t.getHours()+t.getMinutes()/60; return `<i class="dot" style="left:${(h/24*100).toFixed(1)}%" title="${fmtTime(t.getTime())} ${esc(l.emp_name||'')}"></i>`; }).join('')}</div></div>`).join('')}
+    <div class="pt-tl-ax"><span></span><div>${[0,6,12,18,24].map(h=>`<i style="left:${h/24*100}%">${h}</i>`).join('')}</div></div></div>` : '';
   const old=document.getElementById('patrol-modal'), sc=old?old.querySelector('.modal').scrollTop:0;
-  const html=`<div class="modal-bg" id="patrol-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:520px">
+  const html=`<div class="modal-bg" id="patrol-modal" onclick="if(event.target===this)this.remove()"><div class="modal pt-modal" style="max-width:520px">
     <div class="modal-head"><h2>QR 순찰</h2><button class="modal-close" onclick="closeById('patrol-modal')">✕</button></div>
     <div class="pt-day"><button onclick="patrolDay(-1)" aria-label="전날">‹</button><b>${m}월 ${d}일${isToday?' · 오늘':''}</b><button onclick="patrolDay(1)" aria-label="다음 날" ${isToday?'disabled':''}>›</button></div>
-    ${pts.length?`<div class="pt-sum"><b>${n}</b>/${pts.length}곳 순찰<span class="pt-bar big"><i style="width:${pts.length?Math.round(n/pts.length*100):0}%"></i></span></div>`:''}
-    ${isToday&&pts.length&&!EMBED?`<button class="btn btn-primary btn-block pt-scan-btn" onclick="scanPatrol()">${QR_IC}QR 찍어서 순찰 체크</button>`:''}
-    <div class="pt-list">${logs===null?'<div class="empty" style="padding:20px 0"><b>불러오는 중…</b></div>'
-      : pts.length||extra.length ? pts.map(p=>row(p.id,p.name)).join('')+extra.map(id=>row(id,by[id][0].point_name+' (뺀 지점)',true)).join('')
-      : `<div class="empty" style="padding:20px 0"><b>등록된 순찰 지점이 없습니다</b>${me&&me.boss?'아래 지점 관리에서 기계실 · 옥상 · 주차장 등을 등록하세요':'소장에게 순찰 지점 등록을 요청하세요'}</div>`}</div>
+    ${logs===null?'<div class="empty" style="padding:30px 0"><b>불러오는 중…</b></div>':`
+    ${hero}
+    ${isToday&&total&&!EMBED?`<button class="btn btn-primary btn-block pt-scan-btn" onclick="scanPatrol()">${QR_IC}QR 찍어서 순찰 체크</button>`:''}
+    ${all.length?`<div class="pt-grid">${all.map(tile).join('')}</div>`
+      :`<div class="empty" style="padding:20px 0"><b>등록된 순찰 지점이 없습니다</b>${me&&me.boss?'아래 지점 관리에서 기계실 · 옥상 · 주차장 등을 등록하세요':'소장에게 순찰 지점 등록을 요청하세요'}</div>`}
+    ${tl}`}
     ${me&&me.boss?`<div class="pt-mgr"><button class="btn btn-gray" onclick="editPatrolPoints()">지점 관리</button><button class="btn btn-gray" onclick="printPatrolQR()" ${pts.length?'':'disabled'}>QR 인쇄</button></div>`:''}
-    <p class="hint" style="margin:10px 0 0">지점마다 붙인 QR을 휴대폰으로 찍으면 순찰 시각과 이름이 남습니다. 휴대폰 기본 카메라로 찍어도 됩니다.</p>
   </div></div>`;
   if(old){ old.insertAdjacentHTML('afterend', html); old.remove(); document.querySelector('#patrol-modal .modal').scrollTop=sc; }
   else $('#modal-root').insertAdjacentHTML('beforeend', html);
