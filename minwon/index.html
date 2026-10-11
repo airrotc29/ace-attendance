@@ -3603,8 +3603,8 @@ function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · �
       <div class="fig"><h3>시간대별 순찰</h3><div class="sub">0~24시 순찰 횟수 · 진한 막대 = 야간(22~06시)</div>${hours}</div>
     </div>
     <div class="fig full"><h3>날짜별 순찰 이행</h3><div class="sub">그날 돌아본 지점 비율 · 진한 초록 = 모든 지점, 빨강 = 미순찰</div>${cal}</div>
-    ${pt.rounds?`<div class="fig full"><h3>정한 순찰 시간 이행 · ${pt.rounds.pct==null?'-':pt.rounds.pct+'%'}</h3><div class="sub">회차마다 정한 시간 안에 모든 지점을 찍었는지 · 지킨 회차 ${pt.rounds.hit} / 해야 할 회차 ${pt.rounds.req} (지점 기준)</div>
-      ${pt.rounds.per.map(r=>`<div class="hb"><span class="hl">${esc(r.name)} <small style="color:${MUTE}">${r.label}</small></span><div class="hbar"><div class="hs" style="width:calc((100% - 58px) * ${((r.pct||0)/100).toFixed(3)})"><i style="flex:1;background:${pcol(r.pct)}"></i></div><span class="hv" style="width:56px">${r.pct==null?'-':r.pct+'%'} <small style="color:${MUTE}">${r.hit}/${r.req}</small></span></div></div>`).join('')}
+    ${pt.rounds?`<div class="fig full"><h3>정한 순찰 시간 이행 · ${pt.rounds.pct==null?'-':pt.rounds.pct+'%'}</h3><div class="sub">회차마다 정한 시간 안에 모든 지점을 찍었는지 · 지킨 회차 ${pt.rounds.hit} / 해야 할 회차 ${pt.rounds.req} (지점 기준) · ${pt.rounds.per.map(r=>`${esc(r.name)} ${r.label}`).join(', ')}</div>
+      ${pt.rounds.per.map(r=>`<div class="hb"><span class="hl">${esc(r.name)}</span><div class="hbar"><div class="hs" style="width:calc((100% - 58px) * ${((r.pct||0)/100).toFixed(3)})"><i style="flex:1;background:${pcol(r.pct)}"></i></div><span class="hv" style="width:56px">${r.pct==null?'-':r.pct+'%'} <small style="color:${MUTE}">${r.hit}/${r.req}</small></span></div></div>`).join('')}
       ${pt.rounds.miss.length?`<div class="sub" style="margin-top:2mm">빠진 회차 ${pt.rounds.miss.length}건${pt.rounds.miss.length>8?' · 최근 8건':''}: ${pt.rounds.miss.slice(0,8).map(x=>`${m}/${x.d} ${esc(x.round)}(${esc(x.points.join(', '))})`).join(' · ')}</div>`:''}</div>`:''}
     <table class="t" style="margin-top:3mm">
       <thead><tr><th>No</th><th>일시</th><th>지점</th><th>특이사항</th><th>확인자</th>${ptPh?'<th>사진</th>':''}</tr></thead>
