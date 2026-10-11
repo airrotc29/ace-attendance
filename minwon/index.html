@@ -4139,16 +4139,18 @@ function refreshPushUI(){
 // 알림을 눌러 열었을 때 해당 민원 · 탭으로 이동 (?issue=ID, ?tab=chat)
 let deepLink = null;
 function takeDeepLink(u){
-  try{ const q=new URL(u, location.href).searchParams; const d={issue:q.get('issue'), tab:q.get('tab')}; if(d.issue||d.tab) deepLink=d; }catch{}
+  try{ const q=new URL(u, location.href).searchParams; const d={issue:q.get('issue'), tab:q.get('tab'), log:q.get('log')}; if(d.issue||d.tab||d.log) deepLink=d; }catch{}
 }
 function handleDeepLink(){
   if(!deepLink || !me) return;
   const d=deepLink;
   if(d.issue && !issues[d.issue]) return;   // 아직 받지 못했으면 다음 동기화 때
   deepLink=null;
-  if(/[?&](issue|tab)=/.test(location.search)) history.replaceState(null,'',location.pathname);
+  if(/[?&](issue|tab|log)=/.test(location.search)) history.replaceState(null,'',location.pathname);
   if(d.tab && ['list','new','chat','stats'].includes(d.tab)) go(d.tab);
   if(d.issue){ go('list'); openDetail(d.issue); }
+  // 매일 저녁 '오늘 업무일지' 알림 (소장 · 본사만 받음)
+  if(d.log && ptCanView()) askConfirm({title:'오늘 업무일지가 준비되었습니다', msg:'지금 보시겠습니까? 인쇄 · PDF로 저장할 수 있습니다.', ok:'보기'}).then(y=>{ if(y) openWorkLog(); });
 }
 takeDeepLink(location.href);
 if('serviceWorker' in navigator){
