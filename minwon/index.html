@@ -979,6 +979,22 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .pt-row.miss .pt-nm small{color:var(--red)}.pt-row.gone{opacity:.6}
 .pt-cnt{font-size:12px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:999px;padding:2px 8px}
 .pt-mgr{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+/* 통계 · QR 순찰 */
+.pts .pts-hero{display:flex;align-items:center;gap:16px;margin:2px 0 12px}
+.pts-kpi{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.pts-kpi div{display:flex;flex-direction:column}.pts-kpi b{font-size:20px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}.pts-kpi span{font-size:11.5px;color:var(--mute)}
+.pts-kpi .w b{color:#b4761a}
+.pts-sub{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:14px 0 7px;font-size:13.5px;font-weight:700;color:var(--navy);white-space:nowrap}.pts-sub span{white-space:normal}.pts-sub span{font-size:11px;font-weight:400;color:var(--mute);text-align:right}
+.pts-days{display:grid;grid-template-columns:repeat(auto-fill,minmax(26px,1fr));gap:4px}
+.pts-days i{height:26px;border-radius:6px;font-style:normal;font-size:10.5px;display:grid;place-items:center;color:#fff;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.15)}
+.pts-bar{display:flex;align-items:center;gap:8px;padding:5px 0}.pts-bar.gone{opacity:.55}
+.pts-bar .nm{width:76px;flex:none;font-size:13px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pts-bar .bg{flex:1;height:9px;border-radius:9px;background:#eceef2;overflow:hidden}.pts-bar .bg div{height:100%;border-radius:9px}
+.pts-bar .v{width:70px;flex:none;text-align:right;font-size:13px;font-weight:800;color:var(--navy)}.pts-bar .v small{display:block;font-size:10.5px;font-weight:400;color:var(--mute)}
+.pts-hours{display:flex;align-items:flex-end;gap:2px;height:64px;padding:0 1px;border-bottom:1px solid var(--line)}
+.pts-hours i{flex:1;min-height:2px;border-radius:3px 3px 0 0;background:#9db7f5}.pts-hours i.n{background:#1d47cc}
+.pts-hax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mute);margin-top:3px}
+.pts-bad{font-size:13px;color:#4b5563;padding:7px 10px;border-radius:10px;background:#fff7ea;margin-bottom:5px}.pts-bad b{color:#a8640a;margin-right:4px}.pts-bad small{color:var(--mute)}
 /* 순찰 지점별 한 줄 (상태 · 이름 · 시간 막대 · 마지막 시각) */
 .pr-list{margin-top:4px;border-top:1px solid var(--line)}
 .pr{display:flex;align-items:center;gap:10px;padding:10px 0 9px;border-bottom:1px solid var(--line)}
@@ -1021,6 +1037,13 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .ptn-ta textarea:focus{outline:none;border-color:#1d47cc;background:#fff;box-shadow:0 0 0 4px rgba(29,71,204,.1)}
 .ptn-mic{position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:6px;height:34px;padding:0 13px 0 11px;border:0;border-radius:999px;background:#0f172a;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 6px 14px -8px rgba(15,23,42,.8)}
 .ptn-mic svg{width:16px;height:16px}
+.ptn-dict{display:flex;align-items:center;gap:12px;margin:-2px 0 12px;padding:11px 13px;border-radius:16px;background:linear-gradient(135deg,#f3f6ff,#eef3ff);border:1px solid #dbe4ff;animation:ptnIn .2s ease-out}
+.ptn-dict .kb{flex:none;width:58px;height:40px;border-radius:9px;background:#d3d7de;padding:4px;box-sizing:border-box;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:1fr 1fr 12px;gap:2px;position:relative}
+.ptn-dict .kb i{background:#fff;border-radius:2px}.ptn-dict .kb i.sp{grid-column:1/5}
+.ptn-dict .kb b{grid-column:5;display:grid;place-items:center;background:#1d47cc;border-radius:3px;color:#fff;animation:ptdPulse 1.4s ease-in-out infinite}.ptn-dict .kb b svg{width:9px;height:9px}
+.ptn-dict p{margin:0;font-size:13px;line-height:1.45;color:#1e2a44}.ptn-dict p b{color:#1d47cc}.ptn-dict p small{display:block;font-size:11.5px;color:#7a8396;margin-top:2px}
+@keyframes ptnIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes ptdPulse{0%,100%{box-shadow:0 0 0 0 rgba(29,71,204,.5)}50%{box-shadow:0 0 0 4px rgba(29,71,204,0)}}
 .ptn-mic.on{background:var(--red);animation:ptnPulse 1.2s infinite}
 @keyframes ptnPulse{50%{box-shadow:0 0 0 7px rgba(194,71,61,.16)}}
 .ptn-iss{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#f6f7fa;margin:0 0 12px;cursor:pointer}
@@ -1623,7 +1646,7 @@ async function adminReport(id){
   if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
   w.document.write('<!doctype html><meta charset="utf-8"><title>보고서 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">보고서를 만드는 중입니다…</body>');
   try{
-    const [rows, emps, rp] = await Promise.all([ rpc('mw_hq_issues',{p_office:id}), rpc('mw_employees_list',{p_office:id}), rpc('mw_report_get',{p_ym:ym, p_office:id}).catch(()=>null) ]);
+    const [rows, emps, rp, ptd] = await Promise.all([ rpc('mw_hq_issues',{p_office:id}), rpc('mw_employees_list',{p_office:id}), rpc('mw_report_get',{p_ym:ym, p_office:id}).catch(()=>null), patrolMonthFetch(ym, id).catch(()=>null) ]);
     const map={}; (rows||[]).forEach(r=>map[r.id]=rowToIssue(r));
     const list=(emps||[]).sort(sortEmp); const boss=list.find(e=>isBoss(e));
     const d=(rp&&rp.data)||{};
@@ -1631,7 +1654,7 @@ async function adminReport(id){
     // 보고서 만들기는 현재 사업소 데이터를 쓰므로 잠시 바꿔 끼웠다가 되돌림
     const keep={issues, me, EMPLOYEES};
     let html;
-    try{ issues=map; me={officeId:id, officeName:off.name}; EMPLOYEES=list; html=buildReportHTML(ym, o); }
+    try{ issues=map; me={officeId:id, officeName:off.name}; EMPLOYEES=list; html=buildReportHTML(ym, o, patrolAnalyze(ptd, ym)); }
     finally{ issues=keep.issues; me=keep.me; EMPLOYEES=keep.EMPLOYEES; }
     w.document.open(); w.document.write(html); w.document.close();
   }catch(e){
@@ -2283,15 +2306,26 @@ function patrolNoteSheet(point){
 // 음성 입력 (휴대폰 브라우저의 음성 인식 · 한국어). 지원하지 않으면 키보드의 마이크를 안내
 let voiceRec=null;
 function stopVoice(){ if(voiceRec){ try{ voiceRec.stop(); }catch{} voiceRec=null; } }
+// 아이폰 · 아이패드: 홈 화면 앱(웹앱)과 앱 안 브라우저에서는 웹 음성 인식이 막혀 있음 → 키보드 받아쓰기로 안내
+const IS_IOS=/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+function dictateHint(btn, ta, why){
+  try{ ta.focus(); const n=ta.value.length; ta.setSelectionRange(n,n); }catch{}   // 누른 순간 바로 키보드가 열리게
+  const box=btn.closest('.ptn-ta'); if(!box || box.nextElementSibling?.classList.contains('ptn-dict')) return;
+  const mic='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  box.insertAdjacentHTML('afterend',`<div class="ptn-dict" role="note"><span class="kb" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="sp"></i><b>${mic}</b></span>
+    <p>${why?esc(why)+'<br>':''}키보드의 <b>마이크</b>를 누르고 말하세요<small>${IS_IOS?'안 보이면 설정 › 일반 › 키보드 › 받아쓰기':'키보드에 마이크가 없으면 음성 입력을 켜 주세요'}</small></p></div>`);
+}
 function startVoice(btn, ta){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ toast('이 브라우저는 음성 입력을 지원하지 않습니다. 키보드의 🎤 마이크 버튼을 써 주세요', 4000); return; }
+  if(IS_IOS || !SR) return dictateHint(btn, ta, IS_IOS?'':'이 브라우저는 음성 인식을 지원하지 않습니다.');
   if(voiceRec){ stopVoice(); return; }
   const r=new SR(); r.lang='ko-KR'; r.interimResults=true; r.continuous=false; r.maxAlternatives=1;
   const base=ta.value.trim()?ta.value.trim()+' ':'';
   const label=btn.querySelector('span'); btn.classList.add('on'); label.textContent='듣는 중 · 멈춤';
   r.onresult=e=>{ let t=''; for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; ta.value=(base+t).slice(0,200); };
-  r.onerror=e=>{ toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'마이크 사용을 허용해 주세요':e.error==='no-speech'?'말소리가 들리지 않았습니다':'음성 인식이 끊겼습니다. 다시 눌러 주세요', 3000); };
+  r.onerror=e=>{ if(e.error==='no-speech') return toast('말소리가 들리지 않았습니다. 다시 눌러 주세요', 3000);
+    if(e.error==='aborted') return;
+    dictateHint(btn, ta, e.error==='not-allowed'?'마이크 사용이 막혀 있습니다.':'음성 인식을 쓸 수 없습니다.'); };
   r.onend=()=>{ if(voiceRec===r) voiceRec=null; btn.classList.remove('on'); label.textContent='말로 입력'; };
   voiceRec=r; try{ r.start(); }catch(e){ voiceRec=null; btn.classList.remove('on'); label.textContent='말로 입력'; toast('음성 입력을 시작하지 못했습니다'); }
 }
@@ -3089,6 +3123,7 @@ function renderStats(){
   <div class="card"><h3>담당 팀별 배정 <small class="bar-sub">담당이 정해진 ${st.byTeam.reduce((a,e)=>a+e[1],0)}건 중</small></h3>${bars(st.byTeam)}</div>
   <div class="card"><h3>처리자별 완료 <small class="bar-sub">${+m}월 완료 ${st.done.length}건 중</small></h3>${bars(st.byPerson,'',{avatar:1})}</div>
   <div class="card"><h3>접수 경로 <small class="bar-sub">${+m}월 접수 ${st.recv.length}건 중</small></h3>${bars(st.bySrc,'',{icon:1})}</div>
+  ${patrolStatsCard()}
   <div class="card"><h3>반복 민원 <small style="font-weight:400;color:var(--mute)">최근 6개월 · 같은 장소·분류 2회 이상</small></h3>
     ${rep.length?rep.slice(0,12).map(g=>`<div class="repeat-item"><b>${g.count}회</b> ${esc(g.items[0].location||g.items[0].title)} <span class="badge b-cat">${esc(g.items[0].category)}</span><small>${g.items.map(i=>`${fmtDate(i.createdAt)} ${esc(i.title)}${i.reopened?' (재발 '+i.reopened+'회)':''}`).join(' · ')}</small><small style="color:var(--amber)">근본 원인 점검 권장</small></div>`).join(''):'<div style="color:var(--gray4);font-size:13px">반복 민원 없음</div>'}
   </div>
@@ -3109,6 +3144,70 @@ function exportExcel(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sum), '요약');
   XLSX.writeFile(wb, `${me.officeName}_민원처리_${statMonth}.xlsx`);
   accessLog('excel', statMonth, `${statMonth} 민원 엑셀 (연락처 가림)`);
+}
+
+
+// ══════════════════════════════════════════════
+// 순찰 월간 분석 (통계 · 월간보고서) · 소장 · 본사만
+// ══════════════════════════════════════════════
+const ptMonthCache={};   // ym → {at, data} (소장 기기에서만)
+async function patrolMonthFetch(ym, office){
+  const [s,e]=monthRange(ym);
+  const args={p_from:new Date(s).toISOString(), p_to:new Date(e).toISOString()};
+  if(office) args.p_office=office; else args.p_mgr_pw=mgrPw;
+  return rpc('mw_patrol_month', args);
+}
+function patrolAnalyze(d, ym){
+  if(!d) return null;
+  const [y,m]=ym.split('-').map(Number), [s,e]=monthRange(ym), lastDay=new Date(y,m,0).getDate(), now=Date.now();
+  const elapsed = now>=e ? lastDay : (now<s ? 0 : new Date().getDate());
+  const logs=(d.logs||[]).map(l=>({...l, t:new Date(l.ts)}));
+  const used=new Set(logs.map(l=>l.point_id));
+  const pts=(d.points||[]).filter(p=>p.active||used.has(p.id));
+  if(!pts.length) return null;
+  const bad=l=>l.note && l.note!=='이상 없음';
+  const startDay=p=>{ const c=new Date(p.created); return c.getTime()>=s ? c.getDate() : 1; };
+  const per=pts.map(p=>{ const L=logs.filter(l=>l.point_id===p.id); const days=new Set(L.map(l=>l.t.getDate()));
+    const avail=p.active ? Math.max(0, elapsed-startDay(p)+1) : 0;
+    return {id:p.id, name:p.name, active:p.active, count:L.length, days:days.size, avail, pct:avail?Math.min(100,Math.round(days.size/avail*100)):null, bad:L.filter(bad).length}; });
+  const act=per.filter(p=>p.active), sumAvail=act.reduce((a,p)=>a+p.avail,0), sumDays=act.reduce((a,p)=>a+Math.min(p.days,p.avail),0);
+  const daily=[]; for(let dd=1; dd<=lastDay; dd++){
+    if(dd>elapsed){ daily.push(null); continue; }
+    const exist=pts.filter(p=>p.active && startDay(p)<=dd); const hit=new Set(logs.filter(l=>l.t.getDate()===dd).map(l=>l.point_id));
+    daily.push(exist.length ? Math.round(exist.filter(p=>hit.has(p.id)).length/exist.length*100) : null); }
+  const hours=Array(24).fill(0); logs.forEach(l=>hours[l.t.getHours()]++);
+  const byEmp={}; logs.forEach(l=>{ const k=l.emp_name||'-'; byEmp[k]=(byEmp[k]||0)+1; });
+  const name=Object.fromEntries(pts.map(p=>[p.id,p.name]));
+  return { ym, elapsed, lastDay, total:logs.length, points:per, coverage:sumAvail?Math.round(sumDays/sumAvail*100):null,
+    perDay:(()=>{ const st=Math.min(...pts.map(startDay)), n=elapsed-st+1; return n>0?Math.round(logs.length/n*10)/10:0; })(), night:logs.filter(l=>{ const h=l.t.getHours(); return h>=22||h<6; }).length,
+    hours, daily, badList:logs.filter(bad).map(l=>({t:l.t, point:name[l.point_id]||'', emp:l.emp_name||'', note:l.note})).reverse(),
+    byEmp:Object.entries(byEmp).sort((a,b)=>b[1]-a[1]), fullDays:daily.filter(v=>v===100).length, missDays:daily.filter(v=>v===0).length };
+}
+// 통계 탭 카드 (소장 · 본사 화면에서만, 불러오면 다시 그림)
+function patrolStatsCard(){
+  if(!ptCanView()) return '';
+  const ym=statMonth, c=ptMonthCache[ym];
+  if(!c || Date.now()-c.at>120e3){ if(!c || !c.loading){ ptMonthCache[ym]={...(c||{}), loading:true, at:(c&&c.at)||0};
+      patrolMonthFetch(ym).then(d=>{ ptMonthCache[ym]={at:Date.now(), data:d}; if(tab==='stats' && statMonth===ym) render(); })
+        .catch(e=>{ console.warn(e); ptMonthCache[ym]={at:Date.now(), data:null, err:true}; if(tab==='stats' && statMonth===ym) render(); }); }
+    if(!c || !c.data) return `<div class="card pts"><h3>QR 순찰 <small class="bar-sub">불러오는 중…</small></h3></div>`; }
+  const a=patrolAnalyze(c.data, ym); const [,mm]=ym.split('-');
+  if(!a) return `<div class="card pts"><h3>QR 순찰 <small class="bar-sub">${c.err?'불러오지 못했습니다':`${+mm}월 순찰 기록 없음`}</small></h3>${c.err?'':'<p class="hint" style="margin:0">하단 메뉴 <b>순찰</b>에서 순찰 지점을 등록하면 이곳에 순찰 분석이 나옵니다.</p>'}</div>`;
+  const col=v=>v==null?'#eceef2':v>=100?'#1f8a55':v>=70?'#5bbf8a':v>=40?'#f2b13c':v>0?'#ec7d5f':'#e5534b';
+  const R=40,C=2*Math.PI*R, cv=a.coverage||0;
+  return `<div class="card pts"><h3>QR 순찰 <small class="bar-sub">${+mm}월 1일 ~ ${a.elapsed}일 · 소장 · 본사만 봅니다</small></h3>
+    <div class="pts-hero"><div class="pt-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${R}" fill="none" stroke="#eceef2" stroke-width="11"/>${cv?`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${cv>=80?'var(--green)':cv>=50?'#e08a12':'var(--red)'}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${(C*cv/100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>`:''}</svg>
+      <div><b>${a.coverage==null?'-':a.coverage}<small>%</small></b><span>순찰 이행률</span></div></div>
+      <div class="pts-kpi"><div><b>${a.total}</b><span>총 순찰</span></div><div><b>${a.perDay}</b><span>하루 평균</span></div><div class="w"><b>${a.badList.length}</b><span>특이사항</span></div><div><b>${a.night}</b><span>야간 22~06시</span></div></div></div>
+    <div class="pts-sub">날짜별 이행 <span>진할수록 모든 지점 순찰 · 빨강 = 미순찰</span></div>
+    <div class="pts-days">${a.daily.map((v,i)=>`<i style="background:${col(v)}" title="${+mm}/${i+1} ${v==null?'-':v+'%'}">${i+1}</i>`).join('')}</div>
+    <div class="pts-sub">지점별 이행률 <span>순찰한 날 / 지난 날</span></div>
+    ${a.points.map(p=>`<div class="pts-bar ${p.active?'':'gone'}"><span class="nm">${esc(p.name)}</span><div class="bg"><div style="width:${p.pct||0}%;background:${p.pct==null?'#c3c8d1':p.pct>=80?'var(--green)':p.pct>=50?'#e08a12':'var(--red)'}"></div></div><span class="v">${p.active?`${p.pct==null?'-':p.pct+'%'}<small>${p.days}/${p.avail}일</small>`:`<small>뺀 지점 · ${p.count}회</small>`}</span></div>`).join('')}
+    <div class="pts-sub">시간대별 순찰 <span>0시 → 24시 · 진한 막대 = 야간</span></div>
+    <div class="pts-hours">${a.hours.map((v,h)=>{ const mx=Math.max(1,...a.hours); return `<i class="${h>=22||h<6?'n':''}" style="height:${Math.round(v/mx*100)}%" title="${h}시 ${v}회"></i>`; }).join('')}</div>
+    <div class="pts-hax"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+    ${a.badList.length?`<div class="pts-sub">특이사항 <span>최근 ${Math.min(5,a.badList.length)}건 / ${a.badList.length}건</span></div>${a.badList.slice(0,5).map(b=>`<div class="pts-bad"><b>${b.t.getMonth()+1}/${b.t.getDate()} ${fmtTime(b.t.getTime())}</b> ${esc(b.point)} · ${esc(b.note)} <small>${esc(b.emp)}</small></div>`).join('')}`:''}
+  </div>`;
 }
 
 // ── 검색 ─────────────────────────────────────
@@ -3268,7 +3367,15 @@ function reportAnalysis(ym){
 async function autoFillReport(){
   const im=$('#rp-improve'), nt=$('#rp-note'); if(!im||!nt) return;
   if((im.value.trim()||nt.value.trim()) && !await askConfirm({title:'자동분석 결과로 바꿀까요?', msg:'지금 적어 둔 개선 건의 · 특이사항이 자동분석 내용으로 바뀝니다.', ok:'바꾸기'})) return;
-  const r=reportAnalysis(statMonth); im.value=r.improve; nt.value=r.note;
+  const r=reportAnalysis(statMonth);
+  if(ptCanView()){ try{ const c=ptMonthCache[statMonth]; const d=c&&c.data ? c.data : await patrolMonthFetch(statMonth); ptMonthCache[statMonth]={at:Date.now(), data:d};
+    const a=patrolAnalyze(d, statMonth);
+    if(a){ const low=a.points.filter(p=>p.active && p.pct!=null && p.pct<70);
+      r.note+=`\n· QR 순찰: 이행률 ${a.coverage}%, 총 ${a.total}회(하루 평균 ${a.perDay}회, 야간 ${a.night}회), 특이사항 ${a.badList.length}건.`;
+      if(a.badList.length) r.note+=`\n· 순찰 특이사항: ${a.badList.slice(0,3).map(b=>`${b.point} ${b.note}`).join(', ')}${a.badList.length>3?' 등':''}.`;
+      if(low.length) r.improve+=`\n· 순찰 이행률 낮은 지점: ${low.map(p=>`${p.name} ${p.pct}%`).join(', ')}. 순찰 동선 · 근무표 점검 요청.`;
+      if(a.missDays) r.improve+=`\n· 하루 종일 순찰 기록이 없는 날 ${a.missDays}일. 순찰 누락 원인 확인 필요.`; } }catch(e){ console.warn('patrol analysis', e); } }
+  im.value=r.improve; nt.value=r.note;
   [im,nt].forEach(t=>{ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+4,320)+'px'; });
   toast('자동분석 내용을 채웠습니다. 확인하고 고쳐 쓰세요',3000);
 }
@@ -3276,13 +3383,16 @@ function makeReport(){
   const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked};
   lsSet(repKey(),{to:o.to}); lsSet(repKey()+'_'+statMonth, o);
   rpc('mw_report_save',{p_ym:statMonth, p_data:o, p_by:me.name}).catch(e=>console.warn('report save', e));   // 본사에서도 같은 내용으로 볼 수 있게
-  const html = buildReportHTML(statMonth, o);
+  const ym=statMonth;
   const w = window.open('', '_blank');
   if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
   closeById('rep-modal');
+  const done=pt=>{ w.document.open(); w.document.write(buildReportHTML(ym, o, pt)); w.document.close(); };
+  if(!ptCanView()) return done(null);   // 순찰 실적은 소장 · 본사 보고서에만
+  w.document.write('<!doctype html><meta charset="utf-8"><title>보고서 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">보고서를 만드는 중입니다…</body>');
+  patrolMonthFetch(ym).then(d=>{ ptMonthCache[ym]={at:Date.now(), data:d}; done(patrolAnalyze(d, ym)); }).catch(e=>{ console.warn('patrol month', e); done(null); });
 }
-function buildReportHTML(ym, o){
+function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · 본사가 만들 때만)
   const [y,m]=ym.split('-').map(Number);
   const st=monthStats(ym), pv=monthStats(prevYm(ym));
   const [ms,me_]=monthRange(ym);
@@ -3361,6 +3471,40 @@ function buildReportHTML(ym, o){
   // ── 가로 막대 (HTML) ──
   const hbars=(rows,unit='건')=>{ if(!rows.length) return '<div class="muted" style="font-size:9pt">자료 없음</div>'; const mx=Math.max(1,...rows.map(r=>r[1]));
     return rows.map(([k,v])=>`<div class="hb"><span class="hl">${esc(k)}</span><div class="hbar"><div class="hs" style="width:calc((100% - 46px) * ${(v/mx).toFixed(3)})"><i style="flex:1;background:${C1}" title="${esc(k)} ${v}${unit}"></i></div><span class="hv">${v}${unit}</span></div></div>`).join(''); };
+  // ── QR 순찰 실적 (pt 가 있을 때만) ──
+  const ptSection=()=>{
+    const ptIss=Object.values(issues).filter(i=>i.source==='순찰 발견' && i.createdAt>=ms && i.createdAt<me_).length;
+    const act=pt.points.filter(p=>p.active);
+    const pcol=v=>v==null?AXIS:v>=80?GOOD:v>=50?'#c77d0a':BAD;
+    const bars=pt.points.map(p=>`<div class="hb"><span class="hl">${esc(p.name)}</span><div class="hbar"><div class="hs" style="width:calc((100% - 58px) * ${((p.pct||0)/100).toFixed(3)})"><i style="flex:1;background:${pcol(p.pct)}"></i></div><span class="hv" style="width:56px">${p.active?`${p.pct==null?'-':p.pct+'%'} <small style="color:${MUTE}">${p.days}/${p.avail}일</small>`:`<small style="color:${MUTE}">뺀 지점</small>`}</span></div></div>`).join('');
+    const hmx=Math.max(1,...pt.hours), HW=300, HH=90, bw=HW/24;
+    let hs=''; pt.hours.forEach((v,h)=>{ const bh=Math.round(v/hmx*(HH-16)); hs+=`<rect x="${(h*bw+1).toFixed(1)}" y="${HH-12-bh}" width="${(bw-2).toFixed(1)}" height="${Math.max(bh,v?2:0)}" rx="1.5" fill="${h>=22||h<6?C1:CL}"><title>${h}시 ${v}회</title></rect>`; });
+    [0,6,12,18,24].forEach(h=>{ hs+=`<text x="${Math.min(HW-6,Math.max(4,h*bw))}" y="${HH-1}" text-anchor="middle" class="ax">${h}</text>`; });
+    const hours=`<svg viewBox="0 0 ${HW} ${HH}" width="100%" style="max-height:34mm"><line x1="0" y1="${HH-12}" x2="${HW}" y2="${HH-12}" stroke="${AXIS}" stroke-width=".6"/>${hs}</svg>`;
+    const first=new Date(y,m-1,1).getDay(), rows=Math.ceil((first+lastDay)/7), cw=42,chh=19,gp=3,top=16, W=7*cw+6*gp, Hh=top+rows*(chh+gp)+4;
+    let g=''; ['일','월','화','수','목','금','토'].forEach((w,i)=>{ g+=`<text x="${i*(cw+gp)+cw/2}" y="10" text-anchor="middle" class="ax">${w}</text>`; });
+    pt.daily.forEach((v,i)=>{ const d=i+1, k=first+d-1, cx=(k%7)*(cw+gp), cy=top+Math.floor(k/7)*(chh+gp);
+      const fill=v==null?'#f0efec':v>=100?'#1f7a4d':v>=70?'#5bb585':v>=40?'#f0b54a':v>0?'#ec8a6c':'#d9483f', dark=v!=null&&(v>=70||v===0);
+      g+=`<rect x="${cx}" y="${cy}" width="${cw}" height="${chh}" rx="3" fill="${fill}"><title>${m}월 ${d}일 ${v==null?'-':v+'%'}</title></rect><text x="${cx+4}" y="${cy+9}" class="cd" fill="${dark?'#ffffff':MUTE}">${d}</text>${v!=null?`<text x="${cx+cw-3}" y="${cy+15}" text-anchor="end" class="cd" fill="${dark?'#ffffff':INK2}">${v}%</text>`:''}`; });
+    const cal=`<svg viewBox="0 0 ${W} ${Hh}" width="100%" style="max-width:120mm">${g}</svg>`;
+    return `<div>${H('QR 순찰 실적')}
+    <div class="tiles">
+      ${rtile('순찰 이행률', pt.coverage||0, `<span class="dl">지점 ${act.length}곳 · ${act.reduce((n,p)=>n+Math.min(p.days,p.avail),0)}/${act.reduce((n,p)=>n+p.avail,0)} 지점·일</span>`)}
+      ${tile('총 순찰', `${pt.total}<small>회</small>`, `<span class="dl">하루 평균 ${pt.perDay}회 · 야간 ${pt.night}회</span>`)}
+      ${tile('특이사항', `${pt.badList.length}<small>건</small>`, `<span class="dl">민원 전환 ${ptIss}건</span>`)}
+      ${tile('모든 지점 순찰한 날', `${pt.fullDays}<small>일</small>`, `<span class="dl">${pt.missDays?`<b style="color:${BAD}">미순찰 ${pt.missDays}일</b>`:'미순찰일 없음'}</span>`)}
+    </div>
+    <div class="grid2">
+      <div class="fig"><h3>지점별 순찰 이행률</h3><div class="sub">순찰한 날 / 지난 날</div>${bars}</div>
+      <div class="fig"><h3>시간대별 순찰</h3><div class="sub">0~24시 순찰 횟수 · 진한 막대 = 야간(22~06시)</div>${hours}</div>
+    </div>
+    <div class="fig full"><h3>날짜별 순찰 이행</h3><div class="sub">그날 돌아본 지점 비율 · 진한 초록 = 모든 지점, 빨강 = 미순찰</div>${cal}</div>
+    <table class="t" style="margin-top:3mm">
+      <thead><tr><th>No</th><th>일시</th><th>지점</th><th>특이사항</th><th>확인자</th></tr></thead>
+      ${pt.badList.length?pt.badList.slice().reverse().map((b,n)=>`<tr><td class="c">${n+1}</td><td class="c">${b.t.getMonth()+1}/${b.t.getDate()} ${fmtTime(b.t.getTime())}</td><td>${esc(b.point)}</td><td>${esc(b.note)}</td><td class="c">${esc(b.emp)}</td></tr>`).join('')
+        :`<tr><td colspan="5" class="c muted">순찰 중 특이사항 없음</td></tr>`}
+    </table></div>`;
+  };
   const cats={}; st.recv.forEach(i=>{ const c=i.category||'기타'; (cats[c]=cats[c]||{r:0,d:0}).r++; if(i.status==='done') cats[c].d++; });
   const catRows=Object.entries(cats).sort((a,b)=>b[1].r-a[1].r);
   const catMax=Math.max(1,...catRows.map(c=>c[1].r));
@@ -3521,6 +3665,8 @@ thead{display:table-header-group}
     <div class="fig"><h3>담당 팀별 배정</h3><div class="sub">팀 또는 개인의 소속 팀 기준</div>${hbars(st.byTeam)}</div>
     <div class="fig"><h3>처리자 순위</h3><div class="sub">${m}월 완료 건수 상위 5명</div>${rankList(top5)}</div>
   </div>
+
+  ${pt?ptSection():''}
 
   <div>${H(`처리 완료 내역 (${doneRows.length}건)`)}
   <table class="t">
