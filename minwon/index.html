@@ -877,6 +877,28 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .dlg.sheet .sh-acts button:last-child{border-bottom:0}
 .dlg.sheet .sh-acts button.danger{color:#c93434}
 .dlg.sheet .sh-close{display:block;width:100%;margin-top:10px;border:0;background:#eef1f6;font:inherit;font-size:16px;font-weight:700;color:#374151;padding:14px;border-radius:16px}
+/* 고급형 시트 (본사 사업소 메뉴) */
+.dlg.sheet.rich{background:#f4f5f8!important;padding-top:10px!important;max-height:92vh}
+.sheet.rich .sh-grab{display:block;width:38px;height:5px;border-radius:9px;background:#d5d9e0;margin:0 auto 14px}
+.sheet.rich .sh-head{display:flex;align-items:center;gap:14px;background:#fff;border-radius:18px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.sheet.rich .sh-head .th{width:54px;height:54px;border-radius:15px;flex:none;overflow:hidden;background:linear-gradient(145deg,#1d47cc,#0f2a7a);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 16px -10px rgba(29,71,204,.7)}
+.sheet.rich .sh-head .th img{width:100%;height:100%;object-fit:cover}.sheet.rich .sh-head .th svg{width:26px;height:26px}
+.sheet.rich .sh-head .nm{min-width:0;flex:1}
+.sheet.rich .sh-head .nm b{display:block;font-size:17px;font-weight:800;color:#111827;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet.rich .sh-head .nm span{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:12.5px;color:#6b7280;font-weight:600}
+.sheet.rich .sh-head .cd{font-style:normal;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;font-weight:700;letter-spacing:.06em;color:#1d47cc;background:#eef3ff;border-radius:6px;padding:2px 7px}
+.sheet.rich .sh-head .warn{color:var(--red);font-style:normal}
+.dlg.sheet.rich .sh-acts{background:#fff;border-radius:16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.dlg.sheet.rich .sh-acts button.sh-row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:9px 14px;font-size:15.5px;font-weight:600;color:#111827;border-bottom:1px solid #eef0f4;cursor:pointer}
+.dlg.sheet.rich .sh-acts button.sh-row:active{background:#f6f7fa}
+.sheet.rich .sh-ic{width:34px;height:34px;border-radius:10px;flex:none;background:#eef3ff;color:#1d47cc;display:flex;align-items:center;justify-content:center}
+.sheet.rich .sh-ic svg{width:18px;height:18px}
+.sheet.rich .sh-tx{flex:1;min-width:0}
+.sheet.rich .sh-tx small{display:block;font-size:12px;font-weight:500;color:#8a909b;margin-top:2px}
+.sheet.rich .sh-chev{color:#c2c7cf;font-size:20px;line-height:1}
+.dlg.sheet.rich .sh-acts button.sh-row.danger{color:#c93434}
+.sheet.rich .sh-row.danger .sh-ic{background:#fdecec;color:#c93434}
+.dlg.sheet.rich .sh-close{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.05)}
 .rd-sec h4{font-size:14px;font-weight:800;color:#111;margin:6px 2px 8px}
 .rd-sec h4 em{font-style:normal;color:var(--e-blue);margin-left:4px}
 .rd-list{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -1501,7 +1523,9 @@ const AO_IC={
   shield:AO_SV('<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><circle cx="12" cy="11" r="2"/><path d="M12 13v3"/>'),
   tag:AO_SV('<path d="M4 5h16v10H4z"/><path d="M8 19h8M12 15v4"/><path d="M8 9h8M8 12h5"/>'),
   img:AO_SV('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>'),
-  trash:AO_SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>')
+  trash:AO_SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  doc:AO_SV('<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>'),
+  pen:AO_SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')
 };
 // ── 본사: 사업소 이름 바꾸기 (코드 · 비밀번호는 그대로) ──
 async function renameOffice(id){
@@ -1587,10 +1611,17 @@ function renderAdminHome(){
 // 사업소 관리 메뉴 (⋯)
 async function officeMenu(id){
   const o=adminOffices.find(x=>x.id===id); if(!o) return;
-  const v=await openSheet({title:o.name, html:`<div class="hq-sh-meta">코드 ${esc(o.code)} · 직원 ${o.count}명${o.has_mgr?'':' · <b style="color:var(--red)">소장 로그인 미설정</b>'}</div>`, actions:[
-    {value:'report', label:'월간보고서 보기'}, {value:'roster', label:'직원 명단'}, {value:'rename', label:'이름 바꾸기'},
-    {value:'pw', label:'직원 비밀번호'}, {value:'mgr', label:o.has_mgr?'소장 비밀번호':'소장 비밀번호 정하기 (필요)'},
-    {value:'brand', label:'관리단 표시'}, {value:'cover', label:'건물 사진'}, {value:'del', label:'사업소 삭제', danger:true} ]});
+  const head=`<div class="sh-head"><div class="th">${o.cover?`<img src="${esc(o.cover)}" alt="">`:AO_IC.bldg}</div>
+    <div class="nm"><b>${esc(o.name)}</b><span><i class="cd">${esc(o.code)}</i>직원 ${o.count}명${o.has_mgr?'':' · <em class="warn">소장 미설정</em>'}</span></div></div>`;
+  const v=await openSheet({rich:true, html:head, actions:[
+    {group:1, value:'report', label:'월간보고서 보기', desc:'관리단 보고서 · 인쇄 · PDF', icon:AO_IC.doc},
+    {group:2, value:'roster', label:'직원 명단', desc:`${o.count}명 · 넣기 · 빼기`, icon:AO_IC.users},
+    {group:2, value:'rename', label:'이름 바꾸기', desc:'코드 · 비밀번호는 그대로', icon:AO_IC.pen},
+    {group:2, value:'brand', label:'관리단 표시', desc:'화면 맨 아래 이름 · 문구', icon:AO_IC.tag},
+    {group:2, value:'cover', label:'건물 사진', desc:'민원 화면 맨 위 사진', icon:AO_IC.img},
+    {group:3, value:'pw', label:'직원 비밀번호', desc:'직원 공통 로그인', icon:AO_IC.key},
+    {group:3, value:'mgr', label:'소장 비밀번호', desc:o.has_mgr?'소장 입장용':'아직 없음 · 정해 주세요', icon:AO_IC.shield},
+    {group:4, value:'del', label:'사업소 삭제', desc:'두 번 확인 후 영구 삭제', icon:AO_IC.trash, danger:true} ]});
   if(v==='report') adminReport(id); else if(v==='roster') adminRoster(id); else if(v==='rename') renameOffice(id);
   else if(v==='pw') adminPw(id,o.name); else if(v==='mgr') adminMgrPw(id,o.name,o.code); else if(v==='brand') adminBrand(id);
   else if(v==='cover') adminCover(id); else if(v==='del') adminDelete(id,o.name);
@@ -2449,12 +2480,17 @@ async function copyText(t){
   toast('복사했습니다');
 }
 // 아래에서 올라오는 선택 창 (버튼 목록 · 내용)
-function openSheet({title, html='', actions=[]}){
+function openSheet({title, html='', actions=[], rich=false}){
   return new Promise(res=>{
     if(dlgClose) dlgClose(null);
     const root=document.createElement('div'); root.className='dlg-bg sheet-bg';
-    root.innerHTML=`<div class="dlg sheet" role="dialog" aria-modal="true">${title?`<h3>${esc(title)}</h3>`:''}${html}
-      ${actions.length?`<div class="sh-acts">${actions.map((a,i)=>`<button data-i="${i}" class="${a.danger?'danger':''}">${esc(a.label)}</button>`).join('')}</div>`:''}
+    // rich: 아이콘 · 설명 · 묶음(group)으로 나눈 목록
+    const row=(a,i)=>rich
+      ? `<button data-i="${i}" class="sh-row ${a.danger?'danger':''}"><span class="sh-ic">${a.icon||''}</span><span class="sh-tx">${esc(a.label)}${a.desc?`<small>${esc(a.desc)}</small>`:''}</span><span class="sh-chev">›</span></button>`
+      : `<button data-i="${i}" class="${a.danger?'danger':''}">${esc(a.label)}</button>`;
+    const groups=[]; actions.forEach((a,i)=>{ const g=rich?(a.group||0):0; let G=groups.find(x=>x.g===g); if(!G){ G={g,items:[]}; groups.push(G); } G.items.push(row(a,i)); });
+    root.innerHTML=`<div class="dlg sheet ${rich?'rich':''}" role="dialog" aria-modal="true">${rich?'<i class="sh-grab"></i>':''}${title?`<h3>${esc(title)}</h3>`:''}${html}
+      ${groups.map(G=>`<div class="sh-acts">${G.items.join('')}</div>`).join('')}
       <button class="sh-close">${actions.length?'취소':'닫기'}</button></div>`;
     document.body.appendChild(root);
     const done=v=>{ if(!root.isConnected) return; root.remove(); document.removeEventListener('keydown',key,true); dlgClose=null; res(v); };
