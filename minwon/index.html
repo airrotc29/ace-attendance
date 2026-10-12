@@ -2565,6 +2565,33 @@ function patrolPending(){
   if(!v || !me) return; const [id,k]=v.split('.'); if(id&&k) patrolCheck(id,k);
 }
 patrolFromUrl();
+// 별도 순찰 시스템의 순찰 서식(엑셀)을 읽음: 머리글 줄(순찰지점 · 순찰시간이 있는 줄)을 찾아 필요한 열만 가져옴
+let extPatrol=null;   // {name, rows:[{date,time,point,guard,note,round,action}]} (이 기기에서만, 저장하지 않음)
+function parsePatrolForm(wb, name){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+  const hi=aoa.findIndex(r=>r.map(x=>String(x).trim()).includes('순찰지점') && r.map(x=>String(x).trim()).some(x=>x==='순찰시간'||x==='순찰일자'));
+  if(hi<0) throw new Error('form_header');
+  const H=aoa[hi].map(x=>String(x).trim()), col=k=>H.indexOf(k), C={d:col('순찰일자'),t:col('순찰시간'),p:col('순찰지점'),g:col('순찰자'),x:col('이상상황'),r:col('회차'),a:col('조치결과')};
+  const v=(r,k)=>C[k]<0?'':String(r[C[k]]??'').trim();
+  const rows=aoa.slice(hi+1).filter(r=>v(r,'p')).map(r=>({date:v(r,'d'), time:v(r,'t'), point:v(r,'p'), guard:v(r,'g'), note:v(r,'x'), round:v(r,'r'), action:v(r,'a')}));
+  return {name, rows};
+}
+async function pickPatrolForm(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  try{ const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}); extPatrol=parsePatrolForm(wb, f.name);
+    const el=$('#rp-ext-info'); if(el) el.textContent=`첨부됨: ${extPatrol.rows.length}건 (${extPatrol.name})`; toast(`순찰 서식 ${extPatrol.rows.length}건을 읽었습니다`, 2500); }
+  catch(e){ console.warn(e); extPatrol=null; input.value=''; toast(String(e.message)==='form_header'?'순찰 서식에서 "순찰지점" 머리글을 찾지 못했습니다':'엑셀 파일을 읽지 못했습니다', 3500); }
+}
+// 첨부한 순찰 서식을 보고서에 그대로 옮김 (앱 기록과 섞지 않고 따로 표시)
+function extSection(ext){
+  const esc2=x=>esc(x||'');
+  const notes=ext.rows.filter(r=>r.note && r.note!==PT_OK && r.note!=='이상 없음').length, acts=ext.rows.filter(r=>r.action).length;
+  return `<section style="margin-top:18px"><h3 style="font-size:12pt;margin:0 0 4px">순찰 서식 기록 (첨부)</h3>
+    <p style="font-size:10pt;color:#444;margin:0 0 6px">첨부한 순찰 서식 ${ext.rows.length}건을 그대로 옮겼습니다 (${esc2(ext.name)}). 이상상황 ${notes}건 · 조치결과 기재 ${acts}건.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:9.5pt"><thead><tr>${['일자','시간','지점','순찰자','이상상황','회차','조치결과'].map(h=>`<th style="border:.5pt solid #777;background:#eee;padding:3px 4px">${h}</th>`).join('')}</tr></thead>
+    <tbody>${ext.rows.map(r=>`<tr><td style="border:.5pt solid #777;padding:2px 4px">${esc2(r.date)}</td><td style="border:.5pt solid #777;padding:2px 4px">${esc2(r.time)}</td><td style="border:.5pt solid #777;padding:2px 4px">${esc2(r.point)}</td><td style="border:.5pt solid #777;padding:2px 4px">${esc2(r.guard)}</td><td style="border:.5pt solid #777;padding:2px 4px;${r.note&&r.note!==PT_OK?'color:#b00020;font-weight:700':''}">${esc2(r.note)}</td><td style="border:.5pt solid #777;padding:2px 4px">${esc2(r.round)}</td><td style="border:.5pt solid #777;padding:2px 4px">${esc2(r.action)}</td></tr>`).join('')}</tbody></table></section>`;
+}
 // 소장: 수기 순찰 기록 (QR을 찍지 못했을 때 지점 · 시각 · 담당자를 골라 넣음 · 기록에 '수기' 표시)
 function openManualPatrol(){
   const pts=(patrol.points||[]).filter(p=>p.active!==false);
@@ -3688,6 +3715,7 @@ function openReportDialog(){
     <div class="form-row"><label>개선 건의 (반복 민원 대책, 예산 요청 등)</label><textarea id="rp-improve" placeholder="예) 2층 남자화장실 출입문 경첩 노후로 반복 발생. 문짝 교체 검토 요청">${esc(n.improve||'')}</textarea></div>
     <div class="form-row"><label>특이사항</label><textarea id="rp-note" placeholder="예) 10월 15일 승강기 정기점검 실시, 이상 없음">${esc(n.note||'')}</textarea></div>
     ${ptCanView()?`<label class="rp-check"><input type="checkbox" id="rp-patrol" ${n.patrol===false?'':'checked'}> 순찰 실적 포함 <small style="font-weight:500;color:var(--mute)">(끄면 별도 순찰 시스템 기록으로 확인한다고 적힙니다)</small></label>`:''}
+    ${ptCanView()?`<div class="form-row"><label>순찰 서식 첨부 (엑셀 · 선택)</label><input type="file" id="rp-ext" accept=".xlsx,.xls,.csv" onchange="pickPatrolForm(this)"><p class="hint" id="rp-ext-info">${extPatrol?`첨부됨: ${extPatrol.rows.length}건 (${esc(extPatrol.name)})`:'별도 순찰 시스템의 순찰 서식(엑셀)을 올리면 보고서 끝에 그 기록이 그대로 실립니다.'}</p></div>`:''}
     <label class="rp-check"><input type="checkbox" id="rp-photos" ${n.photos===false?'':'checked'}> 처리 사진 대장 포함</label>
     <button class="btn btn-primary btn-block" onclick="makeReport()">보고서 만들기</button>
     <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.<br>작성한 내용은 본사에서도 함께 봅니다.</p>
@@ -3922,12 +3950,13 @@ function makeReport(){
   const w = window.open('', '_blank');
   if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
   closeById('rep-modal');
-  const done=pt=>{ w.document.open(); w.document.write(buildReportHTML(ym, o, pt)); w.document.close(); };
+  const ext=extPatrol&&extPatrol.rows.length?{name:extPatrol.name, rows:extPatrol.rows.filter(r=>!/^\d{4}-\d{2}/.test(r.date)||r.date.startsWith(ym))}:null;
+  const done=pt=>{ w.document.open(); w.document.write(buildReportHTML(ym, o, pt, ext)); w.document.close(); };
   if(!ptCanView() || o.patrol===false) return done(null);   // 순찰 실적은 소장 · 본사 보고서에만, 소장이 포함을 고른 때만
   w.document.write('<!doctype html><meta charset="utf-8"><title>보고서 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">보고서를 만드는 중입니다…</body>');
   patrolMonthFetch(ym).then(d=>{ ptMonthCache[ym]={at:Date.now(), data:d}; done(patrolAnalyze(d, ym)); }).catch(e=>{ console.warn('patrol month', e); done(null); });
 }
-function buildReportHTML(ym, o, pt){   // pt: 순찰 월간 분석 (소장 · 본사가 만들 때만)
+function buildReportHTML(ym, o, pt, ext=null){   // pt: 순찰 월간 분석 (소장 · 본사가 만들 때만) · ext: 첨부한 순찰 서식 (소장)
   const [y,m]=ym.split('-').map(Number);
   const st=monthStats(ym), pv=monthStats(prevYm(ym));
   const [ms,me_]=monthRange(ym);
@@ -4230,6 +4259,7 @@ thead{display:table-header-group}
     <div class="imgs"><div>${x.before?`<img src="${esc(x.before)}">`:'<div class="na">사진 없음</div>'}<div class="lb">접수 · 조치 전</div></div><div>${x.after?`<img src="${esc(x.after)}">`:'<div class="na">사진 없음</div>'}<div class="lb">완료 · 조치 후</div></div></div></div>`).join('')}</div>`:''}
 
   ${pt?ptSection():(o.patrol===false&&ptCanView()?'<p style="font-size:10pt;color:#555;margin:10px 0">순찰 실적은 이 보고서에 싣지 않았습니다. 순찰은 별도 순찰 시스템 기록으로 확인합니다.</p>':'')}
+  ${ext&&ext.rows.length?extSection(ext):''}
   <div>${H('특이사항')}
   <div class="box flow">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div>
   <div class="end">위와 같이 ${y}년 ${m}월 ${ttl.replace(' 보고','')}을 보고합니다.<br>${esc(dt)}
