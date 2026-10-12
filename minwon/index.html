@@ -1145,6 +1145,7 @@ button.stat-tile.on .l{color:var(--e-blue)!important}
 .cover-band .cv-add svg{width:26px;height:26px;flex:none}
 .cover-band .cv-add b{display:block;font-size:15px;color:#111}
 .cover-band .cv-add small{display:block;font-size:12.5px;color:#6b7280;margin-top:2px}
+.ptm-tag{display:inline-block;font-size:10.5px;font-weight:800;font-style:normal;color:#8a5a00;background:#fff1d6;border-radius:6px;padding:0 6px;margin-right:6px}
 </style>
 </head>
 <body>
@@ -1927,7 +1928,7 @@ async function officeMenu(id){
   else if(v==='cover') adminCover(id); else if(v==='del') adminDelete(id,o.name); else if(v==='log') viewAccessLog(id, o.name);
 }
 // ── 본사: 접속 기록 보기 · 점검 (월 1회 이상 점검 권장) ──
-const ACL_ACT = {login:'로그인', contact_view:'연락처 열람', call:'민원인 전화', sms:'민원인 문자', contact_edit:'연락처 수정', excel:'엑셀 내려받기',
+const ACL_ACT = {login:'로그인', patrol_manual:'순찰 수기 입력', contact_view:'연락처 열람', call:'민원인 전화', sms:'민원인 문자', contact_edit:'연락처 수정', excel:'엑셀 내려받기',
   office_view:'사업소 화면 열람', office_create:'사업소 만듦', office_rename:'이름 바꿈', office_pw:'직원 비밀번호 변경', mgr_pw:'소장 비밀번호 변경',
   office_delete:'사업소 삭제', roster_save:'명단 저장', log_view:'접속 기록 점검'};
 const ACL_ROLE = {staff:'직원', boss:'소장', hq:'본사'};
@@ -2417,7 +2418,7 @@ function drawPatrol(){
   // 지점 줄을 누르면 그날 누가 몇 시에 찍었는지 펼침 (특이사항 · 사진 · 회차 함께)
   const inRound=t=>{ const x=rws.find(x=>t>=x.ws&&t<x.we); return x?x.r.name:''; };
   const det=c=>`<div class="prd">${c.map(l=>{ const t=new Date(l.ts).getTime(), b=isBad(l), rn=inRound(t);
-      return `<div class="prd-i ${b?'bad':''}"><b>${fmtTime(t)}</b><span class="who">${esc(l.emp_name||'-')}</span>${rn?`<em>${esc(rn)}</em>`:''}<span class="res">${b?'특이사항':'이상 없음'}</span></div>${b?`<div class="prd-n">${esc(l.note)}${l.photo?`<img class="pr-ph" src="${esc(l.photo)}" alt="특이사항 사진" onclick="event.stopPropagation();viewImg(this)">`:''}</div>`:''}`; }).join('')}</div>`;
+      return `<div class="prd-i ${b?'bad':''}"><b>${fmtTime(t)}</b><span class="who">${esc(l.emp_name||'-')}</span>${rn?`<em>${esc(rn)}</em>`:''}${l.manual_by?`<em class="ptm-tag" title="수기 입력 · ${esc(l.manual_by)}">수기</em>`:''}<span class="res">${b?'특이사항':'이상 없음'}</span></div>${b?`<div class="prd-n">${esc(l.note)}${l.photo?`<img class="pr-ph" src="${esc(l.photo)}" alt="특이사항 사진" onclick="event.stopPropagation();viewImg(this)">`:''}</div>`:''}`; }).join('')}</div>`;
   const row=p=>{ const c=by[p.id]||[], lastc=c[c.length-1], bad=c.filter(isBad), st=c.length?(bad.length?'warn':'ok'):'miss', open=c.length&&ptOpen.has(p.id);
     return `<div class="pr-grp ${open?'open':''}" data-pid="${esc(p.id)}"><div class="pr ${st} ${p.gone?'gone':''} ${c.length?'can':''}" ${c.length?`role="button" aria-expanded="${open?'true':'false'}" onclick="ptToggle(this)"`:''}><div class="pr-l"><i class="pr-dot"></i><b>${esc(p.name)}</b></div>
       <div class="pr-bar">${winBands}${isToday?`<i class="now" style="left:${(nowH/24*100).toFixed(1)}%"></i>`:''}${c.map(l=>{ const t=new Date(l.ts), h=t.getHours()+t.getMinutes()/60; return `<i class="dot ${isBad(l)?'bad':''}" style="left:${(h/24*100).toFixed(1)}%"></i>`; }).join('')}</div>
@@ -2437,7 +2438,7 @@ function drawPatrol(){
     ${isToday&&total&&!EMBED?`<button class="btn btn-primary btn-block pt-scan-btn" onclick="scanPatrol()">${QR_IC}QR 찍어서 순찰 체크</button>`:''}
     ${all.length?rowsHtml
       :`<div class="empty" style="padding:20px 0"><b>등록된 순찰 지점이 없습니다</b>${me&&me.boss?'아래 지점 관리에서 기계실 · 옥상 · 주차장 등을 등록하세요':'소장에게 순찰 지점 등록을 요청하세요'}</div>`}`}
-    ${me&&me.boss?`<div class="pt-mgr"><button class="btn btn-gray" onclick="editPatrolPoints()">지점 관리</button><button class="btn btn-gray" onclick="editPatrolRounds()">순찰 시간</button><button class="btn btn-gray" onclick="printPatrolQR()" ${pts.length?'':'disabled'}>QR 인쇄</button></div>`:''}
+    ${me&&me.boss?`<div class="pt-mgr"><button class="btn btn-gray" onclick="editPatrolPoints()">지점 관리</button><button class="btn btn-gray" onclick="editPatrolRounds()">순찰 시간</button><button class="btn btn-gray" onclick="openManualPatrol()">수기 입력</button><button class="btn btn-gray" onclick="openPatrolSheet()">일일 순찰표</button><button class="btn btn-gray" onclick="printPatrolQR()" ${pts.length?'':'disabled'}>QR 인쇄</button></div>`:''}
   </div></div>`;
   if(old){ const t=document.createElement('div'); t.innerHTML=html; const m=old.querySelector('.modal'); m.innerHTML=t.querySelector('.modal').innerHTML; m.scrollTop=sc; }
   else $('#modal-root').insertAdjacentHTML('beforeend', html);
@@ -2564,6 +2565,99 @@ function patrolPending(){
   if(!v || !me) return; const [id,k]=v.split('.'); if(id&&k) patrolCheck(id,k);
 }
 patrolFromUrl();
+// 소장: 수기 순찰 기록 (QR을 찍지 못했을 때 지점 · 시각 · 담당자를 골라 넣음 · 기록에 '수기' 표시)
+function openManualPatrol(){
+  const pts=(patrol.points||[]).filter(p=>p.active!==false);
+  if(!pts.length){ toast('먼저 순찰 지점을 등록하세요', 3000); return; }
+  const now=new Date(), hm=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const days=[0,1,2].map(k=>{ const d=new Date(now.getFullYear(), now.getMonth(), now.getDate()-k); return {v:fmtDate(d.getTime()), t:k?(k===1?'어제':'그제'):'오늘'}; });
+  const emps=(EMPLOYEES||[]).slice().sort(sortEmp);
+  closeById('pt-manual-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="pt-manual-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:480px">
+    <div class="modal-head"><h2>순찰 수기 입력</h2><button class="modal-close" onclick="closeById('pt-manual-modal')">✕</button></div>
+    <p class="hint">QR을 찍지 못한 순찰을 넣습니다. 기록에는 <b>수기</b>로 표시되고, 입력한 소장 이름과 함께 접속 기록에 남습니다.</p>
+    <label class="hint">지점</label><select id="pm-point" style="width:100%">${pts.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>
+    <div style="display:flex;gap:8px;margin-top:8px"><div style="flex:1"><label class="hint">날짜</label><select id="pm-date" style="width:100%">${days.map(d=>`<option value="${d.v}">${d.t} (${d.v.slice(5)})</option>`).join('')}</select></div>
+    <div style="flex:1"><label class="hint">시각</label><input id="pm-time" type="time" value="${hm}" style="width:100%"></div></div>
+    <label class="hint" style="display:block;margin-top:8px">담당자</label><select id="pm-emp" style="width:100%"><option value="">미지정</option>${emps.map(e=>`<option value="${esc(e.empId)}">${esc(e.name)} (${esc(e.rank)})</option>`).join('')}</select>
+    <label class="hint" style="display:block;margin-top:8px">결과</label><select id="pm-kind" style="width:100%" onchange="$('#pm-note').classList.toggle('hidden', this.value!=='bad')"><option value="ok">이상 없음</option><option value="bad">특이사항 있음</option></select>
+    <textarea id="pm-note" class="hidden" maxlength="200" placeholder="특이사항 내용" style="width:100%;margin-top:6px;min-height:64px"></textarea>
+    <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="saveManualPatrol()">수기로 기록하기</button>
+  </div></div>`);
+}
+async function saveManualPatrol(){
+  const pid=$('#pm-point').value, date=$('#pm-date').value, time=$('#pm-time').value, bad=$('#pm-kind').value==='bad';
+  const note = bad ? $('#pm-note').value.trim() : PT_OK;
+  if(bad && !note){ toast('특이사항 내용을 적어 주세요', 3000); return; }
+  const ts=new Date(`${date}T${time}:00`); if(!time || isNaN(ts)){ toast('시각을 고르세요', 3000); return; }
+  try{
+    const r=await rpc('mw_patrol_manual',{p_mgr_pw:mgrPw, p_point:pid, p_ts:ts.toISOString(), p_emp_id:$('#pm-emp').value||null, p_emp_name:null, p_note:note, p_by:me.name});
+    accessLog('patrol_manual', pid, `${r.point} ${fmtTime(new Date(r.ts).getTime())}${r.duplicate?' (이미 있음)':''}`);
+    closeById('pt-manual-modal'); for(const k in ptMonthCache) delete ptMonthCache[k];
+    toast(r.duplicate?'같은 시각에 이미 기록이 있어 그대로 두었습니다':'수기로 순찰 기록을 넣었습니다', 3000);
+    await patrolLoad(true); if(document.getElementById('patrol-modal')) drawPatrol();
+  }catch(e){ console.warn(e); const m=String(e.message||''); toast(/manager/.test(m)?'소장 비밀번호를 확인해 주세요':/bad_time/.test(m)?'시각은 지금부터 2일 안에서 고르세요':/bad_point/.test(m)?'지점을 다시 고르세요':'저장하지 못했습니다', 3500); }
+}
+// 소장: 일일 순찰표 (관리인 제출용 · 엑셀 · 인쇄). 한 날의 기록을 시간순으로 한 줄씩. 다음 날 새벽 6시까지의 야간 회차 포함
+function openPatrolSheet(){
+  if(!(me&&me.boss&&mgrPw)) return;
+  closeById('pt-sheet-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="pt-sheet-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:420px">
+    <div class="modal-head"><h2>일일 순찰표</h2><button class="modal-close" onclick="closeById('pt-sheet-modal')">✕</button></div>
+    <p class="hint">관리인께 내는 순찰표입니다. 시간순으로 한 줄씩 순찰 지점 · 순찰자 · 입력(QR · 수기) · 이상상황 · 회차가 적힙니다. <b>조치결과</b> 칸은 비워 두어 관리인이 적을 수 있습니다.</p>
+    <label class="hint">날짜</label><input id="ps-date" type="date" value="${ptDay||todayIso()}" max="${todayIso()}" style="width:100%">
+    <div class="btn-row" style="margin-top:12px"><button class="btn btn-gray" onclick="downloadPatrolSheet()">엑셀 받기</button><button class="btn btn-primary" onclick="printPatrolSheet()">인쇄 · PDF 저장</button></div>
+  </div></div>`);
+}
+async function fetchPatrolSheet(){
+  const iso=$('#ps-date').value; if(!iso) throw new Error('no_date');
+  const [y,m,d]=iso.split('-').map(Number), rounds=patrol.rounds||[];
+  const logs=await rpc('mw_patrol_logs',{p_from:new Date(y,m-1,d).toISOString(), p_to:new Date(y,m-1,d+1,6).toISOString(), p_mgr_pw:mgrPw})||[];
+  const hms=t=>`${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+  const roundOf=t=>{   // 그날 회차, 없으면 전날 밤 회차 (자정 넘는 회차)
+    for(const dd of [d,d-1]) for(const r of rounds){ const [s0,e0]=roundWin(r,y,m,dd); if(t>=s0&&t<e0) return r.name; }
+    return ''; };
+  const rows=logs.slice().sort((a,b)=>new Date(a.ts)-new Date(b.ts)).map(l=>{ const t=new Date(l.ts), bad=!!(l.note&&l.note!==PT_OK);
+    return {'순찰일자':iso, '순찰시간':hms(t), '순찰지점':l.point_name||'', '순찰자':l.emp_name||'-', '입력':l.manual_by?`수기 (${l.manual_by})`:'QR', '이상상황':bad?l.note:'', '회차':roundOf(t), '조치결과':''}; });
+  return {iso, rows, office:me.officeName};
+}
+async function downloadPatrolSheet(){
+  try{
+    const s=await fetchPatrolSheet(), wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.aoa_to_sheet([[`${s.office} 일일 순찰표`],[`순찰일자 ${s.iso} · 검색건수 ${s.rows.length}건 · 작성 ${fmtDT(Date.now())}`],[]]);
+    XLSX.utils.sheet_add_json(ws, s.rows.map((r,i)=>({'번호':i+1, ...r})), {origin:-1});
+    ws['!cols']=[{wch:6},{wch:12},{wch:12},{wch:18},{wch:10},{wch:16},{wch:24},{wch:10},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, '순찰표');
+    XLSX.writeFile(wb, `${s.office}_일일순찰표_${s.iso}.xlsx`);
+    accessLog('excel', 'patrol_sheet', s.iso); closeById('pt-sheet-modal');
+  }catch(e){ console.warn(e); toast('순찰표를 내려받지 못했습니다', 3000); }
+}
+async function printPatrolSheet(){
+  const w=window.open('', '_blank');   // 팝업 차단을 피하려고 누른 즉시 창을 엶
+  if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요', 3500); return; }
+  w.document.write('<!doctype html><meta charset="utf-8"><title>순찰표 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">순찰표를 만드는 중입니다…</body>');
+  try{ const s=await fetchPatrolSheet(); w.document.open(); w.document.write(buildPatrolSheetHTML(s)); w.document.close(); accessLog('excel', 'patrol_sheet_print', s.iso); closeById('pt-sheet-modal'); }
+  catch(e){ console.warn(e); w.document.body.textContent='순찰표를 불러오지 못했습니다. 잠시 후 다시 시도하세요.'; }
+}
+function buildPatrolSheetHTML(s){
+  const trs=s.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r['순찰시간'])}</td><td>${esc(r['순찰지점'])}</td><td>${esc(r['순찰자'])}</td><td>${esc(r['입력'])}</td><td class="${r['이상상황']?'bad':''}">${esc(r['이상상황'])}</td><td>${esc(r['회차'])}</td><td class="res"></td></tr>`).join('');
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>일일 순찰표 ${esc(s.iso)}</title><style>
+  @page{size:A4;margin:14mm} body{font-family:'Malgun Gothic','Noto Sans KR',sans-serif;color:#111;font-size:11pt;margin:16px}
+  h1{font-size:18pt;margin:0 0 4px} .meta{font-size:10pt;color:#444;margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:10pt} th,td{border:.6pt solid #555;padding:4px 5px;text-align:center} th{background:#eee}
+  td.bad{color:#b00020;font-weight:700} td.res{width:20%}
+  .sign{display:flex;justify-content:flex-end;gap:6px;margin-top:14px} .sign div{width:90px;height:60px;border:.6pt solid #555;font-size:9pt;text-align:center} .sign b{display:block;border-bottom:.6pt solid #555;padding:2px;background:#f4f4f4}
+  .bar{position:sticky;top:0;background:#fff;padding:8px 0;margin-bottom:10px;border-bottom:1px solid #ddd} .bar button{font-size:14px;padding:8px 14px;margin-right:6px}
+  @media print{.bar{display:none} body{margin:0}}
+  </style></head><body>
+  <div class="bar"><button onclick="window.print()">인쇄 · PDF 저장</button><button onclick="window.close()">닫기</button></div>
+  <h1>일일 순찰표</h1>
+  <div class="meta">사업소: ${esc(s.office)} · 순찰일자: ${esc(s.iso)} · 검색건수: ${s.rows.length}건 · 작성: ${esc(fmtDT(Date.now()))}</div>
+  <table><thead><tr><th>번호</th><th>순찰시간</th><th>순찰지점</th><th>순찰자</th><th>입력</th><th>이상상황</th><th>회차</th><th>조치결과</th></tr></thead>
+  <tbody>${trs||'<tr><td colspan="8">이 날의 순찰 기록이 없습니다</td></tr>'}</tbody></table>
+  <div class="sign"><div><b>담당</b></div><div><b>소장</b></div><div><b>관리인</b></div></div>
+  </body></html>`;
+}
 // 소장: 지점 관리
 let ptDraft=[];
 function editPatrolPoints(){ ptDraft=(patrol.points||[]).map(p=>({id:p.id, name:p.name})); if(!ptDraft.length) ptDraft=[{name:'기계실'},{name:'전기실'},{name:'옥상'},{name:'지하 주차장'}]; drawPtEdit(); }
@@ -3372,7 +3466,7 @@ function renderStats(){
     </tbody></table></div>
   </div>
   ${patrolStatsCard()}
-  <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button>${ptCanView()?'<button class="btn btn-gray" onclick="openWorkLog()">오늘 업무일지</button>':''}</div>`;
+  <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button>${ptCanView()?'<button class="btn btn-gray" onclick="chooseWorkLog()">오늘 업무일지</button>':''}</div>`;
 }
 async function exportExcel(){
   if(typeof XLSX==='undefined'){ toast('엑셀 모듈을 불러오지 못했습니다 (인터넷 확인)'); return; }
@@ -3386,7 +3480,7 @@ async function exportExcel(){
   let pa=null;
   if(ptCanView()){ try{ const c=ptMonthCache[statMonth]; const d=c&&c.data ? c.data : await patrolMonthFetch(statMonth); ptMonthCache[statMonth]={at:Date.now(), data:d}; pa=patrolAnalyze(d, statMonth);
       if(pa){ const nm=Object.fromEntries((d.points||[]).map(x=>[x.id,x.name]));
-        const mEnd=monthRange(statMonth)[1], recs=(d.logs||[]).filter(l=>new Date(l.ts).getTime()<mEnd).map((l,n)=>({'번호':n+1,'일시':fmtDT(new Date(l.ts).getTime()),'지점':nm[l.point_id]||'','확인자':l.emp_name||'','결과':l.note&&l.note!==PT_OK?'특이사항':'이상 없음','내용':l.note&&l.note!==PT_OK?l.note:'','사진':l.photo||''}));
+        const mEnd=monthRange(statMonth)[1], recs=(d.logs||[]).filter(l=>new Date(l.ts).getTime()<mEnd).map((l,n)=>({'번호':n+1,'일시':fmtDT(new Date(l.ts).getTime()),'지점':nm[l.point_id]||'','확인자':l.emp_name||'','입력':l.manual_by?`수기 (${l.manual_by})`:'QR','결과':l.note&&l.note!==PT_OK?'특이사항':'이상 없음','내용':l.note&&l.note!==PT_OK?l.note:'','사진':l.photo||''}));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recs), '순찰 기록');
         const [,mm]=statMonth.split('-');
         const ps=[['항목','값'],['순찰 이행률',pa.coverage==null?'-':pa.coverage+'%'],['순찰 (코스 완주)',pa.total],['일부만 돈 순찰',pa.partial],['QR 찍은 횟수',pa.scans],['하루 평균 완주',pa.perDay],['야간 완주 (22~06시)',pa.night],['특이사항',pa.badList.length],['모든 지점 순찰한 날',pa.fullDays],['하루 종일 미순찰',pa.missDays],[],
@@ -3593,6 +3687,7 @@ function openReportDialog(){
     <button type="button" class="btn btn-auto btn-block" onclick="autoFillReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>자동분석 <small>이 달 민원으로 개선 건의 · 특이사항 채우기</small></button>
     <div class="form-row"><label>개선 건의 (반복 민원 대책, 예산 요청 등)</label><textarea id="rp-improve" placeholder="예) 2층 남자화장실 출입문 경첩 노후로 반복 발생. 문짝 교체 검토 요청">${esc(n.improve||'')}</textarea></div>
     <div class="form-row"><label>특이사항</label><textarea id="rp-note" placeholder="예) 10월 15일 승강기 정기점검 실시, 이상 없음">${esc(n.note||'')}</textarea></div>
+    ${ptCanView()?`<label class="rp-check"><input type="checkbox" id="rp-patrol" ${n.patrol===false?'':'checked'}> 순찰 실적 포함 <small style="font-weight:500;color:var(--mute)">(끄면 별도 순찰 시스템 기록으로 확인한다고 적힙니다)</small></label>`:''}
     <label class="rp-check"><input type="checkbox" id="rp-photos" ${n.photos===false?'':'checked'}> 처리 사진 대장 포함</label>
     <button class="btn btn-primary btn-block" onclick="makeReport()">보고서 만들기</button>
     <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.<br>작성한 내용은 본사에서도 함께 봅니다.</p>
@@ -3702,6 +3797,7 @@ function workLogHTML(d){
   if(oldNU) brief.push(`3일 넘게 열린 민원 ${oldNU}건이 있습니다.`);
   if(P){ brief.push(P.missing.length?`순찰 <b>${P.checked}/${P.total}</b>곳 확인 · <b class="r">미확인 ${P.missing.join(', ')}</b>`:`순찰 ${P.total}곳을 모두 확인했습니다.`);
     if(P.bad.length) brief.push(`특이사항 <b class="o">${P.bad.length}건</b>이 있어 아래 사진과 함께 확인이 필요합니다.`); }
+  else if(d.patrolOff) brief.push('순찰은 이 업무일지에 싣지 않았습니다. 별도 순찰 시스템 기록으로 확인합니다.');
   // ── 시간대 흐름 그래프 ──
   const hmax=Math.max(1,...d.hours.recv,...d.hours.done), W=720, base=112, span=base-12, bw=W/24;
   let bars='';
@@ -3801,15 +3897,25 @@ ${sec('내일 확인할 것',next.length?`<ul class="todo">${next.map(x=>`<li><i
 <div class="end">위와 같이 ${d.date} 업무를 기록합니다.<br>${who}</div>
 </body></html>`;
 }
-async function openWorkLog(){   // 소장 · 본사만. 누른 순간 창을 열어야 팝업이 막히지 않음
+// 소장 · 본사가 업무일지에 순찰을 넣을지 고름 (순찰 시스템을 따로 쓰면 제외)
+async function chooseWorkLog(){
   if(!ptCanView()){ toast('업무일지는 소장 · 본사만 볼 수 있습니다', 3000); return; }
-  const w=window.open('', '_blank'); if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
+  const w=window.open('', '_blank'); if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }   // 선택 창을 띄우기 전에 엶 (기다린 뒤에는 팝업이 막힘)
   w.document.write('<!doctype html><meta charset="utf-8"><title>업무일지 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">업무일지를 만드는 중입니다…</body>');
-  try{ if(ptCanView()) await patrolLoad(true); }catch(e){ console.warn('patrol for log', e); }
-  w.document.open(); w.document.write(workLogHTML(workLogData())); w.document.close();
+  const v=await openSheet({title:'업무일지에 순찰을 넣을까요?', html:'<p class="hint">순찰을 별도 순찰 시스템으로 제출한다면 <b>순찰 제외</b>를 고르세요. 제외하면 업무일지에 "별도 순찰 시스템 기록으로 확인한다"고 적힙니다.</p>', actions:[{value:'in',label:'순찰 포함'},{value:'out',label:'순찰 제외'}]});
+  if(!v){ w.close(); return; }
+  openWorkLog(v==='in', w);
+}
+async function openWorkLog(withPt=true, win=null){   // 소장 · 본사만. 누른 순간 창을 열어야 팝업이 막히지 않음
+  if(!ptCanView()){ toast('업무일지는 소장 · 본사만 볼 수 있습니다', 3000); return; }
+  const w=win || window.open('', '_blank'); if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
+  if(!win) w.document.write('<!doctype html><meta charset="utf-8"><title>업무일지 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">업무일지를 만드는 중입니다…</body>');
+  try{ if(withPt) await patrolLoad(true); }catch(e){ console.warn('patrol for log', e); }
+  const d=workLogData(); if(!withPt){ d.pt=null; d.patrolOff=true; }
+  w.document.open(); w.document.write(workLogHTML(d)); w.document.close();
 }
 function makeReport(){
-  const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked};
+  const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked, ...($('#rp-patrol')?{patrol:$('#rp-patrol').checked}:{})};
   lsSet(repKey(),{to:o.to}); lsSet(repKey()+'_'+statMonth, o);
   rpc('mw_report_save',{p_ym:statMonth, p_data:o, p_by:me.name}).catch(e=>console.warn('report save', e));   // 본사에서도 같은 내용으로 볼 수 있게
   const ym=statMonth;
@@ -3817,7 +3923,7 @@ function makeReport(){
   if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
   closeById('rep-modal');
   const done=pt=>{ w.document.open(); w.document.write(buildReportHTML(ym, o, pt)); w.document.close(); };
-  if(!ptCanView()) return done(null);   // 순찰 실적은 소장 · 본사 보고서에만
+  if(!ptCanView() || o.patrol===false) return done(null);   // 순찰 실적은 소장 · 본사 보고서에만, 소장이 포함을 고른 때만
   w.document.write('<!doctype html><meta charset="utf-8"><title>보고서 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">보고서를 만드는 중입니다…</body>');
   patrolMonthFetch(ym).then(d=>{ ptMonthCache[ym]={at:Date.now(), data:d}; done(patrolAnalyze(d, ym)); }).catch(e=>{ console.warn('patrol month', e); done(null); });
 }
@@ -4123,7 +4229,7 @@ thead{display:table-header-group}
   <div class="photos">${photoRows.map((x,n)=>`<div class="ph"><div class="cap">${n+1}. ${esc(x.i.title)} <span>· ${esc(x.i.location||'')} · ${md(x.i.doneAt)} 완료</span></div>
     <div class="imgs"><div>${x.before?`<img src="${esc(x.before)}">`:'<div class="na">사진 없음</div>'}<div class="lb">접수 · 조치 전</div></div><div>${x.after?`<img src="${esc(x.after)}">`:'<div class="na">사진 없음</div>'}<div class="lb">완료 · 조치 후</div></div></div></div>`).join('')}</div>`:''}
 
-  ${pt?ptSection():''}
+  ${pt?ptSection():(o.patrol===false&&ptCanView()?'<p style="font-size:10pt;color:#555;margin:10px 0">순찰 실적은 이 보고서에 싣지 않았습니다. 순찰은 별도 순찰 시스템 기록으로 확인합니다.</p>':'')}
   <div>${H('특이사항')}
   <div class="box flow">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div>
   <div class="end">위와 같이 ${y}년 ${m}월 ${ttl.replace(' 보고','')}을 보고합니다.<br>${esc(dt)}
