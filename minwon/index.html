@@ -2438,7 +2438,7 @@ function drawPatrol(){
     ${isToday&&total&&!EMBED?`<button class="btn btn-primary btn-block pt-scan-btn" onclick="scanPatrol()">${QR_IC}QR 찍어서 순찰 체크</button>`:''}
     ${all.length?rowsHtml
       :`<div class="empty" style="padding:20px 0"><b>등록된 순찰 지점이 없습니다</b>${me&&me.boss?'아래 지점 관리에서 기계실 · 옥상 · 주차장 등을 등록하세요':'소장에게 순찰 지점 등록을 요청하세요'}</div>`}`}
-    ${me&&me.boss?`<div class="pt-mgr"><button class="btn btn-gray" onclick="editPatrolPoints()">지점 관리</button><button class="btn btn-gray" onclick="editPatrolRounds()">순찰 시간</button><button class="btn btn-gray" onclick="openManualPatrol()">수기 입력</button><button class="btn btn-gray" onclick="printPatrolQR()" ${pts.length?'':'disabled'}>QR 인쇄</button></div>`:''}
+    ${me&&me.boss?`<div class="pt-mgr"><button class="btn btn-gray" onclick="editPatrolPoints()">지점 관리</button><button class="btn btn-gray" onclick="editPatrolRounds()">순찰 시간</button><button class="btn btn-gray" onclick="openManualPatrol()">수기 입력</button><button class="btn btn-gray" onclick="openPatrolSheet()">일일 순찰표</button><button class="btn btn-gray" onclick="printPatrolQR()" ${pts.length?'':'disabled'}>QR 인쇄</button></div>`:''}
   </div></div>`;
   if(old){ const t=document.createElement('div'); t.innerHTML=html; const m=old.querySelector('.modal'); m.innerHTML=t.querySelector('.modal').innerHTML; m.scrollTop=sc; }
   else $('#modal-root').insertAdjacentHTML('beforeend', html);
@@ -2597,6 +2597,66 @@ async function saveManualPatrol(){
     toast(r.duplicate?'같은 시각에 이미 기록이 있어 그대로 두었습니다':'수기로 순찰 기록을 넣었습니다', 3000);
     await patrolLoad(true); if(document.getElementById('patrol-modal')) drawPatrol();
   }catch(e){ console.warn(e); const m=String(e.message||''); toast(/manager/.test(m)?'소장 비밀번호를 확인해 주세요':/bad_time/.test(m)?'시각은 지금부터 2일 안에서 고르세요':/bad_point/.test(m)?'지점을 다시 고르세요':'저장하지 못했습니다', 3500); }
+}
+// 소장: 일일 순찰표 (관리인 제출용 · 엑셀 · 인쇄). 한 날의 기록을 시간순으로 한 줄씩. 다음 날 새벽 6시까지의 야간 회차 포함
+function openPatrolSheet(){
+  if(!(me&&me.boss&&mgrPw)) return;
+  closeById('pt-sheet-modal');
+  $('#modal-root').insertAdjacentHTML('beforeend',`<div class="modal-bg" id="pt-sheet-modal" onclick="if(event.target===this)this.remove()"><div class="modal" style="max-width:420px">
+    <div class="modal-head"><h2>일일 순찰표</h2><button class="modal-close" onclick="closeById('pt-sheet-modal')">✕</button></div>
+    <p class="hint">관리인께 내는 순찰표입니다. 시간순으로 한 줄씩 순찰 지점 · 순찰자 · 입력(QR · 수기) · 이상상황 · 회차가 적힙니다. <b>조치결과</b> 칸은 비워 두어 관리인이 적을 수 있습니다.</p>
+    <label class="hint">날짜</label><input id="ps-date" type="date" value="${ptDay||todayIso()}" max="${todayIso()}" style="width:100%">
+    <div class="btn-row" style="margin-top:12px"><button class="btn btn-gray" onclick="downloadPatrolSheet()">엑셀 받기</button><button class="btn btn-primary" onclick="printPatrolSheet()">인쇄 · PDF 저장</button></div>
+  </div></div>`);
+}
+async function fetchPatrolSheet(){
+  const iso=$('#ps-date').value; if(!iso) throw new Error('no_date');
+  const [y,m,d]=iso.split('-').map(Number), rounds=patrol.rounds||[];
+  const logs=await rpc('mw_patrol_logs',{p_from:new Date(y,m-1,d).toISOString(), p_to:new Date(y,m-1,d+1,6).toISOString(), p_mgr_pw:mgrPw})||[];
+  const hms=t=>`${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+  const roundOf=t=>{   // 그날 회차, 없으면 전날 밤 회차 (자정 넘는 회차)
+    for(const dd of [d,d-1]) for(const r of rounds){ const [s0,e0]=roundWin(r,y,m,dd); if(t>=s0&&t<e0) return r.name; }
+    return ''; };
+  const rows=logs.slice().sort((a,b)=>new Date(a.ts)-new Date(b.ts)).map(l=>{ const t=new Date(l.ts), bad=!!(l.note&&l.note!==PT_OK);
+    return {'순찰일자':iso, '순찰시간':hms(t), '순찰지점':l.point_name||'', '순찰자':l.emp_name||'-', '입력':l.manual_by?`수기 (${l.manual_by})`:'QR', '이상상황':bad?l.note:'', '회차':roundOf(t), '조치결과':''}; });
+  return {iso, rows, office:me.officeName};
+}
+async function downloadPatrolSheet(){
+  try{
+    const s=await fetchPatrolSheet(), wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.aoa_to_sheet([[`${s.office} 일일 순찰표`],[`순찰일자 ${s.iso} · 검색건수 ${s.rows.length}건 · 작성 ${fmtDT(Date.now())}`],[]]);
+    XLSX.utils.sheet_add_json(ws, s.rows.map((r,i)=>({'번호':i+1, ...r})), {origin:-1});
+    ws['!cols']=[{wch:6},{wch:12},{wch:12},{wch:18},{wch:10},{wch:16},{wch:24},{wch:10},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, '순찰표');
+    XLSX.writeFile(wb, `${s.office}_일일순찰표_${s.iso}.xlsx`);
+    accessLog('excel', 'patrol_sheet', s.iso); closeById('pt-sheet-modal');
+  }catch(e){ console.warn(e); toast('순찰표를 내려받지 못했습니다', 3000); }
+}
+async function printPatrolSheet(){
+  const w=window.open('', '_blank');   // 팝업 차단을 피하려고 누른 즉시 창을 엶
+  if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요', 3500); return; }
+  w.document.write('<!doctype html><meta charset="utf-8"><title>순찰표 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">순찰표를 만드는 중입니다…</body>');
+  try{ const s=await fetchPatrolSheet(); w.document.open(); w.document.write(buildPatrolSheetHTML(s)); w.document.close(); accessLog('excel', 'patrol_sheet_print', s.iso); closeById('pt-sheet-modal'); }
+  catch(e){ console.warn(e); w.document.body.textContent='순찰표를 불러오지 못했습니다. 잠시 후 다시 시도하세요.'; }
+}
+function buildPatrolSheetHTML(s){
+  const trs=s.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r['순찰시간'])}</td><td>${esc(r['순찰지점'])}</td><td>${esc(r['순찰자'])}</td><td>${esc(r['입력'])}</td><td class="${r['이상상황']?'bad':''}">${esc(r['이상상황'])}</td><td>${esc(r['회차'])}</td><td class="res"></td></tr>`).join('');
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>일일 순찰표 ${esc(s.iso)}</title><style>
+  @page{size:A4;margin:14mm} body{font-family:'Malgun Gothic','Noto Sans KR',sans-serif;color:#111;font-size:11pt;margin:16px}
+  h1{font-size:18pt;margin:0 0 4px} .meta{font-size:10pt;color:#444;margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:10pt} th,td{border:.6pt solid #555;padding:4px 5px;text-align:center} th{background:#eee}
+  td.bad{color:#b00020;font-weight:700} td.res{width:20%}
+  .sign{display:flex;justify-content:flex-end;gap:6px;margin-top:14px} .sign div{width:90px;height:60px;border:.6pt solid #555;font-size:9pt;text-align:center} .sign b{display:block;border-bottom:.6pt solid #555;padding:2px;background:#f4f4f4}
+  .bar{position:sticky;top:0;background:#fff;padding:8px 0;margin-bottom:10px;border-bottom:1px solid #ddd} .bar button{font-size:14px;padding:8px 14px;margin-right:6px}
+  @media print{.bar{display:none} body{margin:0}}
+  </style></head><body>
+  <div class="bar"><button onclick="window.print()">인쇄 · PDF 저장</button><button onclick="window.close()">닫기</button></div>
+  <h1>일일 순찰표</h1>
+  <div class="meta">사업소: ${esc(s.office)} · 순찰일자: ${esc(s.iso)} · 검색건수: ${s.rows.length}건 · 작성: ${esc(fmtDT(Date.now()))}</div>
+  <table><thead><tr><th>번호</th><th>순찰시간</th><th>순찰지점</th><th>순찰자</th><th>입력</th><th>이상상황</th><th>회차</th><th>조치결과</th></tr></thead>
+  <tbody>${trs||'<tr><td colspan="8">이 날의 순찰 기록이 없습니다</td></tr>'}</tbody></table>
+  <div class="sign"><div><b>담당</b></div><div><b>소장</b></div><div><b>관리인</b></div></div>
+  </body></html>`;
 }
 // 소장: 지점 관리
 let ptDraft=[];
