@@ -1541,6 +1541,7 @@ async function loginSubmit(){
   try{
     const cand={code, pw};
     if(await vendorLoginTry(cand)) return;   // 아비투스 운영자 계정이면 관리회사 화면으로
+    if(await companyLoginTry(cand)) return;  // 관리회사 본사 계정이면 자기 회사 사업소만 보는 본사 화면으로
     const info = await rpc('mw_login', {}, cand);
     auth = cand;
     if(info.is_hq){ lsSet(K.auth,{code,pw,hq:true}); adminEnter(); return; }
@@ -1635,6 +1636,7 @@ async function boot(){
     try{
       if(saved.vendor){ vendorCred={code:saved.code, pw:saved.pw}; await rpc('mw_vendor_login', {}, vendorCred); vendorEnter(); return; }
       if(saved.hq){ await rpc('mw_offices_list'); adminEnter(); return; }
+      if(saved.company){ const c=await rpc('mw_company_login'); companyName=c.name; adminEnter(); return; }
       const info = await rpc('mw_login');
       lgOffice = {office_id:info.office_id, office_name:info.office_name, brand:info.brand||null, cover:info.cover||null};
       EMPLOYEES = await loadEmployees();
@@ -1655,13 +1657,21 @@ async function boot(){
 
 // ── 본사 관리 ──
 function adminEnter(){
-  hqMode=true; accessLog('login', null, '본사 입장');
+  hqMode=true; accessLog('login', null, companyName?`${companyName} 본사 입장`:'본사 입장');
+  const tt=document.querySelector('#admin .tb-title'); if(tt) tt.textContent = companyName ? `${companyName} 본사` : '본사 관리';
   $('#login').classList.add('hidden'); $('#app').classList.add('hidden'); $('#admin').classList.remove('hidden');
   adminHome(); armBackTrap();
 }
 // ══════════════════════════════════════════════
 // 아비투스 운영자: 관리회사 만들기 · 삭제 · 비밀번호 (사업소 · 민원 내용은 보지 않음)
 // ══════════════════════════════════════════════
+// 관리회사 본사 계정: 로그인하면 자기 회사 사업소만 보임 (서버가 회사별로 막음)
+let companyName=null;
+async function companyLoginTry(cand){
+  let c=null; try{ c=await rpc('mw_company_login', {}, cand); }catch(e){ return false; }
+  if(!c) return false;
+  auth=cand; companyName=c.name; lsSet(K.auth,{code:cand.code, pw:cand.pw, company:true}); adminEnter(); return true;
+}
 let vendorCred=null, vendorList=[], vendorMode=false;
 const vrpc = (name,args={}) => rpc(name, args, vendorCred);
 async function vendorLoginTry(cand){
@@ -1928,11 +1938,12 @@ let aclState = {office:null, name:'', days:30, only:false, rows:[]};
 let aclAuth=null, aclAuthUntil=0;
 async function aclUnlock(){
   if(aclAuth && Date.now()<aclAuthUntil) return aclAuth;
-  const pw=await askInput({title:'본사 담당자 확인', msg:'접속 기록은 본사 담당자만 볼 수 있습니다.\n본사 비밀번호를 다시 입력하세요.', placeholder:'본사 비밀번호', min:1, ok:'확인', type:'password'});
+  const pwName = companyName ? '관리회사 비밀번호' : '본사 비밀번호';
+  const pw=await askInput({title:'본사 담당자 확인', msg:`접속 기록은 본사 담당자만 볼 수 있습니다.\n${pwName}를 다시 입력하세요.`, placeholder:pwName, min:1, ok:'확인', type:'password'});
   if(!pw) return null;
   const cand={code:auth.code, pw};
   try{ await rpc('mw_access_log_list',{p_days:1, p_limit:1}, cand); }
-  catch(e){ toast('본사 비밀번호가 맞지 않습니다', 3000); return null; }
+  catch(e){ toast(`${pwName}가 맞지 않습니다`, 3000); return null; }
   aclAuth=cand; aclAuthUntil=Date.now()+600e3; return cand;
 }
 async function viewAccessLog(office, name, days){
