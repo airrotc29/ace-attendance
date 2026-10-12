@@ -3466,7 +3466,7 @@ function renderStats(){
     </tbody></table></div>
   </div>
   ${patrolStatsCard()}
-  <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button>${ptCanView()?'<button class="btn btn-gray" onclick="openWorkLog()">오늘 업무일지</button>':''}</div>`;
+  <div class="btn-row no-print" style="margin-bottom:8px"><button class="btn btn-primary" onclick="openReportDialog()">관리단 월간보고서 만들기</button></div><div class="btn-row no-print"><button class="btn btn-gray" onclick="window.print()">화면 인쇄</button><button class="btn btn-gray" onclick="exportExcel()">엑셀 다운로드</button>${ptCanView()?'<button class="btn btn-gray" onclick="chooseWorkLog()">오늘 업무일지</button>':''}</div>`;
 }
 async function exportExcel(){
   if(typeof XLSX==='undefined'){ toast('엑셀 모듈을 불러오지 못했습니다 (인터넷 확인)'); return; }
@@ -3687,6 +3687,7 @@ function openReportDialog(){
     <button type="button" class="btn btn-auto btn-block" onclick="autoFillReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>자동분석 <small>이 달 민원으로 개선 건의 · 특이사항 채우기</small></button>
     <div class="form-row"><label>개선 건의 (반복 민원 대책, 예산 요청 등)</label><textarea id="rp-improve" placeholder="예) 2층 남자화장실 출입문 경첩 노후로 반복 발생. 문짝 교체 검토 요청">${esc(n.improve||'')}</textarea></div>
     <div class="form-row"><label>특이사항</label><textarea id="rp-note" placeholder="예) 10월 15일 승강기 정기점검 실시, 이상 없음">${esc(n.note||'')}</textarea></div>
+    ${ptCanView()?`<label class="rp-check"><input type="checkbox" id="rp-patrol" ${n.patrol===false?'':'checked'}> 순찰 실적 포함 <small style="font-weight:500;color:var(--mute)">(끄면 별도 순찰 시스템 기록으로 확인한다고 적힙니다)</small></label>`:''}
     <label class="rp-check"><input type="checkbox" id="rp-photos" ${n.photos===false?'':'checked'}> 처리 사진 대장 포함</label>
     <button class="btn btn-primary btn-block" onclick="makeReport()">보고서 만들기</button>
     <p class="hint" style="margin-top:10px;text-align:center">새 창에 보고서가 열립니다. 인쇄하거나 PDF로 저장해 관리단에 제출하세요.<br>작성한 내용은 본사에서도 함께 봅니다.</p>
@@ -3796,6 +3797,7 @@ function workLogHTML(d){
   if(oldNU) brief.push(`3일 넘게 열린 민원 ${oldNU}건이 있습니다.`);
   if(P){ brief.push(P.missing.length?`순찰 <b>${P.checked}/${P.total}</b>곳 확인 · <b class="r">미확인 ${P.missing.join(', ')}</b>`:`순찰 ${P.total}곳을 모두 확인했습니다.`);
     if(P.bad.length) brief.push(`특이사항 <b class="o">${P.bad.length}건</b>이 있어 아래 사진과 함께 확인이 필요합니다.`); }
+  else if(d.patrolOff) brief.push('순찰은 이 업무일지에 싣지 않았습니다. 별도 순찰 시스템 기록으로 확인합니다.');
   // ── 시간대 흐름 그래프 ──
   const hmax=Math.max(1,...d.hours.recv,...d.hours.done), W=720, base=112, span=base-12, bw=W/24;
   let bars='';
@@ -3895,15 +3897,25 @@ ${sec('내일 확인할 것',next.length?`<ul class="todo">${next.map(x=>`<li><i
 <div class="end">위와 같이 ${d.date} 업무를 기록합니다.<br>${who}</div>
 </body></html>`;
 }
-async function openWorkLog(){   // 소장 · 본사만. 누른 순간 창을 열어야 팝업이 막히지 않음
+// 소장 · 본사가 업무일지에 순찰을 넣을지 고름 (순찰 시스템을 따로 쓰면 제외)
+async function chooseWorkLog(){
   if(!ptCanView()){ toast('업무일지는 소장 · 본사만 볼 수 있습니다', 3000); return; }
-  const w=window.open('', '_blank'); if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
+  const w=window.open('', '_blank'); if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }   // 선택 창을 띄우기 전에 엶 (기다린 뒤에는 팝업이 막힘)
   w.document.write('<!doctype html><meta charset="utf-8"><title>업무일지 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">업무일지를 만드는 중입니다…</body>');
-  try{ if(ptCanView()) await patrolLoad(true); }catch(e){ console.warn('patrol for log', e); }
-  w.document.open(); w.document.write(workLogHTML(workLogData())); w.document.close();
+  const v=await openSheet({title:'업무일지에 순찰을 넣을까요?', html:'<p class="hint">순찰을 별도 순찰 시스템으로 제출한다면 <b>순찰 제외</b>를 고르세요. 제외하면 업무일지에 "별도 순찰 시스템 기록으로 확인한다"고 적힙니다.</p>', actions:[{value:'in',label:'순찰 포함'},{value:'out',label:'순찰 제외'}]});
+  if(!v){ w.close(); return; }
+  openWorkLog(v==='in', w);
+}
+async function openWorkLog(withPt=true, win=null){   // 소장 · 본사만. 누른 순간 창을 열어야 팝업이 막히지 않음
+  if(!ptCanView()){ toast('업무일지는 소장 · 본사만 볼 수 있습니다', 3000); return; }
+  const w=win || window.open('', '_blank'); if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
+  if(!win) w.document.write('<!doctype html><meta charset="utf-8"><title>업무일지 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">업무일지를 만드는 중입니다…</body>');
+  try{ if(withPt) await patrolLoad(true); }catch(e){ console.warn('patrol for log', e); }
+  const d=workLogData(); if(!withPt){ d.pt=null; d.patrolOff=true; }
+  w.document.open(); w.document.write(workLogHTML(d)); w.document.close();
 }
 function makeReport(){
-  const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked};
+  const o={to:$('#rp-to').value.trim(), date:$('#rp-date').value, writer:$('#rp-writer').value.trim(), improve:$('#rp-improve').value.trim(), note:$('#rp-note').value.trim(), photos:$('#rp-photos').checked, ...($('#rp-patrol')?{patrol:$('#rp-patrol').checked}:{})};
   lsSet(repKey(),{to:o.to}); lsSet(repKey()+'_'+statMonth, o);
   rpc('mw_report_save',{p_ym:statMonth, p_data:o, p_by:me.name}).catch(e=>console.warn('report save', e));   // 본사에서도 같은 내용으로 볼 수 있게
   const ym=statMonth;
@@ -3911,7 +3923,7 @@ function makeReport(){
   if(!w){ toast('팝업이 차단되었습니다. 이 사이트의 팝업을 허용해 주세요'); return; }
   closeById('rep-modal');
   const done=pt=>{ w.document.open(); w.document.write(buildReportHTML(ym, o, pt)); w.document.close(); };
-  if(!ptCanView()) return done(null);   // 순찰 실적은 소장 · 본사 보고서에만
+  if(!ptCanView() || o.patrol===false) return done(null);   // 순찰 실적은 소장 · 본사 보고서에만, 소장이 포함을 고른 때만
   w.document.write('<!doctype html><meta charset="utf-8"><title>보고서 준비 중</title><body style="font-family:sans-serif;color:#666;display:grid;place-items:center;height:90vh">보고서를 만드는 중입니다…</body>');
   patrolMonthFetch(ym).then(d=>{ ptMonthCache[ym]={at:Date.now(), data:d}; done(patrolAnalyze(d, ym)); }).catch(e=>{ console.warn('patrol month', e); done(null); });
 }
@@ -4217,7 +4229,7 @@ thead{display:table-header-group}
   <div class="photos">${photoRows.map((x,n)=>`<div class="ph"><div class="cap">${n+1}. ${esc(x.i.title)} <span>· ${esc(x.i.location||'')} · ${md(x.i.doneAt)} 완료</span></div>
     <div class="imgs"><div>${x.before?`<img src="${esc(x.before)}">`:'<div class="na">사진 없음</div>'}<div class="lb">접수 · 조치 전</div></div><div>${x.after?`<img src="${esc(x.after)}">`:'<div class="na">사진 없음</div>'}<div class="lb">완료 · 조치 후</div></div></div></div>`).join('')}</div>`:''}
 
-  ${pt?ptSection():''}
+  ${pt?ptSection():(o.patrol===false&&ptCanView()?'<p style="font-size:10pt;color:#555;margin:10px 0">순찰 실적은 이 보고서에 싣지 않았습니다. 순찰은 별도 순찰 시스템 기록으로 확인합니다.</p>':'')}
   <div>${H('특이사항')}
   <div class="box flow">${o.note?esc(o.note):'<span class="muted">특이사항 없음</span>'}</div>
   <div class="end">위와 같이 ${y}년 ${m}월 ${ttl.replace(' 보고','')}을 보고합니다.<br>${esc(dt)}
